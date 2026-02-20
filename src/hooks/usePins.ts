@@ -183,3 +183,41 @@ export function usePins() {
 
   return { pins, loading, error, refetch: fetchPins };
 }
+
+// ---- Pin Mutations ----
+
+export interface PinInput {
+  name: string;
+  lat: number;
+  lng: number;
+  address?: string;
+  country?: string;
+  city?: string;
+  visit_status: 'visited' | 'planned' | 'wishlist';
+  visited_at?: string | null;
+  category?: string;
+  rating?: number | null;
+  note?: string;
+  trip_id?: string | null;
+  day_number?: number | null;
+}
+
+export async function createPin(input: PinInput): Promise<string> {
+  const { data, error } = await supabase
+    .from('pins')
+    .insert(input)
+    .select('id')
+    .single();
+  if (error) throw error;
+  return data.id;
+}
+
+export async function updatePin(id: string, input: Partial<PinInput>): Promise<void> {
+  const { error } = await supabase.from('pins').update(input).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deletePin(id: string): Promise<void> {
+  const { error } = await supabase.from('pins').delete().eq('id', id);
+  if (error) throw error;
+}

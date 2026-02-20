@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { TripStatus } from '../types/trip';
 import type { VisitStatus } from '../types/database';
 import { useTrips } from '../hooks/useTrips';
@@ -195,6 +196,29 @@ export default function HomePage() {
           </span>
         </div>
       )}
+
+      {/* FAB 추가 버튼 */}
+      <div className="fixed bottom-6 right-6 flex flex-col gap-3 items-end">
+        <Link
+          to="/pin/new"
+          className="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-3 rounded-full shadow-lg transition-colors no-underline text-sm font-medium"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          핀 추가
+        </Link>
+        <Link
+          to="/trip/new"
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-full shadow-lg transition-colors no-underline text-sm font-medium"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+          여행 추가
+        </Link>
+      </div>
     </div>
   );
 }

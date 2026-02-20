@@ -111,6 +111,37 @@ export function useTrips() {
   return { trips, loading, error, refetch: fetchTrips };
 }
 
+// ---- Trip Mutations ----
+
+export interface TripInput {
+  title: string;
+  status: 'planned' | 'completed';
+  start_date?: string;
+  end_date?: string;
+  cover_image?: string;
+  memo?: string;
+}
+
+export async function createTrip(input: TripInput): Promise<string> {
+  const { data, error } = await supabase
+    .from('trips')
+    .insert(input)
+    .select('id')
+    .single();
+  if (error) throw error;
+  return data.id;
+}
+
+export async function updateTrip(id: string, input: Partial<TripInput>): Promise<void> {
+  const { error } = await supabase.from('trips').update(input).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteTrip(id: string): Promise<void> {
+  const { error } = await supabase.from('trips').delete().eq('id', id);
+  if (error) throw error;
+}
+
 /** 단일 여행 조회 (ID로) */
 export function useTrip(id: string | undefined) {
   const [trip, setTrip] = useState<Trip | null>(null);

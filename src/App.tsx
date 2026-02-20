@@ -4,6 +4,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
 import TripDetailPage from './pages/TripDetailPage';
+import TripFormPage from './pages/TripFormPage';
+import PinFormPage from './pages/PinFormPage';
 
 export default function App() {
   return (
@@ -22,7 +24,11 @@ export default function App() {
                 <main>
                   <Routes>
                     <Route path="/" element={<HomePage />} />
+                    <Route path="/trip/new" element={<TripFormPage />} />
+                    <Route path="/trip/edit/:id" element={<TripFormPage />} />
                     <Route path="/trip/:id" element={<TripDetailPage />} />
+                    <Route path="/pin/new" element={<PinFormPage />} />
+                    <Route path="/pin/edit/:id" element={<PinFormPage />} />
                   </Routes>
                 </main>
               </>

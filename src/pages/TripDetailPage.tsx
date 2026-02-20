@@ -1,5 +1,7 @@
-import { useParams, Link } from 'react-router-dom';
-import { useTrip } from '../hooks/useTrips';
+import { useState } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useTrip, deleteTrip } from '../hooks/useTrips';
+import { isSupabaseConfigured } from '../lib/supabase';
 import StatusBadge from '../components/StatusBadge';
 import ExpenseTable from '../components/ExpenseTable';
 import Timeline from '../components/Timeline';
@@ -9,7 +11,26 @@ import { formatDate, calcDuration } from '../utils/format';
 
 export default function TripDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { trip, loading, error } = useTrip(id);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!id) return;
+    if (!isSupabaseConfigured) {
+      alert('데모 모드에서는 삭제할 수 없습니다.');
+      return;
+    }
+    if (!window.confirm('이 여행을 삭제하시겠습니까? 되돌릴 수 없습니다.')) return;
+    try {
+      setDeleting(true);
+      await deleteTrip(id);
+      navigate('/');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '삭제에 실패했습니다');
+      setDeleting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -71,6 +92,22 @@ export default function TripDetailPage() {
           <p className="text-white/60 text-sm mt-1">
             {formatDate(trip.startDate)} ~ {formatDate(trip.endDate)} ({calcDuration(trip.startDate, trip.endDate)})
           </p>
+        </div>
+        {/* 수정/삭제 버튼 */}
+        <div className="absolute top-4 right-4 flex gap-2">
+          <Link
+            to={`/trip/edit/${trip.id}`}
+            className="bg-white/90 hover:bg-white text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium no-underline transition-colors shadow-sm"
+          >
+            수정
+          </Link>
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="bg-red-500/90 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-sm cursor-pointer disabled:opacity-50"
+          >
+            {deleting ? '삭제 중...' : '삭제'}
+          </button>
         </div>
       </div>
 
