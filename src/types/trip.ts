@@ -1,6 +1,6 @@
 export type TripStatus = 'completed' | 'planned';
 
-export type ExpenseCategory = 'flight' | 'hotel' | 'food' | 'transport' | 'activity' | 'other';
+export type ExpenseCategory = 'flight' | 'hotel' | 'food' | 'transport' | 'activity' | 'shopping' | 'other';
 
 export type PlacePriority = 'must' | 'want' | 'maybe';
 

@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { sampleTrips } from '../utils/sampleData';
+import { useTrip } from '../hooks/useTrips';
 import StatusBadge from '../components/StatusBadge';
 import ExpenseTable from '../components/ExpenseTable';
 import Timeline from '../components/Timeline';
@@ -9,7 +9,26 @@ import { formatDate, calcDuration } from '../utils/format';
 
 export default function TripDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const trip = sampleTrips.find((t) => t.id === id);
+  const { trip, loading, error } = useTrip(id);
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-20 text-center">
+        <div className="animate-pulse text-gray-400">불러오는 중...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-20 text-center">
+        <p className="text-red-500">{error}</p>
+        <Link to="/" className="text-blue-600 text-sm mt-2 inline-block">
+          홈으로 돌아가기
+        </Link>
+      </div>
+    );
+  }
 
   if (!trip) {
     return (

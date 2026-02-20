@@ -25,6 +25,7 @@ export function expenseCategoryLabel(category: string): string {
     food: '식비',
     transport: '교통',
     activity: '관광/활동',
+    shopping: '쇼핑',
     other: '기타',
   };
   return labels[category] || category;

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { TripStatus } from '../types/trip';
-import { sampleTrips } from '../utils/sampleData';
+import { useTrips } from '../hooks/useTrips';
 import TripCard from '../components/TripCard';
 import { formatCurrency, totalExpenses } from '../utils/format';
 
@@ -8,8 +8,8 @@ type Filter = 'all' | TripStatus;
 
 export default function HomePage() {
   const [filter, setFilter] = useState<Filter>('all');
+  const { trips, loading, error } = useTrips();
 
-  const trips = sampleTrips;
   const filtered =
     filter === 'all' ? trips : trips.filter((t) => t.status === filter);
 
@@ -18,7 +18,7 @@ export default function HomePage() {
   const totalSpent = totalExpenses(
     trips
       .filter((t) => t.status === 'completed')
-      .flatMap((t) => t.expenses)
+      .flatMap((t) => t.expenses),
   );
 
   const filters: { key: Filter; label: string }[] = [
@@ -26,6 +26,25 @@ export default function HomePage() {
     { key: 'completed', label: `완료 (${completedCount})` },
     { key: 'planned', label: `계획 중 (${plannedCount})` },
   ];
+
+  // 로딩 상태
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-20 text-center">
+        <div className="animate-pulse text-gray-400">여행 데이터를 불러오는 중...</div>
+      </div>
+    );
+  }
+
+  // 에러 상태
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-20 text-center">
+        <p className="text-red-500">{error}</p>
+        <p className="text-sm text-gray-400 mt-2">새로고침해주세요.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
