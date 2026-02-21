@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import type { TripStatus, ExpenseCategory, Expense, ChecklistItem } from '../types/trip';
 import { createTrip, updateTrip, saveExpenses, saveChecklistItems, useTrip } from '../hooks/useTrips';
 import { isSupabaseConfigured } from '../lib/supabase';
+import { uploadTripPhoto } from '../lib/storage';
 import { expenseCategoryLabel } from '../utils/format';
 import PhotoUpload from '../components/PhotoUpload';
 
@@ -34,6 +35,7 @@ export default function TripFormPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState('');
   const [initialized, setInitialized] = useState(false);
 
   // 수정 모드: 기존 데이터로 폼 초기화
@@ -81,6 +83,7 @@ export default function TripFormPage() {
 
     try {
       setSaving(true);
+      setSaveStatus('여행 저장 중...');
       const input = {
         title: title.trim(),
         status,
@@ -98,11 +101,43 @@ export default function TripFormPage() {
         tripId = await createTrip(input);
       }
 
+      // 사진 업로드 (base64 → Storage, 외부 URL은 그대로)
+      const base64Photos = photos.filter((p) => p.startsWith('data:'));
+      if (base64Photos.length > 0) {
+        setSaveStatus(`사진 업로드 중... (0/${base64Photos.length})`);
+      }
+      const uploadedUrls: string[] = [];
+      let uploadCount = 0;
+      for (const photo of photos) {
+        if (photo.startsWith('data:')) {
+          try {
+            const url = await uploadTripPhoto(tripId, photo);
+            uploadedUrls.push(url);
+            uploadCount++;
+            setSaveStatus(`사진 업로드 중... (${uploadCount}/${base64Photos.length})`);
+          } catch {
+            console.warn('사진 업로드 건너뜀');
+          }
+        } else {
+          uploadedUrls.push(photo);
+        }
+      }
+
+      // 첫 번째 사진을 대표 이미지로 설정
+      const finalCover = coverImage.startsWith('data:')
+        ? uploadedUrls[0] || ''
+        : coverImage;
+      if (finalCover && finalCover !== input.cover_image) {
+        await updateTrip(tripId, { cover_image: finalCover });
+      }
+
       // 경비 저장 (빈 항목 제외)
+      setSaveStatus('경비 저장 중...');
       const validExpenses = expenses.filter((e) => e.amount > 0);
       await saveExpenses(tripId, validExpenses);
 
       // 체크리스트 저장 (빈 항목 제외)
+      setSaveStatus('체크리스트 저장 중...');
       const validChecklist = checklist.filter((c) => c.text.trim());
       await saveChecklistItems(tripId, validChecklist);
 
@@ -349,7 +384,7 @@ export default function TripFormPage() {
             disabled={saving || !title.trim()}
             className="flex-1 py-3 rounded-xl text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {saving ? '저장 중...' : isEdit ? '수정 완료' : '여행 추가'}
+            {saving ? saveStatus || '저장 중...' : isEdit ? '수정 완료' : '여행 추가'}
           </button>
         </div>
       </form>

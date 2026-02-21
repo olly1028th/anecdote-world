@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { listTripPhotos } from '../lib/storage';
 import { sampleTrips } from '../utils/sampleData';
 import type { Trip, PlacePriority } from '../types/trip';
 import type {
@@ -20,6 +21,7 @@ function mapDbTripToUi(
   checklist: DbChecklistItem[],
   pins: Pin[],
   pinPhotos: PinPhoto[],
+  storagePhotos: string[] = [],
 ): Trip {
   // destination: 핀들의 도시/나라 조합
   const cityCountry = [...new Set(
@@ -57,12 +59,13 @@ function mapDbTripToUi(
     note: p.note,
   }));
 
-  // photos: 핀에 연결된 사진 URL 수집
+  // photos: Storage 사진 + 핀 사진 합치기 (중복 제거)
   const pinIdSet = new Set(pins.map((p) => p.id));
-  const photos = pinPhotos
+  const pinPhotoUrls = pinPhotos
     .filter((pp) => pinIdSet.has(pp.pin_id))
     .sort((a, b) => a.sort_order - b.sort_order)
     .map((pp) => pp.url);
+  const photos = [...new Set([...storagePhotos, ...pinPhotoUrls])];
 
   return {
     id: db.id,
@@ -326,7 +329,7 @@ export function useTrip(id: string | undefined) {
 
       const pins: Pin[] = (pinsRes.data as Pin[]) ?? [];
 
-      // 핀 사진 조회
+      // 핀 사진 + Storage 사진 조회
       let pinPhotos: PinPhoto[] = [];
       const pinIds = pins.map((p) => p.id);
       if (pinIds.length > 0) {
@@ -338,6 +341,14 @@ export function useTrip(id: string | undefined) {
         pinPhotos = (ppRes.data as PinPhoto[]) ?? [];
       }
 
+      // Storage에 업로드된 여행 사진 조회
+      let storagePhotos: string[] = [];
+      try {
+        storagePhotos = await listTripPhotos(id);
+      } catch {
+        // Storage 버킷 미생성 시 무시
+      }
+
       setTrip(
         mapDbTripToUi(
           dbTrip as DbTrip,
@@ -345,6 +356,7 @@ export function useTrip(id: string | undefined) {
           (checklistRes.data ?? []) as DbChecklistItem[],
           pins,
           pinPhotos,
+          storagePhotos,
         ),
       );
     } catch (err) {
