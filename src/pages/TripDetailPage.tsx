@@ -7,6 +7,7 @@ import ExpenseTable from '../components/ExpenseTable';
 import Timeline from '../components/Timeline';
 import PlaceList from '../components/PlaceList';
 import Checklist from '../components/Checklist';
+import PhotoGallery from '../components/PhotoGallery';
 import { formatDate, calcDuration } from '../utils/format';
 
 export default function TripDetailPage() {
@@ -120,6 +121,11 @@ export default function TripDetailPage() {
 
       {/* 콘텐츠 영역 */}
       <div className="space-y-6">
+        {/* 사진 갤러리 */}
+        {trip.photos.length > 0 && (
+          <PhotoGallery photos={trip.photos} />
+        )}
+
         {/* 완료 여행: 일정 타임라인 */}
         {isCompleted && trip.itinerary.length > 0 && (
           <Timeline items={trip.itinerary} />

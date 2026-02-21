@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import type { TripStatus } from '../types/trip';
 import { createTrip, updateTrip, useTrip } from '../hooks/useTrips';
 import { isSupabaseConfigured } from '../lib/supabase';
+import PhotoUpload from '../components/PhotoUpload';
 
 export default function TripFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +16,7 @@ export default function TripFormPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [coverImage, setCoverImage] = useState('');
+  const [photos, setPhotos] = useState<string[]>([]);
   const [memo, setMemo] = useState('');
   const [saving, setSaving] = useState(false);
   const [initialized, setInitialized] = useState(false);
@@ -26,6 +28,7 @@ export default function TripFormPage() {
     setStartDate(existing.startDate);
     setEndDate(existing.endDate);
     setCoverImage(existing.coverImage);
+    setPhotos(existing.photos);
     setMemo(existing.memo);
     setInitialized(true);
   }
@@ -148,25 +151,13 @@ export default function TripFormPage() {
           </div>
         </div>
 
-        {/* 커버 이미지 URL */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">커버 이미지 URL</label>
-          <input
-            type="url"
-            value={coverImage}
-            onChange={(e) => setCoverImage(e.target.value)}
-            placeholder="https://images.unsplash.com/..."
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-          {coverImage && (
-            <img
-              src={coverImage}
-              alt="미리보기"
-              className="mt-2 w-full h-40 object-cover rounded-xl"
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-            />
-          )}
-        </div>
+        {/* 사진 업로드 */}
+        <PhotoUpload
+          photos={photos}
+          onChange={setPhotos}
+          coverImage={coverImage}
+          onCoverChange={setCoverImage}
+        />
 
         {/* 메모 */}
         <div>
