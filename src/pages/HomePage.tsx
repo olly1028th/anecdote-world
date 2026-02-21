@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import type { TripStatus } from '../types/trip';
 import type { VisitStatus } from '../types/database';
 import { useTrips } from '../hooks/useTrips';
 import { usePins } from '../hooks/usePins';
 import TripCard from '../components/TripCard';
-import { WorldMap } from '../components/Map';
 import { formatCurrency, totalExpenses } from '../utils/format';
+
+const WorldMap = lazy(() =>
+  import('../components/Map').then((m) => ({ default: m.WorldMap })),
+);
 
 type Filter = 'all' | TripStatus;
 type View = 'list' | 'map';
@@ -174,7 +177,9 @@ export default function HomePage() {
               <div className="animate-pulse text-gray-400">지도를 불러오는 중...</div>
             </div>
           ) : (
-            <WorldMap pins={filteredPins} />
+            <Suspense fallback={<div className="w-full h-full flex items-center justify-center bg-white"><div className="animate-pulse text-gray-400">지도를 불러오는 중...</div></div>}>
+              <WorldMap pins={filteredPins} />
+            </Suspense>
           )}
         </div>
       )}
