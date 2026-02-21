@@ -5,9 +5,9 @@ interface Props {
 }
 
 const priorityConfig = {
-  must: { label: '필수', className: 'bg-red-100 text-red-600' },
-  want: { label: '가고 싶음', className: 'bg-blue-100 text-blue-600' },
-  maybe: { label: '여유 되면', className: 'bg-gray-100 text-gray-500' },
+  must: { label: '필수', className: 'bg-red-100 text-red-700' },
+  want: { label: '가고싶음', className: 'bg-blue-100 text-blue-700' },
+  maybe: { label: '여유되면', className: 'bg-gray-100 text-gray-600' },
 } as const;
 
 export default function PlaceList({ places }: Props) {
@@ -28,9 +28,9 @@ export default function PlaceList({ places }: Props) {
                 {config.label}
               </span>
               <div>
-                <p className="text-sm font-medium text-gray-800">{place.name}</p>
+                <span className="font-medium text-gray-900 text-sm">{place.name}</span>
                 {place.note && (
-                  <p className="text-xs text-gray-400 mt-0.5">{place.note}</p>
+                  <p className="text-xs text-gray-500 mt-1">{place.note}</p>
                 )}
               </div>
             </div>

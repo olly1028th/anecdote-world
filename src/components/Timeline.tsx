@@ -13,18 +13,18 @@ export default function Timeline({ items }: Props) {
           <div key={item.day} className="flex gap-4">
             {/* 타임라인 점 */}
             <div className="flex flex-col items-center">
-              <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold shrink-0">
+              <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shrink-0">
                 {item.day}
               </div>
               {item.day < items.length && (
-                <div className="w-0.5 flex-1 bg-blue-100 mt-1" />
+                <div className="w-0.5 flex-1 bg-blue-200 mt-1" />
               )}
             </div>
             {/* 내용 */}
             <div className="pb-4">
-              <p className="text-sm font-semibold text-gray-800">
+              <h4 className="font-medium text-gray-900">
                 Day {item.day}: {item.title}
-              </p>
+              </h4>
               <p className="text-sm text-gray-500 mt-1">{item.description}</p>
             </div>
           </div>
