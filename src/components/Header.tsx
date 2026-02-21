@@ -17,9 +17,6 @@ export default function Header() {
         <h1 className="text-2xl font-bold text-[#FF6B6B] tracking-tight">
           Anecdote World
         </h1>
-        <p className="text-xs font-medium text-gray-400 mt-0.5 italic">
-          Capturing your shiny moments... ✨
-        </p>
       </Link>
 
       {user && (

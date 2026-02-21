@@ -1,43 +1,38 @@
 import { useState, lazy, Suspense } from 'react';
-import type { TripStatus } from '../types/trip';
 import type { VisitStatus } from '../types/database';
 import { useTrips } from '../hooks/useTrips';
 import { usePins } from '../hooks/usePins';
-import TripCard from '../components/TripCard';
-import { formatCurrency, totalExpenses } from '../utils/format';
+import { useFavoritePhotos, type FavoritePhoto } from '../hooks/useFavoritePhotos';
 
 const WorldMap = lazy(() =>
   import('../components/Map').then((m) => ({ default: m.WorldMap })),
 );
 
-type Filter = 'all' | TripStatus;
 type PinFilter = 'all' | VisitStatus;
 
 export default function HomePage() {
-  const [filter, setFilter] = useState<Filter>('all');
   const [pinFilter, setPinFilter] = useState<PinFilter>('all');
   const { trips, loading, error } = useTrips();
   const { pins, loading: pinsLoading } = usePins();
-
-  const filtered =
-    filter === 'all' ? trips : trips.filter((t) => t.status === filter);
+  const { photos: favoritePhotos, loading: favLoading } = useFavoritePhotos();
 
   const filteredPins =
     pinFilter === 'all' ? pins : pins.filter((p) => p.visit_status === pinFilter);
 
   const completedCount = trips.filter((t) => t.status === 'completed').length;
   const plannedCount = trips.filter((t) => t.status === 'planned').length;
-  const totalSpent = totalExpenses(
-    trips
-      .filter((t) => t.status === 'completed')
-      .flatMap((t) => t.expenses),
-  );
 
-  const tripFilters: { key: Filter; label: string }[] = [
-    { key: 'all', label: `전체 (${trips.length})` },
-    { key: 'completed', label: `완료 (${completedCount})` },
-    { key: 'planned', label: `계획 중 (${plannedCount})` },
-  ];
+  // favorite 사진을 여행지별로 그룹핑 (시간순)
+  const photosByTrip = favoritePhotos.reduce<Record<string, FavoritePhoto[]>>((acc, photo) => {
+    const key = photo.tripTitle || '기타';
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(photo);
+    return acc;
+  }, {});
+  // 그룹 순서: 각 그룹의 첫 사진 날짜 기준 시간순
+  const tripGroups = Object.entries(photosByTrip).sort(
+    ([, a], [, b]) => new Date(a[0].date).getTime() - new Date(b[0].date).getTime(),
+  );
 
   const pinFilters: { key: PinFilter; label: string }[] = [
     { key: 'all', label: `전체 (${pins.length})` },
@@ -123,52 +118,74 @@ export default function HomePage() {
             <span className="block text-xs font-bold mt-1">{plannedCount} 계획 중</span>
           </div>
           <div className="bg-white p-3 rounded-2xl shadow-sm min-w-[100px] text-center">
-            <span className="block text-xl">💰</span>
-            <span className="block text-xs font-bold mt-1">{formatCurrency(totalSpent)}</span>
-          </div>
-          <div className="bg-white p-3 rounded-2xl shadow-sm min-w-[100px] text-center">
             <span className="block text-xl">📍</span>
             <span className="block text-xs font-bold mt-1">{pins.length} 핀</span>
           </div>
         </div>
       </section>
 
-      {/* My Shiny Journal */}
+      {/* My Shiny Journal — Favorite 사진 액자 갤러리 */}
       <section>
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-6">
           <h2 className="text-xl font-bold text-[#2D3436]">My Shiny Journal</h2>
           <div className="h-[2px] flex-1 bg-[#F0EEE6]" />
         </div>
 
-        {/* 필터 */}
-        <div className="flex gap-2 mb-5">
-          {tripFilters.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              className={`px-4 py-2 rounded-full text-xs font-bold transition-colors cursor-pointer ${
-                filter === f.key
-                  ? 'bg-[#FF6B6B] text-white'
-                  : 'bg-white text-gray-500 hover:bg-gray-100 shadow-sm'
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        {/* 카드 그리드 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((trip) => (
-            <TripCard key={trip.id} trip={trip} />
-          ))}
-        </div>
-
-        {filtered.length === 0 && (
+        {favLoading ? (
+          <div className="text-center py-12">
+            <div className="animate-pulse text-gray-400">사진을 불러오는 중...</div>
+          </div>
+        ) : favoritePhotos.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
-            <p className="text-3xl mb-3">🧳</p>
-            <p className="text-base font-medium">아직 여행이 없어요</p>
-            <p className="text-sm mt-1">아래 + 버튼으로 새 여행을 추가해보세요!</p>
+            <p className="text-3xl mb-3">🖼️</p>
+            <p className="text-base font-medium">아직 대표 사진이 없어요</p>
+            <p className="text-sm mt-1">여행지 상세에서 사진을 즐겨찾기로 지정해보세요!</p>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {tripGroups.map(([tripTitle, photos]) => (
+              <div key={tripTitle}>
+                {/* 여행지 라벨 */}
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-sm font-bold text-[#FF6B6B]">{tripTitle}</span>
+                  <span className="text-xs text-gray-400">{photos[0].destination}</span>
+                </div>
+
+                {/* 액자 가로 스크롤 */}
+                <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory">
+                  {photos.map((photo) => (
+                    <div
+                      key={photo.id}
+                      className="snap-start shrink-0 w-[200px]"
+                    >
+                      {/* 액자 프레임 */}
+                      <div className="bg-white p-2 rounded-lg shadow-md shadow-gray-200/60 border border-gray-100">
+                        <div className="relative aspect-[4/3] rounded overflow-hidden">
+                          <img
+                            src={photo.url}
+                            alt={photo.caption}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        {/* 캡션 영역 */}
+                        <div className="mt-2 px-1 pb-1">
+                          <p className="text-xs font-medium text-[#2D3436] truncate">
+                            {photo.caption}
+                          </p>
+                          <p className="text-[10px] text-gray-400 mt-0.5">
+                            {new Date(photo.date).toLocaleDateString('ko-KR', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </section>
