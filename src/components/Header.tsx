@@ -21,25 +21,38 @@ export default function Header() {
           </p>
         </Link>
 
-        {/* 유저 영역 */}
+        {/* 네비게이션 + 유저 영역 */}
         {user && (
-          <div className="flex items-center gap-3">
-            {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt={displayName}
-                className="w-8 h-8 rounded-full object-cover"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-medium text-blue-600">
-                {displayName.charAt(0)}
-              </div>
-            )}
+          <div className="flex items-center gap-4">
+            {/* 네비 링크 */}
+            <nav className="hidden sm:flex items-center gap-1">
+              <Link
+                to="/dashboard"
+                className="text-sm text-gray-500 hover:text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors no-underline"
+              >
+                대시보드
+              </Link>
+            </nav>
 
-            <span className="text-sm text-gray-700 hidden sm:inline">
-              {displayName}
-            </span>
+            {/* 유저 프로필 (프로필 페이지로 링크) */}
+            <Link to="/profile" className="flex items-center gap-2 no-underline">
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={displayName}
+                  className="w-8 h-8 rounded-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-medium text-blue-600">
+                  {displayName.charAt(0)}
+                </div>
+              )}
+
+              <span className="text-sm text-gray-700 hidden sm:inline">
+                {displayName}
+              </span>
+            </Link>
 
             {isDemo && (
               <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
