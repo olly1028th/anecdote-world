@@ -48,7 +48,7 @@ export default function TripDetailPage() {
 
   if (loading) {
     return (
-      <div className="max-w-6xl mx-auto px-4 py-20 text-center">
+      <div className="px-6 py-20 text-center">
         <div className="animate-pulse text-gray-400">불러오는 중...</div>
       </div>
     );
@@ -56,9 +56,9 @@ export default function TripDetailPage() {
 
   if (error) {
     return (
-      <div className="max-w-6xl mx-auto px-4 py-20 text-center">
-        <p className="text-red-500">{error}</p>
-        <Link to="/" className="text-blue-600 text-sm mt-2 inline-block">
+      <div className="px-6 py-20 text-center">
+        <p className="text-[#FF6B6B]">{error}</p>
+        <Link to="/" className="text-[#FF6B6B] text-sm mt-2 inline-block no-underline hover:underline">
           홈으로 돌아가기
         </Link>
       </div>
@@ -67,9 +67,9 @@ export default function TripDetailPage() {
 
   if (!trip) {
     return (
-      <div className="max-w-6xl mx-auto px-4 py-20 text-center">
+      <div className="px-6 py-20 text-center">
         <p className="text-xl text-gray-400">여행을 찾을 수 없습니다</p>
-        <Link to="/" className="text-blue-600 text-sm mt-2 inline-block">
+        <Link to="/" className="text-[#FF6B6B] text-sm mt-2 inline-block no-underline hover:underline">
           홈으로 돌아가기
         </Link>
       </div>
@@ -79,11 +79,11 @@ export default function TripDetailPage() {
   const isCompleted = trip.status === 'completed';
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="px-6 space-y-6">
       {/* 뒤로가기 */}
       <Link
         to="/"
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6 no-underline"
+        className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-[#FF6B6B] transition-colors no-underline"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -92,7 +92,7 @@ export default function TripDetailPage() {
       </Link>
 
       {/* 헤더 영역 */}
-      <div className="relative rounded-2xl overflow-hidden mb-8">
+      <div className="relative rounded-3xl overflow-hidden shadow-md shadow-gray-200/50">
         <img
           src={trip.coverImage}
           alt={trip.title}
@@ -100,7 +100,7 @@ export default function TripDetailPage() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         <div className="absolute bottom-0 left-0 p-6 text-white">
-          <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
             isCompleted ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'
           }`}>
             {isCompleted ? '완료' : '계획 중'}
@@ -117,14 +117,14 @@ export default function TripDetailPage() {
         <div className="absolute top-4 right-4 flex gap-2">
           <Link
             to={`/trip/edit/${trip.id}`}
-            className="bg-white/90 hover:bg-white text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium no-underline transition-colors shadow-sm"
+            className="bg-white/90 backdrop-blur-md hover:bg-white text-[#4A4A4A] px-3 py-1.5 rounded-full text-sm font-medium no-underline transition-colors shadow-sm"
           >
             수정
           </Link>
           <button
             onClick={handleDelete}
             disabled={deleting}
-            className="bg-red-500/90 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-sm cursor-pointer disabled:opacity-50"
+            className="bg-[#FF6B6B]/90 backdrop-blur-md hover:bg-[#FF6B6B] text-white px-3 py-1.5 rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer disabled:opacity-50"
           >
             {deleting ? '삭제 중...' : '삭제'}
           </button>
@@ -133,8 +133,8 @@ export default function TripDetailPage() {
 
       {/* 한줄 후기 (완료 여행) */}
       {isCompleted && trip.memo && (
-        <blockquote className="bg-blue-50 border-l-4 border-blue-400 px-5 py-4 rounded-r-xl mb-6">
-          <p className="text-gray-700 italic">"{trip.memo}"</p>
+        <blockquote className="bg-[#FFD166]/10 border-l-4 border-[#FFD166] px-5 py-4 rounded-r-2xl">
+          <p className="text-[#4A4A4A] italic">"{trip.memo}"</p>
         </blockquote>
       )}
 
