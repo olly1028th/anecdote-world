@@ -1,58 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-primary: #2563eb;
-  --color-primary-dark: #1d4ed8;
+  --color-primary: #FF6B6B;
+  --color-primary-dark: #e85d5d;
+  --color-accent: #FFD166;
   --color-completed: #059669;
   --color-planned: #d97706;
-  --color-bg: #f8fafc;
+  --color-bg: #FCFBF7;
   --color-card: #ffffff;
-  --color-text: #1e293b;
-  --color-text-light: #64748b;
-  --color-border: #e2e8f0;
+  --color-text: #4A4A4A;
+  --color-text-light: #9CA3AF;
+  --color-border: #F0EEE6;
 }
 
 body {
   margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: var(--color-bg);
   color: var(--color-text);
   transition: background-color 0.2s, color 0.2s;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Selection */
+::selection {
+  background-color: #FFD166;
+  color: #2D3436;
 }
 
 /* ============================
    다크 모드 (Dark Mode)
    ============================ */
 
-/* CSS 변수 오버라이드 */
 .dark {
-  --color-bg: #0f172a;
-  --color-card: #1e293b;
-  --color-text: #f1f5f9;
+  --color-bg: #1a1a2e;
+  --color-card: #16213e;
+  --color-text: #e8e8e8;
   --color-text-light: #94a3b8;
-  --color-border: #334155;
+  --color-border: #2a2a4a;
   color-scheme: dark;
 }
 
 /* 배경색 */
-.dark .bg-white { background-color: #1e293b !important; }
+.dark .bg-white { background-color: #16213e !important; }
+.dark .bg-\[\#FCFBF7\] { background-color: #1a1a2e !important; }
 .dark .bg-gray-50 { background-color: #0f172a !important; }
 .dark .bg-gray-100 { background-color: #1e293b !important; }
 .dark .bg-blue-50 { background-color: #1e3a5f !important; }
 
 /* 텍스트 색상 */
-.dark .text-gray-900 { color: #f1f5f9 !important; }
+.dark .text-gray-900,
+.dark .text-\[\#2D3436\] { color: #f1f5f9 !important; }
 .dark .text-gray-800 { color: #e2e8f0 !important; }
 .dark .text-gray-700 { color: #cbd5e1 !important; }
 .dark .text-gray-600 { color: #94a3b8 !important; }
 .dark .text-gray-500 { color: #94a3b8 !important; }
 .dark .text-gray-400 { color: #64748b !important; }
+.dark .text-\[\#4A4A4A\] { color: #e8e8e8 !important; }
 
 /* 테두리 */
 .dark .border-gray-200 { border-color: #334155 !important; }
 .dark .border-gray-100 { border-color: #1e293b !important; }
 .dark .border-gray-300 { border-color: #475569 !important; }
+.dark .border-\[\#F0EEE6\] { border-color: #2a2a4a !important; }
 
 /* 입력 필드 */
 .dark input,
@@ -79,3 +92,15 @@ body {
 .dark .shadow-sm { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important; }
 .dark .shadow-md,
 .dark .hover\:shadow-md:hover { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4) !important; }
+
+/* 글래스모피즘 다크 모드 */
+.dark .bg-white\/80 { background-color: rgba(22, 33, 62, 0.85) !important; }
+.dark .border-white\/40 { border-color: rgba(42, 42, 74, 0.4) !important; }
+
+/* Leaflet 다크 모드 */
+.dark .leaflet-container {
+  background: #1a1a2e;
+}
+.dark .leaflet-tile {
+  filter: brightness(0.7) contrast(1.1) saturate(0.8);
+}

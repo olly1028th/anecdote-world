@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import type { Trip } from '../types/trip';
-import StatusBadge from './StatusBadge';
 import { formatDate, calcDuration, formatCurrency, totalExpenses } from '../utils/format';
 
 interface Props {
@@ -13,24 +12,24 @@ export default function TripCard({ trip }: Props) {
   return (
     <Link
       to={`/trip/${trip.id}`}
-      className="block bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow no-underline"
+      className="block bg-white rounded-3xl overflow-hidden shadow-md shadow-gray-200/50 hover:shadow-lg transition-shadow duration-300 no-underline"
     >
       {/* 커버 이미지 */}
-      <div className="relative h-48 bg-gray-200">
+      <div className="relative h-56 overflow-hidden">
         <img
           src={trip.coverImage}
           alt={trip.title}
           className="w-full h-full object-cover"
         />
-        <div className="absolute top-3 left-3">
-          <StatusBadge status={trip.status} />
+        <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[12px] font-bold text-[#FF6B6B]">
+          {trip.destination || (trip.status === 'completed' ? '완료' : '계획 중')}
         </div>
       </div>
 
       {/* 카드 본문 */}
-      <div className="p-4">
-        <h3 className="text-lg font-semibold text-gray-900">{trip.title}</h3>
-        <p className="text-sm text-gray-500 mt-1">{trip.destination}</p>
+      <div className="p-5">
+        <h3 className="text-lg font-bold leading-tight text-[#2D3436]">{trip.title}</h3>
+        {trip.destination && <p className="text-sm text-gray-400 mt-1">{trip.destination}</p>}
 
         <div className="flex items-center justify-between mt-3 text-sm text-gray-500">
           <span>

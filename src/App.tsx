@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Outlet } from 'react-router-dom';
 import Header from './components/Header';
+import BottomNav from './components/BottomNav';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
@@ -16,9 +17,10 @@ function ProtectedLayout() {
     <ProtectedRoute>
       <>
         <Header />
-        <main>
+        <main className="pb-24">
           <Outlet />
         </main>
+        <BottomNav />
       </>
     </ProtectedRoute>
   );
