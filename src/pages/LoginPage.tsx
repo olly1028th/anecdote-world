@@ -22,11 +22,11 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* 로고 영역 */}
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+          <h1 className="text-3xl font-bold text-[#FF6B6B] tracking-tight">
             Anecdote World
           </h1>
-          <p className="text-sm text-gray-400 mt-2">
-            Life is short and the world is wide.
+          <p className="text-sm text-gray-400 mt-2 italic">
+            Capturing your shiny moments... ✨
           </p>
         </div>
 
@@ -34,7 +34,7 @@ export default function LoginPage() {
         <div className="space-y-3">
           <button
             onClick={signInWithGoogle}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border border-[#F0EEE6] rounded-2xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer shadow-sm"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -59,7 +59,7 @@ export default function LoginPage() {
 
           <button
             onClick={signInWithKakao}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#FEE500] rounded-xl text-sm font-medium text-[#191919] hover:bg-[#FDD800] transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#FEE500] rounded-2xl text-sm font-medium text-[#191919] hover:bg-[#FDD800] transition-colors cursor-pointer shadow-sm"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#191919">
               <path d="M12 3C6.48 3 2 6.36 2 10.44c0 2.63 1.76 4.94 4.4 6.26-.14.53-.92 3.41-.95 3.63 0 0-.02.17.09.24.11.06.24.01.24.01.32-.04 3.7-2.44 4.28-2.86.62.09 1.27.14 1.94.14 5.52 0 10-3.36 10-7.42C22 6.36 17.52 3 12 3z" />

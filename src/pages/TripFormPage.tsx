@@ -150,11 +150,11 @@ export default function TripFormPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="px-6 space-y-6 max-w-2xl mx-auto">
       {/* 뒤로가기 */}
       <Link
         to="/"
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6 no-underline"
+        className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-[#FF6B6B] transition-colors no-underline"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -162,22 +162,25 @@ export default function TripFormPage() {
         뒤로
       </Link>
 
-      <h1 className="text-2xl font-bold text-gray-900 mb-8">
-        {isEdit ? '여행 수정' : '새 여행 추가'}
-      </h1>
+      <div className="flex items-center gap-2">
+        <h1 className="text-xl font-bold text-[#2D3436]">
+          {isEdit ? '여행 수정' : '새 여행 추가'}
+        </h1>
+        <div className="h-[2px] flex-1 bg-[#F0EEE6]" />
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* 상태 선택 */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">상태</label>
+          <label className="block text-sm font-medium text-[#4A4A4A] mb-2">상태</label>
           <div className="flex gap-3">
             <button
               type="button"
               onClick={() => setStatus('planned')}
-              className={`flex-1 py-3 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
+              className={`flex-1 py-3 rounded-2xl text-sm font-medium transition-colors cursor-pointer ${
                 status === 'planned'
-                  ? 'bg-amber-500 text-white'
-                  : 'bg-white text-gray-600 border border-gray-200'
+                  ? 'bg-amber-500 text-white shadow-md'
+                  : 'bg-white text-gray-500 border border-[#F0EEE6]'
               }`}
             >
               계획 중
@@ -185,10 +188,10 @@ export default function TripFormPage() {
             <button
               type="button"
               onClick={() => setStatus('completed')}
-              className={`flex-1 py-3 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
+              className={`flex-1 py-3 rounded-2xl text-sm font-medium transition-colors cursor-pointer ${
                 status === 'completed'
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-white text-gray-600 border border-gray-200'
+                  ? 'bg-emerald-500 text-white shadow-md'
+                  : 'bg-white text-gray-500 border border-[#F0EEE6]'
               }`}
             >
               완료
@@ -198,8 +201,8 @@ export default function TripFormPage() {
 
         {/* 여행 제목 */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            여행 제목 <span className="text-red-400">*</span>
+          <label className="block text-sm font-medium text-[#4A4A4A] mb-2">
+            여행 제목 <span className="text-[#FF6B6B]">*</span>
           </label>
           <input
             type="text"
@@ -207,28 +210,28 @@ export default function TripFormPage() {
             onChange={(e) => setTitle(e.target.value)}
             placeholder="예: 도쿄 벚꽃 여행"
             required
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-3 rounded-2xl border border-[#F0EEE6] text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40 focus:border-transparent"
           />
         </div>
 
         {/* 날짜 */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">시작일</label>
+            <label className="block text-sm font-medium text-[#4A4A4A] mb-2">시작일</label>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 rounded-2xl border border-[#F0EEE6] text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40 focus:border-transparent"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">종료일</label>
+            <label className="block text-sm font-medium text-[#4A4A4A] mb-2">종료일</label>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 rounded-2xl border border-[#F0EEE6] text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40 focus:border-transparent"
             />
           </div>
         </div>
@@ -243,7 +246,7 @@ export default function TripFormPage() {
 
         {/* 메모 */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-[#4A4A4A] mb-2">
             {status === 'completed' ? '한줄 후기' : '메모'}
           </label>
           <textarea
@@ -251,20 +254,20 @@ export default function TripFormPage() {
             onChange={(e) => setMemo(e.target.value)}
             placeholder={status === 'completed' ? '이 여행 어땠어요?' : '여행에 대한 메모...'}
             rows={3}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            className="w-full px-4 py-3 rounded-2xl border border-[#F0EEE6] text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40 focus:border-transparent resize-none"
           />
         </div>
 
         {/* ──────── 경비 입력 ──────── */}
-        <div className="bg-gray-50 rounded-xl p-5">
+        <div className="bg-[#FFD166]/5 rounded-3xl p-5 border border-[#FFD166]/20">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-gray-800">
+            <h3 className="text-sm font-bold text-[#2D3436]">
               {status === 'completed' ? '경비 내역' : '예상 경비'}
             </h3>
             <button
               type="button"
               onClick={addExpense}
-              className="text-xs text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
+              className="text-xs text-[#FF6B6B] hover:text-[#e85d5d] font-bold cursor-pointer"
             >
               + 항목 추가
             </button>
@@ -282,7 +285,7 @@ export default function TripFormPage() {
                   <select
                     value={expense.category}
                     onChange={(e) => updateExpense(i, 'category', e.target.value)}
-                    className="w-24 shrink-0 px-2 py-2.5 rounded-lg border border-gray-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-24 shrink-0 px-2 py-2.5 rounded-xl border border-[#F0EEE6] text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40"
                   >
                     {EXPENSE_CATEGORIES.map((cat) => (
                       <option key={cat} value={cat}>
@@ -298,7 +301,7 @@ export default function TripFormPage() {
                     onChange={(e) => updateExpense(i, 'amount', Number(e.target.value))}
                     placeholder="금액"
                     min={0}
-                    className="w-28 shrink-0 px-3 py-2.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-28 shrink-0 px-3 py-2.5 rounded-xl border border-[#F0EEE6] text-xs focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40"
                   />
 
                   {/* 설명 */}
@@ -307,14 +310,14 @@ export default function TripFormPage() {
                     value={expense.label}
                     onChange={(e) => updateExpense(i, 'label', e.target.value)}
                     placeholder="설명 (선택)"
-                    className="flex-1 min-w-0 px-3 py-2.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 min-w-0 px-3 py-2.5 rounded-xl border border-[#F0EEE6] text-xs focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40"
                   />
 
                   {/* 삭제 버튼 */}
                   <button
                     type="button"
                     onClick={() => removeExpense(i)}
-                    className="shrink-0 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors cursor-pointer mt-0.5"
+                    className="shrink-0 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-[#FF6B6B] transition-colors cursor-pointer mt-0.5"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -328,13 +331,13 @@ export default function TripFormPage() {
 
         {/* ──────── 체크리스트 입력 (계획 여행용) ──────── */}
         {status === 'planned' && (
-          <div className="bg-gray-50 rounded-xl p-5">
+          <div className="bg-emerald-50/50 rounded-3xl p-5 border border-emerald-100">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-gray-800">준비 체크리스트</h3>
+              <h3 className="text-sm font-bold text-[#2D3436]">준비 체크리스트</h3>
               <button
                 type="button"
                 onClick={addChecklistItem}
-                className="text-xs text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
+                className="text-xs text-[#FF6B6B] hover:text-[#e85d5d] font-bold cursor-pointer"
               >
                 + 항목 추가
               </button>
@@ -353,12 +356,12 @@ export default function TripFormPage() {
                       value={item.text}
                       onChange={(e) => updateChecklistText(i, e.target.value)}
                       placeholder="예: 항공편 예약"
-                      className="flex-1 min-w-0 px-3 py-2.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 min-w-0 px-3 py-2.5 rounded-xl border border-[#F0EEE6] text-xs focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40"
                     />
                     <button
                       type="button"
                       onClick={() => removeChecklistItem(i)}
-                      className="shrink-0 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
+                      className="shrink-0 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-[#FF6B6B] transition-colors cursor-pointer"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -375,14 +378,14 @@ export default function TripFormPage() {
         <div className="flex gap-3 pt-4">
           <Link
             to="/"
-            className="flex-1 py-3 rounded-xl text-sm font-medium text-gray-600 bg-gray-100 text-center no-underline hover:bg-gray-200 transition-colors"
+            className="flex-1 py-3 rounded-2xl text-sm font-medium text-gray-500 bg-[#F0EEE6] text-center no-underline hover:bg-[#e8e5db] transition-colors"
           >
             취소
           </Link>
           <button
             type="submit"
             disabled={saving || !title.trim()}
-            className="flex-1 py-3 rounded-xl text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 py-3 rounded-2xl text-sm font-bold text-white bg-[#FF6B6B] hover:bg-[#e85d5d] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-[#FF6B6B]/20"
           >
             {saving ? saveStatus || '저장 중...' : isEdit ? '수정 완료' : '여행 추가'}
           </button>
