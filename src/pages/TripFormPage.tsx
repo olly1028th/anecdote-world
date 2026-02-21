@@ -1,9 +1,22 @@
 import { useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import type { TripStatus } from '../types/trip';
-import { createTrip, updateTrip, useTrip } from '../hooks/useTrips';
+import type { TripStatus, ExpenseCategory, Expense, ChecklistItem } from '../types/trip';
+import { createTrip, updateTrip, saveExpenses, saveChecklistItems, useTrip } from '../hooks/useTrips';
 import { isSupabaseConfigured } from '../lib/supabase';
+import { expenseCategoryLabel } from '../utils/format';
 import PhotoUpload from '../components/PhotoUpload';
+
+const EXPENSE_CATEGORIES: ExpenseCategory[] = [
+  'flight', 'hotel', 'food', 'transport', 'activity', 'shopping', 'other',
+];
+
+function emptyExpense(): Expense {
+  return { category: 'other', amount: 0, label: '' };
+}
+
+function emptyChecklistItem(): ChecklistItem {
+  return { text: '', checked: false };
+}
 
 export default function TripFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +31,8 @@ export default function TripFormPage() {
   const [coverImage, setCoverImage] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
   const [memo, setMemo] = useState('');
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
@@ -30,8 +45,30 @@ export default function TripFormPage() {
     setCoverImage(existing.coverImage);
     setPhotos(existing.photos);
     setMemo(existing.memo);
+    setExpenses(existing.expenses.length > 0 ? existing.expenses : []);
+    setChecklist(existing.checklist.length > 0 ? existing.checklist : []);
     setInitialized(true);
   }
+
+  // ---- 경비 핸들러 ----
+  const addExpense = () => setExpenses([...expenses, emptyExpense()]);
+  const removeExpense = (index: number) =>
+    setExpenses(expenses.filter((_, i) => i !== index));
+  const updateExpense = (index: number, field: keyof Expense, value: string | number) => {
+    setExpenses(expenses.map((e, i) =>
+      i === index ? { ...e, [field]: value } : e,
+    ));
+  };
+
+  // ---- 체크리스트 핸들러 ----
+  const addChecklistItem = () => setChecklist([...checklist, emptyChecklistItem()]);
+  const removeChecklistItem = (index: number) =>
+    setChecklist(checklist.filter((_, i) => i !== index));
+  const updateChecklistText = (index: number, text: string) => {
+    setChecklist(checklist.map((c, i) =>
+      i === index ? { ...c, text } : c,
+    ));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,13 +90,23 @@ export default function TripFormPage() {
         memo: memo.trim() || undefined,
       };
 
+      let tripId: string;
       if (isEdit && id) {
         await updateTrip(id, input);
-        navigate(`/trip/${id}`);
+        tripId = id;
       } else {
-        const newId = await createTrip(input);
-        navigate(`/trip/${newId}`);
+        tripId = await createTrip(input);
       }
+
+      // 경비 저장 (빈 항목 제외)
+      const validExpenses = expenses.filter((e) => e.amount > 0);
+      await saveExpenses(tripId, validExpenses);
+
+      // 체크리스트 저장 (빈 항목 제외)
+      const validChecklist = checklist.filter((c) => c.text.trim());
+      await saveChecklistItems(tripId, validChecklist);
+
+      navigate(`/trip/${tripId}`);
     } catch (err) {
       alert(err instanceof Error ? err.message : '저장에 실패했습니다');
     } finally {
@@ -172,6 +219,122 @@ export default function TripFormPage() {
             className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
           />
         </div>
+
+        {/* ──────── 경비 입력 ──────── */}
+        <div className="bg-gray-50 rounded-xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-gray-800">
+              {status === 'completed' ? '경비 내역' : '예상 경비'}
+            </h3>
+            <button
+              type="button"
+              onClick={addExpense}
+              className="text-xs text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
+            >
+              + 항목 추가
+            </button>
+          </div>
+
+          {expenses.length === 0 ? (
+            <p className="text-xs text-gray-400 text-center py-4">
+              아직 경비 항목이 없습니다. &quot;+ 항목 추가&quot;를 눌러주세요.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {expenses.map((expense, i) => (
+                <div key={i} className="flex items-start gap-2">
+                  {/* 카테고리 선택 */}
+                  <select
+                    value={expense.category}
+                    onChange={(e) => updateExpense(i, 'category', e.target.value)}
+                    className="w-24 shrink-0 px-2 py-2.5 rounded-lg border border-gray-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {EXPENSE_CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {expenseCategoryLabel(cat)}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* 금액 */}
+                  <input
+                    type="number"
+                    value={expense.amount || ''}
+                    onChange={(e) => updateExpense(i, 'amount', Number(e.target.value))}
+                    placeholder="금액"
+                    min={0}
+                    className="w-28 shrink-0 px-3 py-2.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+
+                  {/* 설명 */}
+                  <input
+                    type="text"
+                    value={expense.label}
+                    onChange={(e) => updateExpense(i, 'label', e.target.value)}
+                    placeholder="설명 (선택)"
+                    className="flex-1 min-w-0 px-3 py-2.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+
+                  {/* 삭제 버튼 */}
+                  <button
+                    type="button"
+                    onClick={() => removeExpense(i)}
+                    className="shrink-0 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors cursor-pointer mt-0.5"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ──────── 체크리스트 입력 (계획 여행용) ──────── */}
+        {status === 'planned' && (
+          <div className="bg-gray-50 rounded-xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-800">준비 체크리스트</h3>
+              <button
+                type="button"
+                onClick={addChecklistItem}
+                className="text-xs text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
+              >
+                + 항목 추가
+              </button>
+            </div>
+
+            {checklist.length === 0 ? (
+              <p className="text-xs text-gray-400 text-center py-4">
+                아직 체크리스트가 없습니다. &quot;+ 항목 추가&quot;를 눌러주세요.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {checklist.map((item, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={item.text}
+                      onChange={(e) => updateChecklistText(i, e.target.value)}
+                      placeholder="예: 항공편 예약"
+                      className="flex-1 min-w-0 px-3 py-2.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeChecklistItem(i)}
+                      className="shrink-0 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 저장 버튼 */}
         <div className="flex gap-3 pt-4">

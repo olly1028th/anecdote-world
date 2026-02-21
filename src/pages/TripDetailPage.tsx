@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useTrip, deleteTrip } from '../hooks/useTrips';
+import { useTrip, deleteTrip, toggleChecklistItem } from '../hooks/useTrips';
 import { isSupabaseConfigured } from '../lib/supabase';
 import StatusBadge from '../components/StatusBadge';
 import ExpenseTable from '../components/ExpenseTable';
@@ -13,8 +13,22 @@ import { formatDate, calcDuration } from '../utils/format';
 export default function TripDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { trip, loading, error } = useTrip(id);
+  const { trip, loading, error, refetch } = useTrip(id);
   const [deleting, setDeleting] = useState(false);
+
+  const handleChecklistToggle = async (index: number) => {
+    if (!trip) return;
+    const item = trip.checklist[index];
+    if (!item?.id) return;
+    if (!isSupabaseConfigured) return;
+
+    try {
+      await toggleChecklistItem(item.id, !item.checked);
+      refetch();
+    } catch (err) {
+      console.error('체크리스트 토글 실패:', err);
+    }
+  };
 
   const handleDelete = async () => {
     if (!id) return;
@@ -89,7 +103,9 @@ export default function TripDetailPage() {
         <div className="absolute bottom-0 left-0 p-6 text-white">
           <StatusBadge status={trip.status} />
           <h1 className="text-3xl font-bold mt-2">{trip.title}</h1>
-          <p className="text-white/80 mt-1">{trip.destination}</p>
+          {trip.destination && (
+            <p className="text-white/80 mt-1">{trip.destination}</p>
+          )}
           <p className="text-white/60 text-sm mt-1">
             {formatDate(trip.startDate)} ~ {formatDate(trip.endDate)} ({calcDuration(trip.startDate, trip.endDate)})
           </p>
@@ -143,7 +159,7 @@ export default function TripDetailPage() {
 
         {/* 계획 여행: 체크리스트 */}
         {!isCompleted && trip.checklist.length > 0 && (
-          <Checklist items={trip.checklist} />
+          <Checklist items={trip.checklist} onToggle={handleChecklistToggle} />
         )}
       </div>
     </div>

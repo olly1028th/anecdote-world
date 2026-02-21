@@ -5,6 +5,7 @@ export type ExpenseCategory = 'flight' | 'hotel' | 'food' | 'transport' | 'activ
 export type PlacePriority = 'must' | 'want' | 'maybe';
 
 export interface Expense {
+  id?: string;
   category: ExpenseCategory;
   amount: number;
   label: string;
@@ -23,6 +24,7 @@ export interface Place {
 }
 
 export interface ChecklistItem {
+  id?: string;
   text: string;
   checked: boolean;
 }

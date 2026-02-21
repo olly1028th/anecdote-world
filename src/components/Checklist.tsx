@@ -2,9 +2,10 @@ import type { ChecklistItem } from '../types/trip';
 
 interface Props {
   items: ChecklistItem[];
+  onToggle?: (index: number) => void;
 }
 
-export default function Checklist({ items }: Props) {
+export default function Checklist({ items, onToggle }: Props) {
   const done = items.filter((i) => i.checked).length;
 
   return (
@@ -22,6 +23,7 @@ export default function Checklist({ items }: Props) {
             className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
           >
             <div
+              onClick={onToggle ? (e) => { e.preventDefault(); onToggle(i); } : undefined}
               className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${
                 item.checked
                   ? 'bg-emerald-500 border-emerald-500'
