@@ -1,0 +1,122 @@
+import React from 'react';
+import { Home, Map, PlusCircle, BarChart2, User, Heart, MessageCircle } from 'lucide-react';
+
+const TravelApp = () => {
+  const travelPosts = [
+    {
+      id: 1,
+      location: 'Jeju Island, Korea',
+      title: 'Our Emerald Sea Memories 🌊',
+      date: 'Oct 12, 2023',
+      image: 'https://images.unsplash.com/photo-1571939228382-b2f2b585ce15?auto=format&fit=crop&q=80&w=800',
+      likes: 124,
+    },
+    {
+      id: 2,
+      location: 'Kyoto, Japan',
+      title: 'Golden Pavilion Walk ⛩️',
+      date: 'Sep 24, 2023',
+      image: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&q=80&w=800',
+      likes: 89,
+    },
+  ];
+
+  return (
+    <div className="flex flex-col min-h-screen bg-[#FCFBF7] text-[#4A4A4A] font-sans selection:bg-[#FFD166]">
+      {/* Header */}
+      <header className="px-6 pt-12 pb-6 flex justify-between items-end">
+        <div>
+          <h1 className="text-3xl font-bold text-[#FF6B6B] tracking-tight">
+            Anecdote World
+          </h1>
+          <p className="text-sm font-medium text-gray-400 mt-1 italic">
+            Capturing your shiny moments... ✨
+          </p>
+        </div>
+        <div className="bg-[#FFD166] p-2 rounded-full shadow-sm hover:scale-105 transition-transform cursor-pointer">
+          <User size={24} className="text-white" />
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1 px-6 pb-24 space-y-8">
+        {/* Welcome Section */}
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-xl font-bold">My Shiny Journal</h2>
+            <div className="h-[2px] flex-1 bg-[#F0EEE6]"></div>
+          </div>
+          
+          <div className="grid gap-6">
+            {travelPosts.map((post) => (
+              <div 
+                key={post.id} 
+                className="bg-white rounded-3xl overflow-hidden shadow-md shadow-gray-200/50 hover:shadow-lg transition-shadow duration-300"
+              >
+                <div className="relative h-56 overflow-hidden">
+                  <img 
+                    src={post.image} 
+                    alt={post.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[12px] font-bold text-[#FF6B6B]">
+                    {post.location}
+                  </div>
+                </div>
+                <div className="p-5">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-lg font-bold leading-tight text-[#2D3436]">
+                      {post.title}
+                    </h3>
+                    <button className="text-[#FF6B6B] flex items-center gap-1 hover:scale-110 transition-transform">
+                      <Heart size={20} fill="#FF6B6B" />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between text-xs font-medium text-gray-400">
+                    <span>{post.date}</span>
+                    <div className="flex items-center gap-1">
+                      <MessageCircle size={14} />
+                      <span>{post.likes} comments</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Quick Stats Summary */}
+        <section className="bg-[#FFD166]/10 p-5 rounded-3xl border-2 border-dashed border-[#FFD166]">
+          <h3 className="text-sm font-bold text-[#FF9F43] mb-3">Where have you been? 🌍</h3>
+          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+            <div className="bg-white p-3 rounded-2xl shadow-sm min-w-[100px] text-center">
+              <span className="block text-xl">🗺️</span>
+              <span className="block text-xs font-bold mt-1">12 Countries</span>
+            </div>
+            <div className="bg-white p-3 rounded-2xl shadow-sm min-w-[100px] text-center">
+              <span className="block text-xl">📸</span>
+              <span className="block text-xs font-bold mt-1">48 Stories</span>
+            </div>
+            <div className="bg-white p-3 rounded-2xl shadow-sm min-w-[100px] text-center">
+              <span className="block text-xl">👣</span>
+              <span className="block text-xs font-bold mt-1">Next: Paris</span>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {/* Bottom Navigation */}
+      <nav className="fixed bottom-6 left-6 right-6 bg-white/80 backdrop-blur-xl border border-white/40 shadow-xl rounded-full px-8 py-4 flex justify-between items-center z-50">
+        <Home size={24} className="text-[#FF6B6B]" strokeWidth={2.5} />
+        <Map size={24} className="text-gray-300 hover:text-[#FF6B6B] transition-colors" />
+        <div className="bg-[#FF6B6B] p-2 rounded-full -mt-12 border-4 border-[#FCFBF7] shadow-lg shadow-[#FF6B6B]/30 hover:scale-110 transition-transform cursor-pointer">
+          <PlusCircle size={32} className="text-white" />
+        </div>
+        <BarChart2 size={24} className="text-gray-300 hover:text-[#FF6B6B] transition-colors" />
+        <User size={24} className="text-gray-300 hover:text-[#FF6B6B] transition-colors" />
+      </nav>
+    </div>
+  );
+};
+
+export default TravelApp;

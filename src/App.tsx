@@ -6,6 +6,8 @@ import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
 import TripDetailPage from './pages/TripDetailPage';
 import TripFormPage from './pages/TripFormPage';
+import DashboardPage from './pages/DashboardPage';
+import ProfilePage from './pages/ProfilePage';
 
 const PinFormPage = lazy(() => import('./pages/PinFormPage'));
 
@@ -30,11 +32,13 @@ const Loading = () => (
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-[var(--color-bg)]">
+    <div className="min-h-screen bg-[var(--color-bg)] transition-colors duration-200">
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route element={<ProtectedLayout />}>
           <Route path="/" element={<HomePage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="/trip/new" element={<TripFormPage />} />
           <Route path="/trip/edit/:id" element={<TripFormPage />} />
           <Route path="/trip/:id" element={<TripDetailPage />} />

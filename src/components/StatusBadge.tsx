@@ -9,7 +9,7 @@ export default function StatusBadge({ status }: Props) {
 
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
         isCompleted
           ? 'bg-emerald-100 text-emerald-700'
           : 'bg-amber-100 text-amber-700'
