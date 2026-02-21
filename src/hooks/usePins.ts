@@ -3,6 +3,12 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { Pin } from '../types/database';
 
 /** 데모 모드용 샘플 핀 데이터 */
+let demoExtraPins: Pin[] = [];
+
+export function addDemoPin(pin: Pin) {
+  demoExtraPins = [pin, ...demoExtraPins];
+}
+
 const samplePins: Pin[] = [
   {
     id: 'pin-1',
@@ -153,7 +159,7 @@ export function usePins() {
 
   const fetchPins = useCallback(async () => {
     if (!isSupabaseConfigured) {
-      setPins(samplePins);
+      setPins([...demoExtraPins, ...samplePins]);
       setLoading(false);
       return;
     }
@@ -179,6 +185,13 @@ export function usePins() {
 
   useEffect(() => {
     fetchPins();
+  }, [fetchPins]);
+
+  // 핀 추가 시 자동 refetch
+  useEffect(() => {
+    const handler = () => fetchPins();
+    window.addEventListener('pin-added', handler);
+    return () => window.removeEventListener('pin-added', handler);
   }, [fetchPins]);
 
   return { pins, loading, error, refetch: fetchPins };

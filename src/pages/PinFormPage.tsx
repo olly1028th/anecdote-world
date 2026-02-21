@@ -3,7 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import type { VisitStatus, PinCategory } from '../types/database';
-import { createPin, updatePin, usePins } from '../hooks/usePins';
+import { createPin, updatePin, addDemoPin, usePins } from '../hooks/usePins';
 import { useTrips } from '../hooks/useTrips';
 import { isSupabaseConfigured } from '../lib/supabase';
 import 'leaflet/dist/leaflet.css';
@@ -99,11 +99,6 @@ export default function PinFormPage() {
     e.preventDefault();
     if (!name.trim() || lat === null || lng === null) return;
 
-    if (!isSupabaseConfigured) {
-      alert('데모 모드에서는 저장할 수 없습니다. Supabase를 연결해주세요.');
-      return;
-    }
-
     try {
       setSaving(true);
       const input = {
@@ -122,7 +117,31 @@ export default function PinFormPage() {
         day_number: dayNumber,
       };
 
-      if (isEdit && id) {
+      if (!isSupabaseConfigured) {
+        // 데모 모드: 로컬 상태에 추가
+        const now = new Date().toISOString();
+        addDemoPin({
+          id: `demo-pin-${Date.now()}`,
+          user_id: 'demo-user-001',
+          name: input.name,
+          lat: input.lat,
+          lng: input.lng,
+          address: input.address ?? '',
+          country: input.country ?? '',
+          city: input.city ?? '',
+          visit_status: input.visit_status,
+          visited_at: input.visited_at ?? null,
+          category: input.category ?? 'other',
+          rating: input.rating ?? null,
+          note: input.note ?? '',
+          trip_id: input.trip_id ?? null,
+          day_number: input.day_number ?? null,
+          sort_order: 0,
+          created_at: now,
+          updated_at: now,
+        });
+        window.dispatchEvent(new CustomEvent('pin-added'));
+      } else if (isEdit && id) {
         await updatePin(id, input);
       } else {
         await createPin(input);
