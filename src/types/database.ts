@@ -64,6 +64,7 @@ export interface PinPhoto {
   user_id: string;
   url: string;
   caption: string;
+  is_favorite: boolean;
   sort_order: number;
   created_at: string;
 }

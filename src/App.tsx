@@ -1,7 +1,8 @@
-import { lazy, Suspense } from 'react';
-import { Routes, Route, Outlet } from 'react-router-dom';
+import { lazy, Suspense, useState, useCallback } from 'react';
+import { Routes, Route, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import BottomNav from './components/BottomNav';
+import TripFormModal from './components/TripFormModal';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
@@ -13,6 +14,17 @@ import ProfilePage from './pages/ProfilePage';
 const PinFormPage = lazy(() => import('./pages/PinFormPage'));
 
 function ProtectedLayout() {
+  const [modalOpen, setModalOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleSaved = useCallback(() => {
+    // 홈이 아니면 홈으로 이동 (useTrips가 trip-added 이벤트로 자동 refetch)
+    if (location.pathname !== '/') {
+      navigate('/');
+    }
+  }, [navigate, location.pathname]);
+
   return (
     <ProtectedRoute>
       <>
@@ -20,7 +32,12 @@ function ProtectedLayout() {
         <main className="pb-24">
           <Outlet />
         </main>
-        <BottomNav />
+        <BottomNav onAddClick={() => setModalOpen(true)} />
+        <TripFormModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          onSaved={handleSaved}
+        />
       </>
     </ProtectedRoute>
   );

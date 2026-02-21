@@ -1,6 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
 
-export default function BottomNav() {
+interface Props {
+  onAddClick?: () => void;
+}
+
+export default function BottomNav({ onAddClick }: Props) {
   const { pathname } = useLocation();
 
   const isActive = (path: string) => pathname === path;
@@ -25,14 +29,15 @@ export default function BottomNav() {
       </Link>
 
       {/* 추가 버튼 (가운데 크게) */}
-      <Link
-        to="/trip/new"
-        className="bg-[#FF6B6B] p-2.5 rounded-full -mt-10 border-4 border-[var(--color-bg)] shadow-lg shadow-[#FF6B6B]/30 hover:scale-110 transition-transform no-underline"
+      <button
+        type="button"
+        onClick={onAddClick}
+        className="bg-[#FF6B6B] p-2.5 rounded-full -mt-10 border-4 border-[var(--color-bg)] shadow-lg shadow-[#FF6B6B]/30 hover:scale-110 transition-transform cursor-pointer"
       >
         <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
         </svg>
-      </Link>
+      </button>
 
       {/* 대시보드 */}
       <Link to="/dashboard" className={`no-underline ${iconClass('/dashboard')}`}>

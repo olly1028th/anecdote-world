@@ -11,6 +11,14 @@ import type {
   PinPhoto,
 } from '../types/database';
 
+// ---- 데모 모드 로컬 저장소 ----
+
+let demoExtraTrips: Trip[] = [];
+
+export function addDemoTrip(trip: Trip) {
+  demoExtraTrips = [trip, ...demoExtraTrips];
+}
+
 /**
  * DB 행(snake_case) → UI Trip 타입(camelCase) 매핑.
  * pins → itinerary/places/destination, pin_photos → photos 로 변환.
@@ -101,9 +109,9 @@ export function useTrips() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchTrips = useCallback(async () => {
-    // Supabase 미설정 → 데모 모드
+    // Supabase 미설정 → 데모 모드 (로컬 추가 여행 포함)
     if (!isSupabaseConfigured) {
-      setTrips(sampleTrips);
+      setTrips([...demoExtraTrips, ...sampleTrips]);
       setLoading(false);
       return;
     }
@@ -178,6 +186,13 @@ export function useTrips() {
 
   useEffect(() => {
     fetchTrips();
+  }, [fetchTrips]);
+
+  // 모달 등에서 여행 추가 시 자동 refetch
+  useEffect(() => {
+    const handler = () => fetchTrips();
+    window.addEventListener('trip-added', handler);
+    return () => window.removeEventListener('trip-added', handler);
   }, [fetchTrips]);
 
   return { trips, loading, error, refetch: fetchTrips };
