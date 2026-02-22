@@ -2,11 +2,23 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { Pin } from '../types/database';
 
-/** 데모 모드용 샘플 핀 데이터 */
-let demoExtraPins: Pin[] = [];
+/** 데모 모드용 사용자 추가 핀 – localStorage 로 영구 보관 */
+const DEMO_PINS_KEY = 'anecdote-demo-pins';
+
+function loadDemoPins(): Pin[] {
+  try {
+    const raw = localStorage.getItem(DEMO_PINS_KEY);
+    return raw ? (JSON.parse(raw) as Pin[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+let demoExtraPins: Pin[] = loadDemoPins();
 
 export function addDemoPin(pin: Pin) {
   demoExtraPins = [pin, ...demoExtraPins];
+  localStorage.setItem(DEMO_PINS_KEY, JSON.stringify(demoExtraPins));
 }
 
 const samplePins: Pin[] = [

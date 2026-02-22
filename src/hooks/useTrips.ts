@@ -11,12 +11,24 @@ import type {
   PinPhoto,
 } from '../types/database';
 
-// ---- 데모 모드 로컬 저장소 ----
+// ---- 데모 모드 로컬 저장소 (localStorage 영구 보관) ----
 
-let demoExtraTrips: Trip[] = [];
+const DEMO_TRIPS_KEY = 'anecdote-demo-trips';
+
+function loadDemoTrips(): Trip[] {
+  try {
+    const raw = localStorage.getItem(DEMO_TRIPS_KEY);
+    return raw ? (JSON.parse(raw) as Trip[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+let demoExtraTrips: Trip[] = loadDemoTrips();
 
 export function addDemoTrip(trip: Trip) {
   demoExtraTrips = [trip, ...demoExtraTrips];
+  localStorage.setItem(DEMO_TRIPS_KEY, JSON.stringify(demoExtraTrips));
 }
 
 /**
