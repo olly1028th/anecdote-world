@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTrip, deleteTrip, toggleChecklistItem, saveExpenses, saveChecklistItems, updateDemoTrip, deleteDemoTrip } from '../hooks/useTrips';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { useSharesForTrip, createShare, removeShare, updateSharePermission } from '../hooks/useShares';
+import { useAuth } from '../contexts/AuthContext';
 import ExpenseTable from '../components/ExpenseTable';
 import Timeline from '../components/Timeline';
 import PlaceList from '../components/PlaceList';
@@ -10,6 +12,7 @@ import PhotoGallery from '../components/PhotoGallery';
 import PhotoUpload from '../components/PhotoUpload';
 import { formatDate, calcDuration, totalExpenses, formatCurrency, expenseCategoryLabel } from '../utils/format';
 import type { Expense, ExpenseCategory, ChecklistItem, Place, PlacePriority } from '../types/trip';
+import type { SharePermission } from '../types/database';
 
 const EXPENSE_CATEGORIES: ExpenseCategory[] = [
   'flight', 'hotel', 'food', 'transport', 'activity', 'shopping', 'other',
@@ -60,6 +63,44 @@ export default function TripDetailPage() {
   const navigate = useNavigate();
   const { trip, loading, error, refetch } = useTrip(id);
   const [deleting, setDeleting] = useState(false);
+  const { user } = useAuth();
+  const { shares, loading: sharesLoading } = useSharesForTrip(id);
+
+  // Share modal state
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [invitePermission, setInvitePermission] = useState<SharePermission>('read');
+  const [inviting, setInviting] = useState(false);
+
+  const handleInvite = async () => {
+    if (!id || !inviteEmail.trim() || !user) return;
+    try {
+      setInviting(true);
+      await createShare(id, user.id, inviteEmail.trim(), invitePermission, trip?.title);
+      setInviteEmail('');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '초대 실패');
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const handleRemoveShare = async (shareId: string) => {
+    if (!window.confirm('이 공유를 취소하시겠습니까?')) return;
+    try {
+      await removeShare(shareId);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '삭제 실패');
+    }
+  };
+
+  const handlePermissionChange = async (shareId: string, perm: SharePermission) => {
+    try {
+      await updateSharePermission(shareId, perm);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '권한 변경 실패');
+    }
+  };
 
   // Inline edit states
   const [editingPhotos, setEditingPhotos] = useState(false);
@@ -338,7 +379,7 @@ export default function TripDetailPage() {
           </p>
         </div>
 
-        {/* 수정/삭제 버튼 */}
+        {/* 수정/공유/삭제 버튼 */}
         <div className="flex gap-3 w-full">
           <Link
             to={`/trip/edit/${trip.id}`}
@@ -346,6 +387,14 @@ export default function TripDetailPage() {
           >
             Edit Mission
           </Link>
+          <button
+            onClick={() => setShareModalOpen(true)}
+            className="bg-[#0d9488] hover:bg-[#0d9488]/90 text-white font-bold py-3 px-4 rounded-xl border-[3px] border-slate-900 retro-shadow transition-transform active:translate-y-0.5 active:translate-x-0.5 cursor-pointer"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+          </button>
           <button
             onClick={handleDelete}
             disabled={deleting}
@@ -356,7 +405,141 @@ export default function TripDetailPage() {
             </svg>
           </button>
         </div>
+
+        {/* 공유된 유저 뱃지 */}
+        {shares.length > 0 && (
+          <div className="flex flex-wrap gap-2 w-full">
+            {shares.map((s) => (
+              <span
+                key={s.id}
+                className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border-2 ${
+                  s.status === 'accepted'
+                    ? 'bg-[#0d9488]/10 border-[#0d9488] text-[#0d9488]'
+                    : s.status === 'pending'
+                    ? 'bg-[#eab308]/10 border-[#eab308] text-[#eab308]'
+                    : 'bg-slate-100 border-slate-300 text-slate-400'
+                }`}
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                {s.invited_email.split('@')[0]}
+                <span className="opacity-60">({s.permission === 'edit' ? '편집' : '읽기'})</span>
+                {s.status === 'pending' && <span className="opacity-60">대기중</span>}
+              </span>
+            ))}
+          </div>
+        )}
       </section>
+
+      {/* 공유 모달 */}
+      {shareModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center" onClick={() => setShareModalOpen(false)}>
+          <div
+            className="bg-white dark:bg-slate-800 w-full max-w-md rounded-t-2xl sm:rounded-2xl border-[3px] border-slate-900 retro-shadow p-6 space-y-5 max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Share Mission</h3>
+              <button
+                onClick={() => setShareModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer bg-transparent border-0 p-1"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* 초대 폼 */}
+            <div className="space-y-3">
+              <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Invite</p>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  placeholder="이메일 주소 입력"
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleInvite(); } }}
+                  className="flex-1 min-w-0 px-3 py-2.5 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
+                />
+                <select
+                  value={invitePermission}
+                  onChange={(e) => setInvitePermission(e.target.value as SharePermission)}
+                  className="w-20 shrink-0 px-2 py-2.5 rounded-xl border-2 border-slate-900 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
+                >
+                  <option value="read">읽기</option>
+                  <option value="edit">편집</option>
+                </select>
+              </div>
+              <button
+                type="button"
+                onClick={handleInvite}
+                disabled={inviting || !inviteEmail.trim()}
+                className="w-full py-2.5 rounded-xl text-sm font-bold uppercase tracking-tight text-white bg-[#0d9488] border-2 border-slate-900 retro-shadow hover:bg-[#0d9488]/90 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {inviting ? '초대 중...' : '초대 보내기'}
+              </button>
+            </div>
+
+            {/* 공유 목록 */}
+            {shares.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Shared With</p>
+                <div className="space-y-2">
+                  {shares.map((s) => (
+                    <div
+                      key={s.id}
+                      className="flex items-center justify-between p-3 bg-[#F9F4E8] dark:bg-slate-700 rounded-xl border-2 border-slate-200 dark:border-slate-600"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                          s.status === 'accepted' ? 'bg-[#0d9488] text-white' : 'bg-[#eab308] text-slate-900'
+                        }`}>
+                          {s.invited_email[0].toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">{s.invited_email}</p>
+                          <p className="text-[10px] text-slate-400 font-medium">
+                            {s.status === 'pending' ? '수락 대기중' : s.status === 'accepted' ? '수락됨' : '거절됨'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <select
+                          value={s.permission}
+                          onChange={(e) => handlePermissionChange(s.id, e.target.value as SharePermission)}
+                          className="px-2 py-1 rounded-lg border-2 border-slate-300 text-[10px] font-bold bg-white focus:outline-none"
+                        >
+                          <option value="read">읽기</option>
+                          <option value="edit">편집</option>
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveShare(s.id)}
+                          className="text-slate-300 hover:text-[#f43f5e] transition-colors cursor-pointer bg-transparent border-0 p-1"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {shares.length === 0 && !sharesLoading && (
+              <div className="text-center py-6">
+                <p className="text-3xl mb-2">🔗</p>
+                <p className="text-sm text-slate-400 font-medium">아직 공유된 사람이 없습니다</p>
+                <p className="text-xs text-slate-300 mt-1">이메일로 초대하여 함께 여행을 계획해보세요!</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <section className="grid grid-cols-2 gap-4">

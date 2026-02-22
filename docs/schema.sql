@@ -167,6 +167,33 @@ CREATE TABLE public.checklist_items (
 CREATE INDEX idx_checklist_trip ON public.checklist_items(trip_id);
 
 
+-- ========================
+-- 7. trip_shares (여행 공유/초대)
+-- ========================
+-- 다른 유저에게 여행을 공유하여 read/edit 권한 부여
+CREATE TABLE public.trip_shares (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  trip_id         UUID NOT NULL REFERENCES public.trips(id) ON DELETE CASCADE,
+  owner_id        UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  invited_email   TEXT NOT NULL,                                -- 초대받는 유저 이메일
+  invited_user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE, -- 수락 후 연결
+  permission      TEXT NOT NULL DEFAULT 'read'
+                    CHECK (permission IN ('read', 'edit')),     -- 읽기 / 편집 권한
+  status          TEXT NOT NULL DEFAULT 'pending'
+                    CHECK (status IN ('pending', 'accepted', 'declined')),
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_trip_shares_trip ON public.trip_shares(trip_id);
+CREATE INDEX idx_trip_shares_owner ON public.trip_shares(owner_id);
+CREATE INDEX idx_trip_shares_invited ON public.trip_shares(invited_email);
+CREATE INDEX idx_trip_shares_invited_user ON public.trip_shares(invited_user_id);
+
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.trip_shares
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+
+
 -- ============================================================
 -- Row Level Security (RLS)
 -- ============================================================
@@ -185,25 +212,90 @@ CREATE POLICY "Users can view own profile"
 CREATE POLICY "Users can update own profile"
   ON public.profiles FOR UPDATE USING (auth.uid() = id);
 
--- trips: 본인만 CRUD
+-- trips: 본인 CRUD + 공유받은 여행 읽기/수정
 CREATE POLICY "Users can CRUD own trips"
   ON public.trips FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Shared users can read trips"
+  ON public.trips FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.trip_shares
+      WHERE trip_shares.trip_id = trips.id
+        AND trip_shares.invited_user_id = auth.uid()
+        AND trip_shares.status = 'accepted'
+    )
+  );
+CREATE POLICY "Shared users with edit can update trips"
+  ON public.trips FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM public.trip_shares
+      WHERE trip_shares.trip_id = trips.id
+        AND trip_shares.invited_user_id = auth.uid()
+        AND trip_shares.status = 'accepted'
+        AND trip_shares.permission = 'edit'
+    )
+  );
 
--- pins: 본인만 CRUD
+-- pins: 본인 CRUD + 공유 여행의 핀 접근
 CREATE POLICY "Users can CRUD own pins"
   ON public.pins FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Shared users can read pins"
+  ON public.pins FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.trip_shares
+      WHERE trip_shares.trip_id = pins.trip_id
+        AND trip_shares.invited_user_id = auth.uid()
+        AND trip_shares.status = 'accepted'
+    )
+  );
 
--- pin_photos: 본인만 CRUD
+-- pin_photos: 본인 CRUD + 공유 접근
 CREATE POLICY "Users can CRUD own pin photos"
   ON public.pin_photos FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Shared users can read pin photos"
+  ON public.pin_photos FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.trip_shares ts
+      JOIN public.pins p ON p.id = pin_photos.pin_id
+      WHERE ts.trip_id = p.trip_id
+        AND ts.invited_user_id = auth.uid()
+        AND ts.status = 'accepted'
+    )
+  );
 
--- expenses: 본인만 CRUD
+-- expenses: 본인 CRUD + 공유 접근
 CREATE POLICY "Users can CRUD own expenses"
   ON public.expenses FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Shared users can read expenses"
+  ON public.expenses FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.trip_shares
+      WHERE trip_shares.trip_id = expenses.trip_id
+        AND trip_shares.invited_user_id = auth.uid()
+        AND trip_shares.status = 'accepted'
+    )
+  );
 
--- checklist_items: 본인만 CRUD
+-- checklist_items: 본인 CRUD + 공유 접근
 CREATE POLICY "Users can CRUD own checklists"
   ON public.checklist_items FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Shared users can read checklists"
+  ON public.checklist_items FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.trip_shares
+      WHERE trip_shares.trip_id = checklist_items.trip_id
+        AND trip_shares.invited_user_id = auth.uid()
+        AND trip_shares.status = 'accepted'
+    )
+  );
+
+-- trip_shares: 초대한 사람 + 초대받은 사람 접근
+ALTER TABLE public.trip_shares ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Owners can manage shares"
+  ON public.trip_shares FOR ALL USING (auth.uid() = owner_id);
+CREATE POLICY "Invited users can view and respond to shares"
+  ON public.trip_shares FOR SELECT USING (auth.uid() = invited_user_id);
+CREATE POLICY "Invited users can accept/decline"
+  ON public.trip_shares FOR UPDATE USING (auth.uid() = invited_user_id);
 
 
 -- ============================================================
