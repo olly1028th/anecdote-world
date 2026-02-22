@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import type { TripStatus, ExpenseCategory, Expense, ChecklistItem } from '../types/trip';
 import { createTrip, updateTrip, saveExpenses, saveChecklistItems, useTrip } from '../hooks/useTrips';
+import { createPin } from '../hooks/usePins';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { uploadTripPhoto } from '../lib/storage';
 import { expenseCategoryLabel } from '../utils/format';
 import PhotoUpload from '../components/PhotoUpload';
+import DestinationPicker, { EMPTY_DESTINATION, type DestinationInfo } from '../components/DestinationPicker';
 
 const EXPENSE_CATEGORIES: ExpenseCategory[] = [
   'flight', 'hotel', 'food', 'transport', 'activity', 'shopping', 'other',
@@ -27,6 +29,7 @@ export default function TripFormPage() {
 
   const [title, setTitle] = useState('');
   const [status, setStatus] = useState<TripStatus>('planned');
+  const [destination, setDestination] = useState<DestinationInfo>(EMPTY_DESTINATION);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [coverImage, setCoverImage] = useState('');
@@ -38,10 +41,17 @@ export default function TripFormPage() {
   const [saveStatus, setSaveStatus] = useState('');
   const [initialized, setInitialized] = useState(false);
 
+  const handleDestinationChange = useCallback((info: DestinationInfo) => {
+    setDestination(info);
+  }, []);
+
   // 수정 모드: 기존 데이터로 폼 초기화
   if (isEdit && existing && !initialized) {
     setTitle(existing.title);
     setStatus(existing.status);
+    if (existing.destination) {
+      setDestination({ ...EMPTY_DESTINATION, name: existing.destination });
+    }
     setStartDate(existing.startDate);
     setEndDate(existing.endDate);
     setCoverImage(existing.coverImage);
@@ -99,6 +109,27 @@ export default function TripFormPage() {
         tripId = id;
       } else {
         tripId = await createTrip(input);
+      }
+
+      // 여행지 좌표가 있으면 핀 생성 (신규 생성 시에만)
+      if (!isEdit && destination.lat != null && destination.lng != null) {
+        try {
+          setSaveStatus('여행지 핀 저장 중...');
+          await createPin({
+            name: destination.name || destination.city || '여행지',
+            lat: destination.lat,
+            lng: destination.lng,
+            country: destination.country,
+            city: destination.city,
+            visit_status: status === 'completed' ? 'visited' : 'planned',
+            visited_at: status === 'completed' ? (startDate || undefined) : undefined,
+            category: 'landmark',
+            trip_id: tripId,
+          });
+          window.dispatchEvent(new CustomEvent('pin-added'));
+        } catch {
+          // 핀 생성 실패해도 여행은 저장됨
+        }
       }
 
       // 사진 업로드 (base64 → Storage, 외부 URL은 그대로)
@@ -213,6 +244,9 @@ export default function TripFormPage() {
             className="w-full px-4 py-3 rounded-2xl border border-[#F0EEE6] text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40 focus:border-transparent"
           />
         </div>
+
+        {/* 여행지 선택 (지도) */}
+        <DestinationPicker value={destination} onChange={handleDestinationChange} />
 
         {/* 날짜 */}
         <div className="grid grid-cols-2 gap-4">

@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { TripStatus } from '../types/trip';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { createTrip } from '../hooks/useTrips';
 import { addDemoTrip } from '../hooks/useTrips';
+import { createPin, addDemoPin } from '../hooks/usePins';
+import DestinationPicker, { EMPTY_DESTINATION, type DestinationInfo } from './DestinationPicker';
 
 interface Props {
   open: boolean;
@@ -13,11 +15,16 @@ interface Props {
 export default function TripFormModal({ open, onClose, onSaved }: Props) {
   const [title, setTitle] = useState('');
   const [status, setStatus] = useState<TripStatus>('planned');
+  const [destination, setDestination] = useState<DestinationInfo>(EMPTY_DESTINATION);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [memo, setMemo] = useState('');
   const [saving, setSaving] = useState(false);
   const [visible, setVisible] = useState(false);
+
+  const handleDestinationChange = useCallback((info: DestinationInfo) => {
+    setDestination(info);
+  }, []);
 
   // 열릴 때 애니메이션
   useEffect(() => {
@@ -33,6 +40,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
     if (open) {
       setTitle('');
       setStatus('planned');
+      setDestination(EMPTY_DESTINATION);
       setStartDate('');
       setEndDate('');
       setMemo('');
@@ -51,10 +59,11 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
 
       const saveDemoTrip = () => {
         const now = new Date().toISOString();
+        const tripId = `demo-${Date.now()}`;
         addDemoTrip({
-          id: `demo-${Date.now()}`,
+          id: tripId,
           title: title.trim(),
-          destination: '',
+          destination: destination.name,
           status,
           startDate: startDate || '',
           endDate: endDate || '',
@@ -68,17 +77,60 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
           createdAt: now,
           updatedAt: now,
         });
+        // 여행지 좌표가 있으면 데모 핀도 생성
+        if (destination.lat != null && destination.lng != null) {
+          addDemoPin({
+            id: `pin-demo-${Date.now()}`,
+            user_id: 'demo-user-001',
+            trip_id: tripId,
+            name: destination.name || destination.city || '여행지',
+            address: '',
+            lat: destination.lat,
+            lng: destination.lng,
+            country: destination.country,
+            city: destination.city,
+            visit_status: status === 'completed' ? 'visited' : 'planned',
+            visited_at: status === 'completed' ? (startDate || null) : null,
+            category: 'landmark',
+            rating: null,
+            note: '',
+            day_number: null,
+            sort_order: 0,
+            created_at: now,
+            updated_at: now,
+          });
+          window.dispatchEvent(new CustomEvent('pin-added'));
+        }
       };
 
       if (isSupabaseConfigured) {
         try {
-          await createTrip({
+          const tripId = await createTrip({
             title: title.trim(),
             status,
             start_date: startDate || undefined,
             end_date: endDate || undefined,
             memo: memo.trim() || undefined,
           });
+          // 여행지 좌표가 있으면 핀 생성
+          if (destination.lat != null && destination.lng != null) {
+            try {
+              await createPin({
+                name: destination.name || destination.city || '여행지',
+                lat: destination.lat,
+                lng: destination.lng,
+                country: destination.country,
+                city: destination.city,
+                visit_status: status === 'completed' ? 'visited' : 'planned',
+                visited_at: status === 'completed' ? (startDate || undefined) : undefined,
+                category: 'landmark',
+                trip_id: tripId,
+              });
+              window.dispatchEvent(new CustomEvent('pin-added'));
+            } catch {
+              // 핀 생성 실패해도 여행은 저장됨
+            }
+          }
         } catch {
           // Supabase 실패 시 데모 모드로 폴백
           saveDemoTrip();
@@ -183,6 +235,9 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
               className="w-full px-4 py-3 rounded-2xl border border-[#F0EEE6] text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40 focus:border-transparent"
             />
           </div>
+
+          {/* 여행지 선택 (지도) */}
+          <DestinationPicker value={destination} onChange={handleDestinationChange} />
 
           {/* 날짜 */}
           <div className="grid grid-cols-2 gap-4">

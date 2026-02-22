@@ -1,8 +1,10 @@
 import { useState, lazy, Suspense } from 'react';
+import { Link } from 'react-router-dom';
 import type { VisitStatus } from '../types/database';
 import { useTrips } from '../hooks/useTrips';
 import { usePins } from '../hooks/usePins';
 import { useFavoritePhotos, type FavoritePhoto } from '../hooks/useFavoritePhotos';
+import { formatDate } from '../utils/format';
 import SpaceTrips from '../components/SpaceTrips';
 
 const WorldMap = lazy(() =>
@@ -10,9 +12,11 @@ const WorldMap = lazy(() =>
 );
 
 type PinFilter = 'all' | VisitStatus;
+type StatsTab = 'completed' | 'planned' | 'pins' | null;
 
 export default function HomePage() {
   const [pinFilter, setPinFilter] = useState<PinFilter>('all');
+  const [activeStatsTab, setActiveStatsTab] = useState<StatsTab>(null);
   const { trips, loading, error } = useTrips();
   const { pins, loading: pinsLoading } = usePins();
   const { photos: favoritePhotos, loading: favLoading } = useFavoritePhotos();
@@ -65,19 +69,143 @@ export default function HomePage() {
       <section className="bg-[#FFD166]/10 p-5 rounded-3xl border-2 border-dashed border-[#FFD166]">
         <h3 className="text-sm font-bold text-[#FF9F43] mb-3">Where have you been? 🌍</h3>
         <div className="flex gap-3 overflow-x-auto pb-1">
-          <div className="bg-white p-3 rounded-2xl shadow-sm min-w-[100px] text-center">
+          <button
+            type="button"
+            onClick={() => setActiveStatsTab(activeStatsTab === 'completed' ? null : 'completed')}
+            className={`p-3 rounded-2xl shadow-sm min-w-[100px] text-center transition-all cursor-pointer border-2 ${
+              activeStatsTab === 'completed'
+                ? 'bg-[#FF6B6B] border-[#FF6B6B] scale-105'
+                : 'bg-white border-transparent hover:border-[#FF6B6B]/30'
+            }`}
+          >
             <span className="block text-xl">✈️</span>
-            <span className="block text-xs font-bold mt-1">{completedCount} 여행 완료</span>
-          </div>
-          <div className="bg-white p-3 rounded-2xl shadow-sm min-w-[100px] text-center">
+            <span className={`block text-xs font-bold mt-1 ${activeStatsTab === 'completed' ? 'text-white' : ''}`}>
+              {completedCount} 여행 완료
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveStatsTab(activeStatsTab === 'planned' ? null : 'planned')}
+            className={`p-3 rounded-2xl shadow-sm min-w-[100px] text-center transition-all cursor-pointer border-2 ${
+              activeStatsTab === 'planned'
+                ? 'bg-[#FF6B6B] border-[#FF6B6B] scale-105'
+                : 'bg-white border-transparent hover:border-[#FF6B6B]/30'
+            }`}
+          >
             <span className="block text-xl">📋</span>
-            <span className="block text-xs font-bold mt-1">{plannedCount} 계획 중</span>
-          </div>
-          <div className="bg-white p-3 rounded-2xl shadow-sm min-w-[100px] text-center">
+            <span className={`block text-xs font-bold mt-1 ${activeStatsTab === 'planned' ? 'text-white' : ''}`}>
+              {plannedCount} 계획 중
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveStatsTab(activeStatsTab === 'pins' ? null : 'pins')}
+            className={`p-3 rounded-2xl shadow-sm min-w-[100px] text-center transition-all cursor-pointer border-2 ${
+              activeStatsTab === 'pins'
+                ? 'bg-[#FF6B6B] border-[#FF6B6B] scale-105'
+                : 'bg-white border-transparent hover:border-[#FF6B6B]/30'
+            }`}
+          >
             <span className="block text-xl">📍</span>
-            <span className="block text-xs font-bold mt-1">{pins.length} 핀</span>
-          </div>
+            <span className={`block text-xs font-bold mt-1 ${activeStatsTab === 'pins' ? 'text-white' : ''}`}>
+              {pins.length} 핀
+            </span>
+          </button>
         </div>
+
+        {/* Expanded list panel */}
+        {activeStatsTab === 'completed' && (
+          <div className="mt-4 space-y-2">
+            {trips.filter((t) => t.status === 'completed').length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-4">완료된 여행이 없습니다.</p>
+            ) : (
+              trips.filter((t) => t.status === 'completed').map((trip) => (
+                <Link
+                  key={trip.id}
+                  to={`/trip/${trip.id}`}
+                  className="flex items-center gap-3 bg-white p-3 rounded-2xl shadow-sm hover:shadow-md transition-shadow no-underline"
+                >
+                  <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0">
+                    <img src={trip.coverImage} alt={trip.title} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-[#2D3436] truncate">{trip.title}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {trip.destination && <span>{trip.destination} · </span>}
+                      {formatDate(trip.startDate)} ~ {formatDate(trip.endDate)}
+                    </p>
+                  </div>
+                  <span className="text-gray-300 text-lg shrink-0">›</span>
+                </Link>
+              ))
+            )}
+          </div>
+        )}
+
+        {activeStatsTab === 'planned' && (
+          <div className="mt-4 space-y-2">
+            {trips.filter((t) => t.status === 'planned').length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-4">계획 중인 여행이 없습니다.</p>
+            ) : (
+              trips.filter((t) => t.status === 'planned').map((trip) => (
+                <Link
+                  key={trip.id}
+                  to={`/trip/${trip.id}`}
+                  className="flex items-center gap-3 bg-white p-3 rounded-2xl shadow-sm hover:shadow-md transition-shadow no-underline"
+                >
+                  <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0">
+                    <img src={trip.coverImage} alt={trip.title} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-[#2D3436] truncate">{trip.title}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {trip.destination && <span>{trip.destination} · </span>}
+                      {formatDate(trip.startDate)} ~ {formatDate(trip.endDate)}
+                    </p>
+                  </div>
+                  <span className="text-gray-300 text-lg shrink-0">›</span>
+                </Link>
+              ))
+            )}
+          </div>
+        )}
+
+        {activeStatsTab === 'pins' && (
+          <div className="mt-4 space-y-2">
+            {pins.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-4">등록된 핀이 없습니다.</p>
+            ) : (
+              pins.map((pin) => {
+                const pinTrip = pin.trip_id ? trips.find((t) => t.id === pin.trip_id) : null;
+                const statusLabels: Record<string, string> = { visited: '방문', planned: '계획', wishlist: '위시' };
+                const statusColors: Record<string, string> = { visited: 'bg-emerald-100 text-emerald-700', planned: 'bg-amber-100 text-amber-700', wishlist: 'bg-indigo-100 text-indigo-700' };
+                return (
+                  <Link
+                    key={pin.id}
+                    to={pinTrip ? `/trip/${pinTrip.id}` : `/pin/edit/${pin.id}`}
+                    className="flex items-center gap-3 bg-white p-3 rounded-2xl shadow-sm hover:shadow-md transition-shadow no-underline"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-[#FF6B6B]/10 flex items-center justify-center shrink-0">
+                      <span className="text-lg">📍</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-[#2D3436] truncate">{pin.name}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {pin.city && <span>{pin.city}</span>}
+                        {pin.country && <span>, {pin.country}</span>}
+                        {pinTrip && <span> · {pinTrip.title}</span>}
+                      </p>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${statusColors[pin.visit_status] || ''}`}>
+                      {statusLabels[pin.visit_status] || pin.visit_status}
+                    </span>
+                    <span className="text-gray-300 text-lg shrink-0">›</span>
+                  </Link>
+                );
+              })
+            )}
+          </div>
+        )}
       </section>
 
       {/* 세계지도 */}
