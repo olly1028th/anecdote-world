@@ -1,10 +1,12 @@
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { useEffect, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 interface Props {
   selectedLat: number | null;
   selectedLng: number | null;
+  flyTo: { lat: number; lng: number } | null;
   onSelect: (lat: number, lng: number) => void;
 }
 
@@ -29,7 +31,23 @@ function ClickHandler({ onSelect }: { onSelect: (lat: number, lng: number) => vo
   return null;
 }
 
-export default function DestinationMap({ selectedLat, selectedLng, onSelect }: Props) {
+/** 검색 결과로 지도를 이동시키는 컴포넌트 */
+function FlyToHandler({ flyTo }: { flyTo: { lat: number; lng: number } | null }) {
+  const map = useMap();
+  const lastFlyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!flyTo) return;
+    const key = `${flyTo.lat},${flyTo.lng}`;
+    if (lastFlyRef.current === key) return;
+    lastFlyRef.current = key;
+    map.flyTo([flyTo.lat, flyTo.lng], 10, { duration: 1.2 });
+  }, [flyTo, map]);
+
+  return null;
+}
+
+export default function DestinationMap({ selectedLat, selectedLng, flyTo, onSelect }: Props) {
   const center: [number, number] =
     selectedLat != null && selectedLng != null
       ? [selectedLat, selectedLng]
@@ -43,13 +61,14 @@ export default function DestinationMap({ selectedLat, selectedLng, onSelect }: P
       minZoom={2}
       maxZoom={18}
       className="w-full h-full z-0"
-      style={{ minHeight: '260px' }}
+      style={{ minHeight: '280px' }}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
         url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
       />
       <ClickHandler onSelect={onSelect} />
+      <FlyToHandler flyTo={flyTo} />
       {selectedLat != null && selectedLng != null && (
         <Marker position={[selectedLat, selectedLng]} icon={markerIcon} />
       )}
