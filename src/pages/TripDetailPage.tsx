@@ -7,6 +7,7 @@ import Timeline from '../components/Timeline';
 import PlaceList from '../components/PlaceList';
 import Checklist from '../components/Checklist';
 import PhotoGallery from '../components/PhotoGallery';
+import PhotoUpload from '../components/PhotoUpload';
 import { formatDate, calcDuration, totalExpenses, formatCurrency, expenseCategoryLabel } from '../utils/format';
 import type { Expense, ExpenseCategory, ChecklistItem, Place, PlacePriority } from '../types/trip';
 
@@ -61,17 +62,46 @@ export default function TripDetailPage() {
   const [deleting, setDeleting] = useState(false);
 
   // Inline edit states
+  const [editingPhotos, setEditingPhotos] = useState(false);
   const [editingExpenses, setEditingExpenses] = useState(false);
   const [editingChecklist, setEditingChecklist] = useState(false);
   const [editingPlaces, setEditingPlaces] = useState(false);
   const [editingMemo, setEditingMemo] = useState(false);
 
   // Edit form data
+  const [draftPhotos, setDraftPhotos] = useState<string[]>([]);
+  const [draftCover, setDraftCover] = useState('');
   const [draftExpenses, setDraftExpenses] = useState<Expense[]>([]);
   const [draftChecklist, setDraftChecklist] = useState<ChecklistItem[]>([]);
   const [draftPlaces, setDraftPlaces] = useState<Place[]>([]);
   const [draftMemo, setDraftMemo] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // --- Photo inline edit ---
+  const startEditPhotos = () => {
+    if (!trip) return;
+    setDraftPhotos([...trip.photos]);
+    setDraftCover(trip.coverImage || trip.photos[0] || '');
+    setEditingPhotos(true);
+  };
+  const savePhotosInline = async () => {
+    if (!trip || !id) return;
+    try {
+      setSaving(true);
+      if (!isSupabaseConfigured) {
+        updateDemoTrip(id, { photos: draftPhotos, coverImage: draftCover });
+      } else {
+        // Supabase: 커버 이미지만 DB에 저장 (사진은 Storage 사용)
+        await supabase.from('trips').update({ cover_image: draftCover }).eq('id', id);
+      }
+      setEditingPhotos(false);
+      refetch();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '저장 실패');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // --- Checklist Toggle (demo + supabase) ---
   const handleChecklistToggle = async (index: number) => {
@@ -358,7 +388,10 @@ export default function TripDetailPage() {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border-[3px] border-slate-900 retro-shadow flex flex-col gap-2">
+        <div
+          onClick={startEditPhotos}
+          className="bg-white dark:bg-slate-800 p-4 rounded-xl border-[3px] border-slate-900 retro-shadow flex flex-col gap-2 cursor-pointer hover:border-[#f48c25] transition-colors"
+        >
           <div className="w-10 h-10 rounded-lg bg-[#f43f5e]/20 border-2 border-[#f43f5e] flex items-center justify-center">
             <svg className="w-5 h-5 text-[#f43f5e]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -441,7 +474,34 @@ export default function TripDetailPage() {
 
       {/* 콘텐츠 섹션들 */}
       <div className="space-y-6">
-        {trip.photos.length > 0 && <PhotoGallery photos={trip.photos} />}
+        {/* 사진 — 인라인 편집 */}
+        {editingPhotos ? (
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-slate-900 retro-shadow">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-4">Photos</h3>
+            <PhotoUpload
+              photos={draftPhotos}
+              onChange={setDraftPhotos}
+              coverImage={draftCover}
+              onCoverChange={setDraftCover}
+            />
+            <SaveCancelButtons onSave={savePhotosInline} onCancel={() => setEditingPhotos(false)} saving={saving} />
+          </div>
+        ) : trip.photos.length > 0 ? (
+          <div className="relative">
+            <div className="absolute top-5 right-5 z-10">
+              <EditButton onClick={startEditPhotos} />
+            </div>
+            <PhotoGallery photos={trip.photos} />
+          </div>
+        ) : (
+          <div
+            onClick={startEditPhotos}
+            className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-dashed border-slate-300 cursor-pointer hover:border-[#f48c25] transition-colors"
+          >
+            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">Photos</h3>
+            <p className="text-xs text-slate-300 font-medium text-center py-4">탭하여 사진을 추가해보세요</p>
+          </div>
+        )}
 
         {isCompleted && trip.itinerary.length > 0 && <Timeline items={trip.itinerary} />}
 
