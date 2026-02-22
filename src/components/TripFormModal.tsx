@@ -49,17 +49,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
     try {
       setSaving(true);
 
-      if (isSupabaseConfigured) {
-        // Supabase 모드: DB에 저장
-        await createTrip({
-          title: title.trim(),
-          status,
-          start_date: startDate || undefined,
-          end_date: endDate || undefined,
-          memo: memo.trim() || undefined,
-        });
-      } else {
-        // 데모 모드: 로컬 상태에 추가
+      const saveDemoTrip = () => {
         const now = new Date().toISOString();
         addDemoTrip({
           id: `demo-${Date.now()}`,
@@ -78,6 +68,23 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
           createdAt: now,
           updatedAt: now,
         });
+      };
+
+      if (isSupabaseConfigured) {
+        try {
+          await createTrip({
+            title: title.trim(),
+            status,
+            start_date: startDate || undefined,
+            end_date: endDate || undefined,
+            memo: memo.trim() || undefined,
+          });
+        } catch {
+          // Supabase 실패 시 데모 모드로 폴백
+          saveDemoTrip();
+        }
+      } else {
+        saveDemoTrip();
       }
 
       // useTrips refetch 트리거

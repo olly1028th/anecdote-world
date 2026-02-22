@@ -117,8 +117,7 @@ export default function PinFormPage() {
         day_number: dayNumber,
       };
 
-      if (!isSupabaseConfigured) {
-        // 데모 모드: 로컬 상태에 추가
+      const saveDemoPin = () => {
         const now = new Date().toISOString();
         addDemoPin({
           id: `demo-pin-${Date.now()}`,
@@ -141,10 +140,23 @@ export default function PinFormPage() {
           updated_at: now,
         });
         window.dispatchEvent(new CustomEvent('pin-added'));
+      };
+
+      if (!isSupabaseConfigured) {
+        saveDemoPin();
       } else if (isEdit && id) {
-        await updatePin(id, input);
+        try {
+          await updatePin(id, input);
+        } catch {
+          saveDemoPin();
+        }
       } else {
-        await createPin(input);
+        try {
+          await createPin(input);
+        } catch {
+          // Supabase 실패 시 데모 모드로 폴백
+          saveDemoPin();
+        }
       }
       navigate('/');
     } catch (err) {
