@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Retro Space Stats Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f48c25",
+                        "background-light": "#e0f2f1", // Soft Mint Green for Retro feel
+                        "background-dark": "#1a1a1a",
+                        "retro-teal": "#26a69a",
+                        "retro-red": "#ef5350",
+                        "retro-yellow": "#ffca28"
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .retro-border {
+            border: 3px solid #221910;
+        }
+        .retro-shadow {
+            box-shadow: 4px 4px 0px 0px #221910;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(4px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen pb-24">
+<!-- Header Navigation -->
+<header class="flex items-center justify-between p-6 bg-background-light/80 dark:bg-background-dark/80 sticky top-0 z-10 backdrop-blur-md border-b-2 border-slate-900/10">
+<div class="flex items-center gap-2">
+<div class="bg-primary rounded-lg p-1 retro-border">
+<span class="material-symbols-outlined text-white font-bold">rocket_launch</span>
+</div>
+<h1 class="text-xl font-bold tracking-tighter uppercase italic">Anecdote</h1>
+</div>
+<button class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 retro-border flex items-center justify-center retro-shadow">
+<span class="material-symbols-outlined text-slate-900 dark:text-slate-100">settings</span>
+</button>
+</header>
+<main class="max-w-md mx-auto px-4 pt-4 space-y-6">
+<!-- Profile Section -->
+<section class="flex flex-col items-center text-center space-y-4">
+<div class="relative">
+<!-- Saturn Ring Decoration -->
+<div class="absolute -inset-4 border-[6px] border-primary/30 rounded-[60%_40%_70%_30%/50%] rotate-12 pointer-events-none"></div>
+<div class="w-32 h-32 rounded-full retro-border overflow-hidden bg-white retro-shadow relative z-10">
+<img alt="Commander profile" class="w-full h-full object-cover" data-alt="Close up portrait of a smiling woman in a vintage pilot jacket" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7CogRWBs1EQ07TvKAdT9clO9c1B67CG6hcwlAOShBT3GbnftD6RdvmAqe5PSQxUtw0w9GhLn8i7w7APgtAfL63iCrFT53p2iYEghm1AIFC4XohV0QmBNoVeMVOQghNdmXZE7SHHrupu2cRbqCOM3-szZ-W4G8AxlODtQXKdI1P85kn7dPC5FF7cnqzE8KtAZX7NjkedyMR8Xyi0oMxPsPqPOX9DAg2UaUMVkmL-eUkFHKynLQ_LMqO-znzPvM_RPbFOY4CzPEkVE"/>
+</div>
+<div class="absolute -bottom-2 -right-2 bg-retro-yellow retro-border rounded-lg px-2 py-1 text-[10px] font-bold uppercase tracking-widest z-20">
+                    LVL 42
+                </div>
+</div>
+<div class="space-y-1">
+<h2 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 uppercase italic">Commander Alex</h2>
+<div class="flex items-center justify-center gap-2 text-slate-600 dark:text-slate-400 font-medium">
+<span class="material-symbols-outlined text-sm">location_on</span>
+<span>Home Base: Earth-01 (Berlin)</span>
+</div>
+</div>
+<button class="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-8 rounded-xl retro-border retro-shadow transition-transform active:translate-y-1 active:translate-x-1 uppercase tracking-widest text-sm w-full">
+                Launch New Mission
+            </button>
+</section>
+<!-- Stats Grid -->
+<section class="grid grid-cols-2 gap-4">
+<!-- Stat 1: Planets -->
+<div class="bg-white dark:bg-slate-800 p-4 rounded-xl retro-border retro-shadow flex flex-col gap-2">
+<div class="w-10 h-10 rounded-lg bg-retro-teal/20 border-2 border-retro-teal flex items-center justify-center">
+<span class="material-symbols-outlined text-retro-teal font-bold">public</span>
+</div>
+<div>
+<p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Planets Visited</p>
+<p class="text-3xl font-bold text-slate-900 dark:text-slate-100">24</p>
+</div>
+<div class="flex items-center gap-1 text-xs font-bold text-retro-teal">
+<span class="material-symbols-outlined text-xs">trending_up</span>
+<span>+2 New</span>
+</div>
+</div>
+<!-- Stat 2: Stars -->
+<div class="bg-white dark:bg-slate-800 p-4 rounded-xl retro-border retro-shadow flex flex-col gap-2">
+<div class="w-10 h-10 rounded-lg bg-retro-yellow/20 border-2 border-retro-yellow flex items-center justify-center">
+<span class="material-symbols-outlined text-retro-yellow font-bold">star</span>
+</div>
+<div>
+<p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Stars Collected</p>
+<p class="text-3xl font-bold text-slate-900 dark:text-slate-100">1.2k</p>
+</div>
+<div class="flex items-center gap-1 text-xs font-bold text-retro-yellow">
+<span class="material-symbols-outlined text-xs">auto_awesome</span>
+<span>Memories</span>
+</div>
+</div>
+<!-- Stat 3: Lightyears -->
+<div class="bg-white dark:bg-slate-800 p-4 rounded-xl retro-border retro-shadow flex flex-col gap-2">
+<div class="w-10 h-10 rounded-lg bg-retro-red/20 border-2 border-retro-red flex items-center justify-center">
+<span class="material-symbols-outlined text-retro-red font-bold">speed</span>
+</div>
+<div>
+<p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Light-years</p>
+<p class="text-3xl font-bold text-slate-900 dark:text-slate-100">8.5k</p>
+</div>
+<p class="text-[10px] font-bold text-slate-400 italic">Total Distance</p>
+</div>
+<!-- Stat 4: Orbit Time -->
+<div class="bg-white dark:bg-slate-800 p-4 rounded-xl retro-border retro-shadow flex flex-col gap-2">
+<div class="w-10 h-10 rounded-lg bg-primary/20 border-2 border-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-primary font-bold">update</span>
+</div>
+<div>
+<p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Orbit Time</p>
+<p class="text-3xl font-bold text-slate-900 dark:text-slate-100">312d</p>
+</div>
+<p class="text-[10px] font-bold text-slate-400 italic">Time Away</p>
+</div>
+</section>
+<!-- Progress Section -->
+<section class="bg-white dark:bg-slate-800 p-6 rounded-xl retro-border retro-shadow space-y-4">
+<div class="flex justify-between items-end">
+<div class="space-y-1">
+<h3 class="text-sm font-bold uppercase tracking-widest text-slate-500">Galaxy Completion</h3>
+<p class="text-lg font-bold text-slate-900 dark:text-slate-100">Andromeda Sector</p>
+</div>
+<p class="text-2xl font-bold text-primary">65%</p>
+</div>
+<div class="h-6 bg-slate-100 dark:bg-slate-700 rounded-lg border-2 border-slate-900 relative overflow-hidden">
+<div class="absolute top-0 left-0 h-full bg-primary rounded-r-lg flex items-center justify-end pr-2" style="width: 65%;">
+<div class="w-2 h-2 rounded-full bg-white animate-pulse"></div>
+</div>
+<!-- Scanning Effect Line -->
+<div class="absolute top-0 bottom-0 w-1 bg-white/30 skew-x-12 translate-x-20"></div>
+</div>
+<p class="text-xs font-medium text-slate-600 dark:text-slate-400 leading-relaxed italic">
+                28 more planets to discover before reaching <span class="text-primary font-bold">Supernova Status</span>.
+            </p>
+</section>
+<!-- Mission Logs (Recent Trips) -->
+<section class="space-y-4">
+<h3 class="text-sm font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
+<span class="material-symbols-outlined text-base">history_edu</span>
+                Recent Mission Logs
+            </h3>
+<div class="space-y-3">
+<!-- Log 1 -->
+<div class="flex items-center gap-4 bg-white/60 dark:bg-slate-800/60 p-4 rounded-xl retro-border group hover:bg-white dark:hover:bg-slate-800 transition-colors">
+<div class="w-12 h-12 rounded-lg retro-border flex items-center justify-center bg-retro-teal text-white flex-shrink-0">
+<span class="material-symbols-outlined">explore</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-xs font-bold text-slate-400 uppercase tracking-tighter">Star-date 2024.11</p>
+<h4 class="text-lg font-bold truncate text-slate-900 dark:text-slate-100">Japan: Neo-Tokyo Sector</h4>
+</div>
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">chevron_right</span>
+</div>
+<!-- Log 2 -->
+<div class="flex items-center gap-4 bg-white/60 dark:bg-slate-800/60 p-4 rounded-xl retro-border group hover:bg-white dark:hover:bg-slate-800 transition-colors">
+<div class="w-12 h-12 rounded-lg retro-border flex items-center justify-center bg-retro-red text-white flex-shrink-0">
+<span class="material-symbols-outlined">map</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-xs font-bold text-slate-400 uppercase tracking-tighter">Star-date 2024.08</p>
+<h4 class="text-lg font-bold truncate text-slate-900 dark:text-slate-100">Italy: Amalfi Nebula</h4>
+</div>
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">chevron_right</span>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 right-0 bg-background-light dark:bg-background-dark border-t-4 border-slate-900 px-6 pb-8 pt-4 z-50">
+<div class="max-w-md mx-auto flex justify-between items-center">
+<a class="flex flex-col items-center gap-1 group" href="#">
+<div class="w-12 h-12 rounded-xl flex items-center justify-center transition-all group-hover:bg-primary/20">
+<span class="material-symbols-outlined text-slate-900 dark:text-slate-100 group-hover:text-primary text-3xl">map</span>
+</div>
+<span class="text-[10px] font-bold uppercase tracking-widest">Star Map</span>
+</a>
+<a class="flex flex-col items-center gap-1 group" href="#">
+<div class="w-12 h-12 rounded-xl flex items-center justify-center transition-all group-hover:bg-primary/20">
+<span class="material-symbols-outlined text-slate-900 dark:text-slate-100 group-hover:text-primary text-3xl">rocket</span>
+</div>
+<span class="text-[10px] font-bold uppercase tracking-widest">Missions</span>
+</a>
+<!-- Active State for Profile -->
+<a class="flex flex-col items-center gap-1" href="#">
+<div class="w-14 h-14 bg-primary rounded-xl retro-border flex items-center justify-center -translate-y-4 retro-shadow">
+<span class="material-symbols-outlined text-white text-4xl" style="font-variation-settings: 'FILL' 1">account_circle</span>
+</div>
+<span class="text-[10px] font-bold uppercase tracking-widest text-primary -mt-3">Commander</span>
+</a>
+<a class="flex flex-col items-center gap-1 group" href="#">
+<div class="w-12 h-12 rounded-xl flex items-center justify-center transition-all group-hover:bg-primary/20">
+<span class="material-symbols-outlined text-slate-900 dark:text-slate-100 group-hover:text-primary text-3xl">book</span>
+</div>
+<span class="text-[10px] font-bold uppercase tracking-widest">Log</span>
+</a>
+<a class="flex flex-col items-center gap-1 group" href="#">
+<div class="w-12 h-12 rounded-xl flex items-center justify-center transition-all group-hover:bg-primary/20">
+<span class="material-symbols-outlined text-slate-900 dark:text-slate-100 group-hover:text-primary text-3xl">emoji_events</span>
+</div>
+<span class="text-[10px] font-bold uppercase tracking-widest">Ranks</span>
+</a>
+</div>
+</nav>
+</body></html>
