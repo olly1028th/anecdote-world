@@ -45,7 +45,6 @@ export default function TripFormPage() {
     setDestination(info);
   }, []);
 
-  // 수정 모드: 기존 데이터로 폼 초기화
   if (isEdit && existing && !initialized) {
     setTitle(existing.title);
     setStatus(existing.status);
@@ -62,24 +61,16 @@ export default function TripFormPage() {
     setInitialized(true);
   }
 
-  // ---- 경비 핸들러 ----
   const addExpense = () => setExpenses([...expenses, emptyExpense()]);
-  const removeExpense = (index: number) =>
-    setExpenses(expenses.filter((_, i) => i !== index));
+  const removeExpense = (index: number) => setExpenses(expenses.filter((_, i) => i !== index));
   const updateExpense = (index: number, field: keyof Expense, value: string | number) => {
-    setExpenses(expenses.map((e, i) =>
-      i === index ? { ...e, [field]: value } : e,
-    ));
+    setExpenses(expenses.map((e, i) => (i === index ? { ...e, [field]: value } : e)));
   };
 
-  // ---- 체크리스트 핸들러 ----
   const addChecklistItem = () => setChecklist([...checklist, emptyChecklistItem()]);
-  const removeChecklistItem = (index: number) =>
-    setChecklist(checklist.filter((_, i) => i !== index));
+  const removeChecklistItem = (index: number) => setChecklist(checklist.filter((_, i) => i !== index));
   const updateChecklistText = (index: number, text: string) => {
-    setChecklist(checklist.map((c, i) =>
-      i === index ? { ...c, text } : c,
-    ));
+    setChecklist(checklist.map((c, i) => (i === index ? { ...c, text } : c)));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -111,7 +102,6 @@ export default function TripFormPage() {
         tripId = await createTrip(input);
       }
 
-      // 여행지 좌표가 있으면 핀 생성 (신규 생성 시에만)
       if (!isEdit && destination.lat != null && destination.lng != null) {
         try {
           setSaveStatus('여행지 핀 저장 중...');
@@ -127,12 +117,9 @@ export default function TripFormPage() {
             trip_id: tripId,
           });
           window.dispatchEvent(new CustomEvent('pin-added'));
-        } catch {
-          // 핀 생성 실패해도 여행은 저장됨
-        }
+        } catch { /* 핀 생성 실패해도 여행은 저장됨 */ }
       }
 
-      // 사진 업로드 (base64 → Storage, 외부 URL은 그대로)
       const base64Photos = photos.filter((p) => p.startsWith('data:'));
       if (base64Photos.length > 0) {
         setSaveStatus(`사진 업로드 중... (0/${base64Photos.length})`);
@@ -146,28 +133,21 @@ export default function TripFormPage() {
             uploadedUrls.push(url);
             uploadCount++;
             setSaveStatus(`사진 업로드 중... (${uploadCount}/${base64Photos.length})`);
-          } catch {
-            console.warn('사진 업로드 건너뜀');
-          }
+          } catch { console.warn('사진 업로드 건너뜀'); }
         } else {
           uploadedUrls.push(photo);
         }
       }
 
-      // 첫 번째 사진을 대표 이미지로 설정
-      const finalCover = coverImage.startsWith('data:')
-        ? uploadedUrls[0] || ''
-        : coverImage;
+      const finalCover = coverImage.startsWith('data:') ? uploadedUrls[0] || '' : coverImage;
       if (finalCover && finalCover !== input.cover_image) {
         await updateTrip(tripId, { cover_image: finalCover });
       }
 
-      // 경비 저장 (빈 항목 제외)
       setSaveStatus('경비 저장 중...');
       const validExpenses = expenses.filter((e) => e.amount > 0);
       await saveExpenses(tripId, validExpenses);
 
-      // 체크리스트 저장 (빈 항목 제외)
       setSaveStatus('체크리스트 저장 중...');
       const validChecklist = checklist.filter((c) => c.text.trim());
       await saveChecklistItems(tripId, validChecklist);
@@ -181,11 +161,11 @@ export default function TripFormPage() {
   };
 
   return (
-    <div className="px-6 space-y-6 max-w-2xl mx-auto">
+    <div className="px-6 space-y-6 max-w-2xl mx-auto pb-24">
       {/* 뒤로가기 */}
       <Link
         to="/"
-        className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-widest text-[#2D3436]/40 hover:text-[#FF6B6B] transition-colors no-underline"
+        className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-[#f48c25] transition-colors no-underline"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -193,25 +173,25 @@ export default function TripFormPage() {
         Back
       </Link>
 
-      <div className="flex items-center gap-4">
-        <h1 className="text-xl font-black italic uppercase tracking-tighter text-[#2D3436]">
-          {isEdit ? 'Edit Planet' : 'New Planet'}
+      <div>
+        <p className="text-sm font-bold text-[#f48c25] uppercase tracking-widest mb-1">Mission Setup</p>
+        <h1 className="text-2xl font-bold text-[#1c140d] dark:text-slate-100">
+          {isEdit ? 'Edit Mission' : 'New Mission'}
         </h1>
-        <div className="h-[4px] flex-1 bg-[#2D3436] rounded-full" />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* 상태 선택 */}
         <div>
-          <label className="block text-xs font-black uppercase tracking-widest text-[#2D3436]/60 mb-2">Status</label>
+          <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Status</label>
           <div className="flex gap-3">
             <button
               type="button"
               onClick={() => setStatus('planned')}
-              className={`flex-1 py-3 rounded-2xl text-sm font-black uppercase tracking-tight transition-all cursor-pointer border-2 border-[#2D3436] ${
+              className={`flex-1 py-3 rounded-xl text-sm font-bold uppercase tracking-tight transition-all cursor-pointer border-2 border-slate-900 ${
                 status === 'planned'
-                  ? 'bg-[#FFD166] text-[#2D3436] shadow-[3px_3px_0px_0px_#2D3436]'
-                  : 'bg-white text-[#2D3436]/40 shadow-none'
+                  ? 'bg-[#eab308] text-slate-900 retro-shadow'
+                  : 'bg-white text-slate-400 shadow-none'
               }`}
             >
               계획 중
@@ -219,10 +199,10 @@ export default function TripFormPage() {
             <button
               type="button"
               onClick={() => setStatus('completed')}
-              className={`flex-1 py-3 rounded-2xl text-sm font-black uppercase tracking-tight transition-all cursor-pointer border-2 border-[#2D3436] ${
+              className={`flex-1 py-3 rounded-xl text-sm font-bold uppercase tracking-tight transition-all cursor-pointer border-2 border-slate-900 ${
                 status === 'completed'
-                  ? 'bg-[#4ECDC4] text-[#2D3436] shadow-[3px_3px_0px_0px_#2D3436]'
-                  : 'bg-white text-[#2D3436]/40 shadow-none'
+                  ? 'bg-[#0d9488] text-white retro-shadow'
+                  : 'bg-white text-slate-400 shadow-none'
               }`}
             >
               완료
@@ -232,8 +212,8 @@ export default function TripFormPage() {
 
         {/* 여행 제목 */}
         <div>
-          <label className="block text-xs font-black uppercase tracking-widest text-[#2D3436]/60 mb-2">
-            Title <span className="text-[#FF6B6B]">*</span>
+          <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
+            Title <span className="text-[#f43f5e]">*</span>
           </label>
           <input
             type="text"
@@ -241,46 +221,41 @@ export default function TripFormPage() {
             onChange={(e) => setTitle(e.target.value)}
             placeholder="예: 도쿄 벚꽃 여행"
             required
-            className="w-full px-4 py-3 rounded-xl border-2 border-[#2D3436] text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40 focus:border-[#FF6B6B]"
+            className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
           />
         </div>
 
-        {/* 여행지 선택 (지도) */}
+        {/* 여행지 선택 */}
         <DestinationPicker value={destination} onChange={handleDestinationChange} />
 
         {/* 날짜 */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-black uppercase tracking-widest text-[#2D3436]/60 mb-2">Start</label>
+            <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Start</label>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border-2 border-[#2D3436] text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40 focus:border-[#FF6B6B]"
+              className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
             />
           </div>
           <div>
-            <label className="block text-xs font-black uppercase tracking-widest text-[#2D3436]/60 mb-2">End</label>
+            <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">End</label>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border-2 border-[#2D3436] text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40 focus:border-[#FF6B6B]"
+              className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
             />
           </div>
         </div>
 
         {/* 사진 업로드 */}
-        <PhotoUpload
-          photos={photos}
-          onChange={setPhotos}
-          coverImage={coverImage}
-          onCoverChange={setCoverImage}
-        />
+        <PhotoUpload photos={photos} onChange={setPhotos} coverImage={coverImage} onCoverChange={setCoverImage} />
 
         {/* 메모 */}
         <div>
-          <label className="block text-xs font-black uppercase tracking-widest text-[#2D3436]/60 mb-2">
+          <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
             {status === 'completed' ? 'Review' : 'Memo'}
           </label>
           <textarea
@@ -288,29 +263,27 @@ export default function TripFormPage() {
             onChange={(e) => setMemo(e.target.value)}
             placeholder={status === 'completed' ? '이 여행 어땠어요?' : '여행에 대한 메모...'}
             rows={3}
-            className="w-full px-4 py-3 rounded-xl border-2 border-[#2D3436] text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40 focus:border-[#FF6B6B] resize-none"
+            className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25] resize-none"
           />
         </div>
 
-        {/* ──────── 경비 입력 ──────── */}
-        <div className="border-4 border-[#2D3436] rounded-[24px] p-5 bg-[#FFD166]/10 shadow-[4px_4px_0px_0px_#2D3436]">
+        {/* 경비 입력 */}
+        <div className="bg-white dark:bg-slate-800 border-[3px] border-slate-900 rounded-xl p-5 retro-shadow">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xs font-black uppercase tracking-widest text-[#2D3436]">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">
               {status === 'completed' ? 'Expenses' : 'Est. Expenses'}
             </h3>
             <button
               type="button"
               onClick={addExpense}
-              className="text-[10px] font-black uppercase tracking-widest text-[#FF6B6B] hover:text-[#e85d5d] cursor-pointer border-2 border-[#FF6B6B] px-3 py-1 rounded-full hover:bg-[#FF6B6B]/10 transition-colors"
+              className="text-[10px] font-bold uppercase tracking-widest text-[#f48c25] hover:text-[#d97a1e] cursor-pointer border-2 border-[#f48c25] px-3 py-1 rounded-full hover:bg-[#f48c25]/10 transition-colors"
             >
               + Add
             </button>
           </div>
 
           {expenses.length === 0 ? (
-            <p className="text-xs text-[#2D3436]/40 text-center py-4 font-medium">
-              아직 경비 항목이 없습니다.
-            </p>
+            <p className="text-xs text-slate-400 text-center py-4 font-medium">아직 경비 항목이 없습니다.</p>
           ) : (
             <div className="space-y-3">
               {expenses.map((expense, i) => (
@@ -318,12 +291,10 @@ export default function TripFormPage() {
                   <select
                     value={expense.category}
                     onChange={(e) => updateExpense(i, 'category', e.target.value)}
-                    className="w-24 shrink-0 px-2 py-2.5 rounded-lg border-2 border-[#2D3436] text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40"
+                    className="w-24 shrink-0 px-2 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
                   >
                     {EXPENSE_CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {expenseCategoryLabel(cat)}
-                      </option>
+                      <option key={cat} value={cat}>{expenseCategoryLabel(cat)}</option>
                     ))}
                   </select>
                   <input
@@ -332,19 +303,19 @@ export default function TripFormPage() {
                     onChange={(e) => updateExpense(i, 'amount', Number(e.target.value))}
                     placeholder="금액"
                     min={0}
-                    className="w-28 shrink-0 px-3 py-2.5 rounded-lg border-2 border-[#2D3436] text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40"
+                    className="w-28 shrink-0 px-3 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
                   />
                   <input
                     type="text"
                     value={expense.label}
                     onChange={(e) => updateExpense(i, 'label', e.target.value)}
                     placeholder="설명"
-                    className="flex-1 min-w-0 px-3 py-2.5 rounded-lg border-2 border-[#2D3436] text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40"
+                    className="flex-1 min-w-0 px-3 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
                   />
                   <button
                     type="button"
                     onClick={() => removeExpense(i)}
-                    className="shrink-0 w-8 h-8 flex items-center justify-center text-[#2D3436]/30 hover:text-[#FF6B6B] transition-colors cursor-pointer mt-0.5"
+                    className="shrink-0 w-8 h-8 flex items-center justify-center text-slate-300 hover:text-[#f43f5e] transition-colors cursor-pointer mt-0.5 bg-transparent border-0"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -356,24 +327,22 @@ export default function TripFormPage() {
           )}
         </div>
 
-        {/* ──────── 체크리스트 입력 (계획 여행용) ──────── */}
+        {/* 체크리스트 입력 */}
         {status === 'planned' && (
-          <div className="border-4 border-[#2D3436] rounded-[24px] p-5 bg-[#4ECDC4]/10 shadow-[4px_4px_0px_0px_#2D3436]">
+          <div className="bg-white dark:bg-slate-800 border-[3px] border-slate-900 rounded-xl p-5 retro-shadow">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xs font-black uppercase tracking-widest text-[#2D3436]">Checklist</h3>
+              <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">Checklist</h3>
               <button
                 type="button"
                 onClick={addChecklistItem}
-                className="text-[10px] font-black uppercase tracking-widest text-[#FF6B6B] hover:text-[#e85d5d] cursor-pointer border-2 border-[#FF6B6B] px-3 py-1 rounded-full hover:bg-[#FF6B6B]/10 transition-colors"
+                className="text-[10px] font-bold uppercase tracking-widest text-[#f48c25] hover:text-[#d97a1e] cursor-pointer border-2 border-[#f48c25] px-3 py-1 rounded-full hover:bg-[#f48c25]/10 transition-colors"
               >
                 + Add
               </button>
             </div>
 
             {checklist.length === 0 ? (
-              <p className="text-xs text-[#2D3436]/40 text-center py-4 font-medium">
-                아직 체크리스트가 없습니다.
-              </p>
+              <p className="text-xs text-slate-400 text-center py-4 font-medium">아직 체크리스트가 없습니다.</p>
             ) : (
               <div className="space-y-2">
                 {checklist.map((item, i) => (
@@ -383,12 +352,12 @@ export default function TripFormPage() {
                       value={item.text}
                       onChange={(e) => updateChecklistText(i, e.target.value)}
                       placeholder="예: 항공편 예약"
-                      className="flex-1 min-w-0 px-3 py-2.5 rounded-lg border-2 border-[#2D3436] text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40"
+                      className="flex-1 min-w-0 px-3 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
                     />
                     <button
                       type="button"
                       onClick={() => removeChecklistItem(i)}
-                      className="shrink-0 w-8 h-8 flex items-center justify-center text-[#2D3436]/30 hover:text-[#FF6B6B] transition-colors cursor-pointer"
+                      className="shrink-0 w-8 h-8 flex items-center justify-center text-slate-300 hover:text-[#f43f5e] transition-colors cursor-pointer bg-transparent border-0"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -405,16 +374,16 @@ export default function TripFormPage() {
         <div className="flex gap-3 pt-4">
           <Link
             to="/"
-            className="flex-1 py-3.5 rounded-2xl text-sm font-black uppercase tracking-tight text-[#2D3436]/60 bg-white border-2 border-[#2D3436] text-center no-underline hover:bg-gray-50 active:translate-x-0.5 active:translate-y-0.5 transition-all"
+            className="flex-1 py-3.5 rounded-xl text-sm font-bold uppercase tracking-tight text-slate-500 bg-white border-2 border-slate-900 text-center no-underline hover:bg-gray-50 transition-all"
           >
             Cancel
           </Link>
           <button
             type="submit"
             disabled={saving || !title.trim()}
-            className="flex-1 py-3.5 rounded-2xl text-sm font-black uppercase tracking-tight text-white bg-[#FF6B6B] border-2 border-[#2D3436] shadow-[4px_4px_0px_0px_#2D3436] hover:bg-[#e85d5d] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 py-3.5 rounded-xl text-sm font-bold uppercase tracking-tight text-white bg-[#f48c25] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-[#d97a1e] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {saving ? saveStatus || 'Saving...' : isEdit ? 'Update' : 'Launch Planet'}
+            {saving ? saveStatus || 'Saving...' : isEdit ? 'Update' : 'Launch Mission'}
           </button>
         </div>
       </form>

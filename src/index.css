@@ -1,25 +1,28 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-primary: #FF6B6B;
-  --color-primary-dark: #e85d5d;
-  --color-accent: #FFD166;
-  --color-completed: #059669;
-  --color-planned: #d97706;
+  --color-primary: #f48c25;
+  --color-primary-dark: #d97a1e;
+  --color-accent: #eab308;
+  --color-completed: #0d9488;
+  --color-planned: #eab308;
   --color-bg: #F9F4E8;
   --color-card: #ffffff;
-  --color-text: #2D3436;
+  --color-text: #1c140d;
   --color-text-light: #9CA3AF;
-  --color-border: #2D3436;
-  --color-ink: #2D3436;
+  --color-border: #1c140d;
+  --color-ink: #1c140d;
+  --color-teal: #0d9488;
+  --color-mustard: #eab308;
+  --color-coral: #f43f5e;
 }
 
 body {
   margin: 0;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
   background-color: var(--color-bg);
   color: var(--color-text);
   transition: background-color 0.2s, color 0.2s;
@@ -28,8 +31,28 @@ body {
 
 /* Selection */
 ::selection {
-  background-color: #FFD166;
-  color: #2D3436;
+  background-color: #f48c25;
+  color: white;
+}
+
+/* Retro utility classes */
+.retro-border {
+  border: 3px solid #1c140d;
+  box-shadow: 4px 4px 0px #1c140d;
+}
+.retro-border:active {
+  box-shadow: 0px 0px 0px #1c140d;
+  transform: translate(2px, 2px);
+}
+
+.retro-shadow {
+  box-shadow: 4px 4px 0px 0px #1c140d;
+}
+
+.vintage-grain {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.06;
+  pointer-events: none;
 }
 
 /* ============================
@@ -37,45 +60,48 @@ body {
    ============================ */
 
 .dark {
-  --color-bg: #1a1a2e;
-  --color-card: #16213e;
+  --color-bg: #221910;
+  --color-card: #2a1f15;
   --color-text: #e8e8e8;
   --color-text-light: #94a3b8;
-  --color-border: #3a3a5a;
+  --color-border: #4a3f35;
   --color-ink: #94a3b8;
   color-scheme: dark;
 }
 
 /* 배경색 */
-.dark .bg-white { background-color: #16213e !important; }
-.dark .bg-\[\#FCFBF7\] { background-color: #1a1a2e !important; }
-.dark .bg-gray-50 { background-color: #0f172a !important; }
-.dark .bg-gray-100 { background-color: #1e293b !important; }
-.dark .bg-blue-50 { background-color: #1e3a5f !important; }
+.dark .bg-white { background-color: #2a1f15 !important; }
+.dark .bg-\[\#F9F4E8\] { background-color: #221910 !important; }
+.dark .bg-\[\#f8f7f5\] { background-color: #221910 !important; }
+.dark .bg-gray-50 { background-color: #1a1208 !important; }
+.dark .bg-gray-100 { background-color: #2a1f15 !important; }
 
 /* 텍스트 색상 */
 .dark .text-gray-900,
-.dark .text-\[\#2D3436\] { color: #f1f5f9 !important; }
+.dark .text-\[\#1c140d\] { color: #f1f5f9 !important; }
+.dark .text-slate-900 { color: #f1f5f9 !important; }
 .dark .text-gray-800 { color: #e2e8f0 !important; }
 .dark .text-gray-700 { color: #cbd5e1 !important; }
 .dark .text-gray-600 { color: #94a3b8 !important; }
-.dark .text-gray-500 { color: #94a3b8 !important; }
-.dark .text-gray-400 { color: #64748b !important; }
-.dark .text-\[\#4A4A4A\] { color: #e8e8e8 !important; }
+.dark .text-gray-500,
+.dark .text-slate-500 { color: #94a3b8 !important; }
+.dark .text-gray-400,
+.dark .text-slate-400 { color: #64748b !important; }
 
 /* 테두리 */
-.dark .border-gray-200 { border-color: #334155 !important; }
-.dark .border-gray-100 { border-color: #1e293b !important; }
-.dark .border-gray-300 { border-color: #475569 !important; }
-.dark .border-\[\#F0EEE6\] { border-color: #2a2a4a !important; }
+.dark .border-gray-200 { border-color: #4a3f35 !important; }
+.dark .border-gray-100 { border-color: #2a1f15 !important; }
+.dark .border-gray-300 { border-color: #5a4f45 !important; }
+.dark .border-slate-900 { border-color: #4a3f35 !important; }
+.dark .border-\[\#1c140d\] { border-color: #4a3f35 !important; }
 
 /* 입력 필드 */
 .dark input,
 .dark textarea,
 .dark select {
-  background-color: #0f172a !important;
+  background-color: #1a1208 !important;
   color: #f1f5f9 !important;
-  border-color: #334155 !important;
+  border-color: #4a3f35 !important;
 }
 .dark input::placeholder,
 .dark textarea::placeholder {
@@ -83,9 +109,9 @@ body {
 }
 
 /* 호버 상태 */
-.dark .hover\:bg-gray-50:hover { background-color: #334155 !important; }
-.dark .hover\:bg-gray-100:hover { background-color: #334155 !important; }
-.dark .hover\:bg-gray-200:hover { background-color: #475569 !important; }
+.dark .hover\:bg-gray-50:hover { background-color: #4a3f35 !important; }
+.dark .hover\:bg-gray-100:hover { background-color: #4a3f35 !important; }
+.dark .hover\:bg-white:hover { background-color: #3a2f25 !important; }
 
 /* 링크 */
 .dark a { color: inherit; }
@@ -96,41 +122,24 @@ body {
 .dark .hover\:shadow-md:hover { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4) !important; }
 
 /* 글래스모피즘 다크 모드 */
-.dark .bg-white\/80 { background-color: rgba(22, 33, 62, 0.85) !important; }
-.dark .border-white\/40 { border-color: rgba(42, 42, 74, 0.4) !important; }
+.dark .bg-white\/80 { background-color: rgba(42, 31, 21, 0.85) !important; }
 
-/* 레트로 스티치 디자인 — 다크모드 보더/섀도 */
-.dark .border-\[\#2D3436\] { border-color: #3a3a5a !important; }
-.dark .shadow-\[8px_8px_0px_0px_\#2D3436\] { box-shadow: 8px 8px 0px 0px rgba(0,0,0,0.4) !important; }
-.dark .shadow-\[6px_6px_0px_0px_\#2D3436\] { box-shadow: 6px 6px 0px 0px rgba(0,0,0,0.4) !important; }
-.dark .shadow-\[4px_4px_0px_0px_\#2D3436\] { box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.4) !important; }
-.dark .shadow-\[3px_3px_0px_0px_\#2D3436\] { box-shadow: 3px 3px 0px 0px rgba(0,0,0,0.4) !important; }
-.dark .shadow-\[0_6px_0px_0px_\#2D3436\] { box-shadow: 0 6px 0px 0px rgba(0,0,0,0.4) !important; }
-.dark .bg-\[\#F9F4E8\] { background-color: #1a1a2e !important; }
+/* 레트로 — 다크모드 보더/섀도 */
+.dark .retro-border { border-color: #4a3f35 !important; box-shadow: 4px 4px 0px rgba(0,0,0,0.4) !important; }
+.dark .retro-shadow { box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.4) !important; }
+
+/* 컬러 섀도 다크모드 */
+.dark .shadow-\[8px_8px_0px_0px_rgba\(234\2c 179\2c 8\2c 1\)\] { box-shadow: 8px 8px 0px 0px rgba(234,179,8,0.4) !important; }
+.dark .shadow-\[8px_8px_0px_0px_rgba\(13\2c 148\2c 136\2c 1\)\] { box-shadow: 8px 8px 0px 0px rgba(13,148,136,0.4) !important; }
+.dark .shadow-\[8px_8px_0px_0px_rgba\(244\2c 63\2c 94\2c 1\)\] { box-shadow: 8px 8px 0px 0px rgba(244,63,94,0.4) !important; }
+.dark .shadow-\[4px_4px_0px_0px_\#1c140d\] { box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.4) !important; }
+.dark .shadow-\[4px_4px_0px_0px_rgba\(0\2c 0\2c 0\2c 1\)\] { box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.4) !important; }
+.dark .shadow-\[0_6px_0_0_\#925417\] { box-shadow: 0 6px 0 0 rgba(0,0,0,0.4) !important; }
 
 /* Leaflet 다크 모드 */
 .dark .leaflet-container {
-  background: #1a1a2e;
+  background: #221910;
 }
 .dark .leaflet-tile {
   filter: brightness(0.7) contrast(1.1) saturate(0.8);
-}
-
-/* ============================
-   Space Theme — orbit & stars
-   ============================ */
-
-@keyframes space-twinkle {
-  0% { opacity: 0.15; }
-  100% { opacity: 1; }
-}
-
-@keyframes space-orbit {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@keyframes space-orbit-reverse {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(-360deg); }
 }

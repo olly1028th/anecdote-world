@@ -6,36 +6,49 @@ interface Props {
   isEstimate?: boolean;
 }
 
+const categoryIcons: Record<string, string> = {
+  flight: '✈️',
+  hotel: '🏨',
+  food: '🍽️',
+  transport: '🚕',
+  activity: '🎭',
+  shopping: '🛍️',
+  other: '📦',
+};
+
 export default function ExpenseTable({ expenses, isEstimate = false }: Props) {
   const total = totalExpenses(expenses);
 
   return (
-    <div className="bg-white rounded-xl p-5">
-      <h3 className="text-base font-semibold text-gray-900 mb-4">
-        {isEstimate ? '예상 경비' : '경비 내역'}
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-slate-900 retro-shadow">
+      <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-4">
+        {isEstimate ? 'Est. Budget' : 'Expenses'}
       </h3>
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {expenses.map((expense, i) => (
-          <div key={i} className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-600">
-                {expenseCategoryLabel(expense.category)}
-              </span>
-              {expense.label && (
-                <span className="text-xs text-gray-400">({expense.label})</span>
-              )}
+          <div key={i} className="flex items-center justify-between bg-[#F9F4E8] dark:bg-slate-700 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-600">
+            <div className="flex items-center gap-2.5">
+              <span className="text-base">{categoryIcons[expense.category] || '📦'}</span>
+              <div>
+                <span className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
+                  {expenseCategoryLabel(expense.category)}
+                </span>
+                {expense.label && (
+                  <p className="text-[10px] text-slate-400 font-medium mt-0.5">{expense.label}</p>
+                )}
+              </div>
             </div>
-            <span className="text-sm font-medium text-gray-900">
+            <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
               {formatCurrency(expense.amount)}
             </span>
           </div>
         ))}
       </div>
-      <div className="mt-4 pt-3 border-t border-gray-200 flex items-center justify-between">
-        <span className="text-sm font-semibold text-gray-700">
-          {isEstimate ? '총 예상' : '총합'}
+      <div className="mt-4 pt-3 border-t-2 border-slate-200 dark:border-slate-600 flex items-center justify-between">
+        <span className="text-xs font-bold uppercase tracking-widest text-slate-500">
+          {isEstimate ? 'Total Budget' : 'Total'}
         </span>
-        <span className="text-lg font-bold text-gray-900">
+        <span className="text-lg font-bold text-[#f48c25]">
           {formatCurrency(total)}
         </span>
       </div>

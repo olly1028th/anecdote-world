@@ -6,26 +6,22 @@ interface Props {
 
 export default function Timeline({ items }: Props) {
   return (
-    <div className="bg-white rounded-xl p-5">
-      <h3 className="text-base font-semibold text-gray-900 mb-4">일정</h3>
-      <div className="space-y-4">
-        {items.map((item) => (
-          <div key={item.day} className="flex gap-4">
-            {/* 타임라인 점 */}
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-slate-900 retro-shadow">
+      <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-4">Itinerary</h3>
+      <div className="space-y-1">
+        {items.map((item, idx) => (
+          <div key={item.day} className="flex gap-3">
             <div className="flex flex-col items-center">
-              <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shrink-0">
-                {item.day}
+              <div className="w-9 h-9 rounded-xl bg-[#f48c25] border-2 border-slate-900 text-white flex items-center justify-center text-xs font-bold shrink-0 retro-shadow">
+                D{item.day}
               </div>
-              {item.day < items.length && (
-                <div className="w-0.5 flex-1 bg-blue-200 mt-1" />
+              {idx < items.length - 1 && (
+                <div className="w-1 flex-1 bg-slate-200 my-1 rounded-full" />
               )}
             </div>
-            {/* 내용 */}
-            <div className="pb-4">
-              <h4 className="font-medium text-gray-900">
-                Day {item.day}: {item.title}
-              </h4>
-              <p className="text-sm text-gray-500 mt-1">{item.description}</p>
+            <div className="pb-4 flex-1">
+              <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">{item.title}</h4>
+              <p className="text-xs text-slate-500 font-medium mt-1 leading-relaxed">{item.description}</p>
             </div>
           </div>
         ))}
