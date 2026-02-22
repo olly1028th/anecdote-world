@@ -16,6 +16,7 @@ export default function Header() {
       <Link to="/" className="no-underline">
         <h1 className="text-2xl font-bold text-[#FF6B6B] tracking-tight">
           Anecdote World
+          <span className="text-[9px] text-gray-300 ml-1 font-normal align-super">v2</span>
         </h1>
       </Link>
 
