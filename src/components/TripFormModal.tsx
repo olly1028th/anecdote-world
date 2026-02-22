@@ -119,7 +119,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
         {/* 헤더 */}
         <div className="sticky top-0 bg-[var(--color-bg)] px-6 pt-5 pb-3 border-b border-[var(--color-border)] z-10">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-[#2D3436]">새 여행 추가</h2>
+            <h2 className="text-lg font-bold text-[#2D3436]">새 행성 만들기</h2>
             <button
               type="button"
               onClick={onClose}
@@ -235,7 +235,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
               disabled={saving || !title.trim()}
               className="flex-1 py-3 rounded-2xl text-sm font-bold text-white bg-[#FF6B6B] hover:bg-[#e85d5d] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-[#FF6B6B]/20"
             >
-              {saving ? '저장 중...' : '여행 추가'}
+              {saving ? '저장 중...' : '행성 만들기'}
             </button>
           </div>
         </form>

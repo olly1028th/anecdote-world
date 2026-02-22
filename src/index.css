@@ -104,3 +104,22 @@ body {
 .dark .leaflet-tile {
   filter: brightness(0.7) contrast(1.1) saturate(0.8);
 }
+
+/* ============================
+   Space Theme — orbit & stars
+   ============================ */
+
+@keyframes space-twinkle {
+  0% { opacity: 0.15; }
+  100% { opacity: 1; }
+}
+
+@keyframes space-orbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes space-orbit-reverse {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}

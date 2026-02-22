@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useCallback } from 'react';
+import { lazy, Suspense, useState, useCallback, useEffect } from 'react';
 import { Routes, Route, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import BottomNav from './components/BottomNav';
@@ -24,6 +24,13 @@ function ProtectedLayout() {
       navigate('/');
     }
   }, [navigate, location.pathname]);
+
+  // SpaceTrips "새 행성 만들기" 버튼에서 모달 열기
+  useEffect(() => {
+    const handler = () => setModalOpen(true);
+    window.addEventListener('open-trip-modal', handler);
+    return () => window.removeEventListener('open-trip-modal', handler);
+  }, []);
 
   return (
     <ProtectedRoute>

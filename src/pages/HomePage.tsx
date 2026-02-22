@@ -3,6 +3,7 @@ import type { VisitStatus } from '../types/database';
 import { useTrips } from '../hooks/useTrips';
 import { usePins } from '../hooks/usePins';
 import { useFavoritePhotos, type FavoritePhoto } from '../hooks/useFavoritePhotos';
+import SpaceTrips from '../components/SpaceTrips';
 
 const WorldMap = lazy(() =>
   import('../components/Map').then((m) => ({ default: m.WorldMap })),
@@ -123,6 +124,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* My Universe — 여행 행성 궤도 뷰 */}
+      <SpaceTrips trips={trips} />
 
       {/* Life Journey — Favorite 사진 액자 갤러리 */}
       <section>

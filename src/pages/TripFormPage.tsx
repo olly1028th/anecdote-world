@@ -164,7 +164,7 @@ export default function TripFormPage() {
 
       <div className="flex items-center gap-2">
         <h1 className="text-xl font-bold text-[#2D3436]">
-          {isEdit ? '여행 수정' : '새 여행 추가'}
+          {isEdit ? '여행 수정' : '새 행성 만들기'}
         </h1>
         <div className="h-[2px] flex-1 bg-[#F0EEE6]" />
       </div>
