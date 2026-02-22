@@ -1,122 +1,125 @@
 import React from 'react';
-import { Home, Map, PlusCircle, BarChart2, User, Heart, MessageCircle } from 'lucide-react';
+import { Home, Map, PlusCircle, BarChart2, User, Heart, Star, Navigation } from 'lucide-react';
 
-const TravelApp = () => {
+const RetroSpaceApp = () => {
   const travelPosts = [
     {
       id: 1,
-      location: 'Jeju Island, Korea',
-      title: 'Our Emerald Sea Memories 🌊',
-      date: 'Oct 12, 2023',
+      location: 'MARS BASE, JEJU',
+      title: 'Emerald Sea Exploration 🌊',
+      date: 'Earth Date: 2023.10.12',
       image: 'https://images.unsplash.com/photo-1571939228382-b2f2b585ce15?auto=format&fit=crop&q=80&w=800',
-      likes: 124,
+      tag: 'New Planet'
     },
     {
       id: 2,
-      location: 'Kyoto, Japan',
-      title: 'Golden Pavilion Walk ⛩️',
-      date: 'Sep 24, 2023',
+      location: 'STATION KYOTO',
+      title: 'Golden Pavilion Orbit ⛩️',
+      date: 'Earth Date: 2023.09.24',
       image: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&q=80&w=800',
-      likes: 89,
+      tag: 'Ancient Star'
     },
   ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#FCFBF7] text-[#4A4A4A] font-sans selection:bg-[#FFD166]">
-      {/* Header */}
-      <header className="px-6 pt-12 pb-6 flex justify-between items-end">
+    <div className="flex flex-col min-h-screen bg-[#F9F4E8] text-[#2D3436] font-mono p-4 pb-32">
+      {/* Space Age Header */}
+      <header className="flex justify-between items-center py-6 px-2">
         <div>
-          <h1 className="text-3xl font-bold text-[#FF6B6B] tracking-tight">
-            Anecdote World
+          <h1 className="text-3xl font-black italic tracking-tighter text-[#FF6B6B] drop-shadow-[2px_2px_0px_#2D3436]">
+            ANECDOTE<br/>WORLD
           </h1>
-          <p className="text-sm font-medium text-gray-400 mt-1 italic">
-            Capturing your shiny moments... ✨
-          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <div className="h-2 w-2 rounded-full bg-[#4ECDC4] animate-pulse"></div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#2D3436]/60">
+              System Online: Exploring...
+            </p>
+          </div>
         </div>
-        <div className="bg-[#FFD166] p-2 rounded-full shadow-sm hover:scale-105 transition-transform cursor-pointer">
-          <User size={24} className="text-white" />
+        <div className="border-4 border-[#2D3436] bg-[#FFD166] p-2 rounded-2xl shadow-[4px_4px_0px_0px_#2D3436] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer">
+          <User size={28} strokeWidth={3} />
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 px-6 pb-24 space-y-8">
-        {/* Welcome Section */}
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-xl font-bold">My Shiny Journal</h2>
-            <div className="h-[2px] flex-1 bg-[#F0EEE6]"></div>
+      {/* Stats Board: Retro Dashboard Style */}
+      <section className="mt-4 mb-8 grid grid-cols-2 gap-4">
+        <div className="border-4 border-[#2D3436] bg-[#4ECDC4] p-4 rounded-[32px] shadow-[6px_6px_0px_0px_#2D3436]">
+          <div className="flex justify-between items-start mb-2">
+            <Navigation size={20} fill="#2D3436" />
+            <span className="text-[10px] font-black bg-white px-2 py-0.5 rounded-full border-2 border-[#2D3436]">KM-04</span>
           </div>
-          
-          <div className="grid gap-6">
-            {travelPosts.map((post) => (
-              <div 
-                key={post.id} 
-                className="bg-white rounded-3xl overflow-hidden shadow-md shadow-gray-200/50 hover:shadow-lg transition-shadow duration-300"
-              >
-                <div className="relative h-56 overflow-hidden">
-                  <img 
-                    src={post.image} 
-                    alt={post.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[12px] font-bold text-[#FF6B6B]">
-                    {post.location}
-                  </div>
+          <p className="text-xs font-black uppercase tracking-tight">Planets Visited</p>
+          <p className="text-3xl font-black mt-1">12</p>
+        </div>
+        <div className="border-4 border-[#2D3436] bg-[#FFD166] p-4 rounded-[32px] shadow-[6px_6px_0px_0px_#2D3436]">
+          <div className="flex justify-between items-start mb-2">
+            <Star size={20} fill="#2D3436" />
+            <span className="text-[10px] font-black bg-white px-2 py-0.5 rounded-full border-2 border-[#2D3436]">LVL-99</span>
+          </div>
+          <p className="text-xs font-black uppercase tracking-tight">Stars Collected</p>
+          <p className="text-3xl font-black mt-1">48</p>
+        </div>
+      </section>
+
+      {/* Travel Journal Feed */}
+      <main className="space-y-10">
+        <div className="flex items-center gap-4 px-2">
+          <h2 className="text-xl font-black italic uppercase tracking-tighter">Galaxy Log</h2>
+          <div className="h-[4px] flex-1 bg-[#2D3436] rounded-full"></div>
+        </div>
+
+        {travelPosts.map((post) => (
+          <article key={post.id} className="relative">
+            {/* Card Shadow/Border */}
+            <div className="border-4 border-[#2D3436] bg-white rounded-[40px] overflow-hidden shadow-[8px_8px_0px_0px_#2D3436] transition-transform hover:-translate-y-1 duration-300">
+              <div className="relative h-64 border-b-4 border-[#2D3436]">
+                <img
+                  src={post.image}
+                  alt={post.title}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute top-4 left-4 border-2 border-[#2D3436] bg-[#FF6B6B] px-3 py-1 rounded-full text-[10px] font-black text-white uppercase tracking-widest shadow-[3px_3px_0px_0px_#2D3436]">
+                  {post.location}
                 </div>
-                <div className="p-5">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-lg font-bold leading-tight text-[#2D3436]">
-                      {post.title}
-                    </h3>
-                    <button className="text-[#FF6B6B] flex items-center gap-1 hover:scale-110 transition-transform">
-                      <Heart size={20} fill="#FF6B6B" />
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between text-xs font-medium text-gray-400">
-                    <span>{post.date}</span>
-                    <div className="flex items-center gap-1">
-                      <MessageCircle size={14} />
-                      <span>{post.likes} comments</span>
-                    </div>
-                  </div>
+                <div className="absolute bottom-4 right-4 bg-white border-2 border-[#2D3436] px-3 py-1 rounded-full text-[10px] font-black uppercase shadow-[3px_3px_0px_0px_#2D3436]">
+                  {post.tag}
                 </div>
               </div>
-            ))}
-          </div>
-        </section>
 
-        {/* Quick Stats Summary */}
-        <section className="bg-[#FFD166]/10 p-5 rounded-3xl border-2 border-dashed border-[#FFD166]">
-          <h3 className="text-sm font-bold text-[#FF9F43] mb-3">Where have you been? 🌍</h3>
-          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-            <div className="bg-white p-3 rounded-2xl shadow-sm min-w-[100px] text-center">
-              <span className="block text-xl">🗺️</span>
-              <span className="block text-xs font-bold mt-1">12 Countries</span>
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-xl font-black italic uppercase tracking-tighter leading-tight">
+                    {post.title}
+                  </h3>
+                  <button className="border-2 border-[#2D3436] p-2 rounded-full bg-pink-100 hover:bg-[#FF6B6B] hover:text-white transition-colors">
+                    <Heart size={20} strokeWidth={3} />
+                  </button>
+                </div>
+                <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">
+                  {post.date}
+                </p>
+              </div>
             </div>
-            <div className="bg-white p-3 rounded-2xl shadow-sm min-w-[100px] text-center">
-              <span className="block text-xl">📸</span>
-              <span className="block text-xs font-bold mt-1">48 Stories</span>
-            </div>
-            <div className="bg-white p-3 rounded-2xl shadow-sm min-w-[100px] text-center">
-              <span className="block text-xl">👣</span>
-              <span className="block text-xs font-bold mt-1">Next: Paris</span>
-            </div>
-          </div>
-        </section>
+          </article>
+        ))}
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-6 left-6 right-6 bg-white/80 backdrop-blur-xl border border-white/40 shadow-xl rounded-full px-8 py-4 flex justify-between items-center z-50">
-        <Home size={24} className="text-[#FF6B6B]" strokeWidth={2.5} />
-        <Map size={24} className="text-gray-300 hover:text-[#FF6B6B] transition-colors" />
-        <div className="bg-[#FF6B6B] p-2 rounded-full -mt-12 border-4 border-[#FCFBF7] shadow-lg shadow-[#FF6B6B]/30 hover:scale-110 transition-transform cursor-pointer">
-          <PlusCircle size={32} className="text-white" />
-        </div>
-        <BarChart2 size={24} className="text-gray-300 hover:text-[#FF6B6B] transition-colors" />
-        <User size={24} className="text-gray-300 hover:text-[#FF6B6B] transition-colors" />
-      </nav>
+      {/* Retro Navigation Bar */}
+      <div className="fixed bottom-8 left-4 right-4 z-50">
+        <nav className="bg-white border-4 border-[#2D3436] rounded-[30px] p-4 flex justify-between items-center shadow-[0_10px_30px_rgba(0,0,0,0.1)]">
+          <button className="p-2 text-[#FF6B6B]"><Home size={28} strokeWidth={3}/></button>
+          <button className="p-2 text-[#2D3436]/30 hover:text-[#2D3436] transition-colors"><Map size={28} strokeWidth={3}/></button>
+
+          <button className="relative -mt-16 bg-[#FF6B6B] p-4 rounded-full border-4 border-[#2D3436] shadow-[0_8px_0px_0px_#2D3436] active:shadow-none active:translate-y-2 transition-all">
+            <PlusCircle size={36} className="text-white" strokeWidth={3} />
+          </button>
+
+          <button className="p-2 text-[#2D3436]/30 hover:text-[#2D3436] transition-colors"><BarChart2 size={28} strokeWidth={3}/></button>
+          <button className="p-2 text-[#2D3436]/30 hover:text-[#2D3436] transition-colors"><User size={28} strokeWidth={3}/></button>
+        </nav>
+      </div>
     </div>
   );
 };
 
-export default TravelApp;
+export default RetroSpaceApp;
