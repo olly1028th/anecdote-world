@@ -80,7 +80,7 @@ export default function HomePage() {
           }`}
         >
           <span className="text-2xl font-bold text-[#eab308]">{completedTrips.length}</span>
-          <span className="text-[10px] uppercase font-bold text-slate-500 mt-1 leading-none">Systems</span>
+          <span className="text-[10px] uppercase font-bold text-slate-500 mt-1 leading-none">정복 완료</span>
         </button>
         <button
           type="button"
@@ -204,13 +204,6 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Trip Feed Cards */}
-      <section className="space-y-8">
-        {trips.map((trip, i) => (
-          <TripCard key={trip.id} trip={trip} colorIndex={i} />
-        ))}
-      </section>
-
       {/* 세계지도 */}
       <section>
         <p className="text-sm font-bold text-[#f48c25] uppercase tracking-widest mb-1">Galaxy Map</p>
@@ -256,6 +249,13 @@ export default function HomePage() {
             </span>
           </div>
         </div>
+      </section>
+
+      {/* Trip Feed Cards */}
+      <section className="space-y-8">
+        {trips.map((trip, i) => (
+          <TripCard key={trip.id} trip={trip} colorIndex={i} />
+        ))}
       </section>
 
       {/* Life Journey */}
