@@ -338,7 +338,9 @@ export function useTrip(id: string | undefined) {
 
       if (tripErr) throw tripErr;
       if (!dbTrip) {
-        setTrip(null);
+        // DB에 없으면 데모 데이터에서 검색 (useTrips와 동일한 폴백 로직)
+        const allDemoTrips = [...demoExtraTrips, ...sampleTrips];
+        setTrip(allDemoTrips.find((t) => t.id === id) ?? null);
         return;
       }
 
@@ -388,9 +390,11 @@ export function useTrip(id: string | undefined) {
           storagePhotos,
         ),
       );
-    } catch (err) {
-      const message = err instanceof Error ? err.message : '여행을 불러오지 못했습니다';
-      setError(message);
+    } catch {
+      // Supabase 실패 시 데모 데이터로 폴백 (useTrips와 동일한 폴백 로직)
+      const allDemoTrips = [...demoExtraTrips, ...sampleTrips];
+      setTrip(allDemoTrips.find((t) => t.id === id) ?? null);
+      setError(null);
     } finally {
       setLoading(false);
     }
