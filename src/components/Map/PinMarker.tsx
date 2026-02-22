@@ -35,13 +35,14 @@ function createIcon(status: string) {
   const color = STATUS_COLORS[status] ?? STATUS_COLORS.wishlist;
   return L.divIcon({
     className: '',
-    iconSize: [28, 28],
-    iconAnchor: [14, 28],
-    popupAnchor: [0, -28],
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+    popupAnchor: [0, -18],
     html: `
-      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M14 2C8.48 2 4 6.48 4 12c0 7.5 10 14 10 14s10-6.5 10-14c0-5.52-4.48-10-10-10z" fill="${color}" stroke="white" stroke-width="1.5"/>
-        <circle cx="14" cy="11" r="3.5" fill="white"/>
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="9" fill="${color}" stroke="#1c140d" stroke-width="2"/>
+        <ellipse cx="16" cy="16" rx="14" ry="5" fill="none" stroke="${color}" stroke-width="2" opacity="0.7" transform="rotate(-20 16 16)"/>
+        <circle cx="13" cy="13" r="2" fill="white" opacity="0.5"/>
       </svg>
     `,
   });

@@ -91,7 +91,7 @@ export default function HomePage() {
           }`}
         >
           <span className="text-2xl font-bold text-[#0d9488]">{plannedTrips.length}</span>
-          <span className="text-[10px] uppercase font-bold text-slate-500 mt-1 leading-none">Planned</span>
+          <span className="text-[10px] uppercase font-bold text-slate-500 mt-1 leading-none">정복 예정</span>
         </button>
         <button
           type="button"
