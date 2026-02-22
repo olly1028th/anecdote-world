@@ -9,11 +9,12 @@
   --color-accent: #FFD166;
   --color-completed: #059669;
   --color-planned: #d97706;
-  --color-bg: #FCFBF7;
+  --color-bg: #F9F4E8;
   --color-card: #ffffff;
-  --color-text: #4A4A4A;
+  --color-text: #2D3436;
   --color-text-light: #9CA3AF;
-  --color-border: #F0EEE6;
+  --color-border: #2D3436;
+  --color-ink: #2D3436;
 }
 
 body {
@@ -40,7 +41,8 @@ body {
   --color-card: #16213e;
   --color-text: #e8e8e8;
   --color-text-light: #94a3b8;
-  --color-border: #2a2a4a;
+  --color-border: #3a3a5a;
+  --color-ink: #94a3b8;
   color-scheme: dark;
 }
 
@@ -96,6 +98,15 @@ body {
 /* 글래스모피즘 다크 모드 */
 .dark .bg-white\/80 { background-color: rgba(22, 33, 62, 0.85) !important; }
 .dark .border-white\/40 { border-color: rgba(42, 42, 74, 0.4) !important; }
+
+/* 레트로 스티치 디자인 — 다크모드 보더/섀도 */
+.dark .border-\[\#2D3436\] { border-color: #3a3a5a !important; }
+.dark .shadow-\[8px_8px_0px_0px_\#2D3436\] { box-shadow: 8px 8px 0px 0px rgba(0,0,0,0.4) !important; }
+.dark .shadow-\[6px_6px_0px_0px_\#2D3436\] { box-shadow: 6px 6px 0px 0px rgba(0,0,0,0.4) !important; }
+.dark .shadow-\[4px_4px_0px_0px_\#2D3436\] { box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.4) !important; }
+.dark .shadow-\[3px_3px_0px_0px_\#2D3436\] { box-shadow: 3px 3px 0px 0px rgba(0,0,0,0.4) !important; }
+.dark .shadow-\[0_6px_0px_0px_\#2D3436\] { box-shadow: 0 6px 0px 0px rgba(0,0,0,0.4) !important; }
+.dark .bg-\[\#F9F4E8\] { background-color: #1a1a2e !important; }
 
 /* Leaflet 다크 모드 */
 .dark .leaflet-container {
