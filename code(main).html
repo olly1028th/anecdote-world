@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Retro Space Home Feed</title>
+<!-- Tailwind CSS with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Space Grotesk -->
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f48c25",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#221910",
+                        "mustard": "#eab308",
+                        "teal-retro": "#0d9488",
+                        "coral-retro": "#f43f5e",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-nav .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1;
+        }
+        /* Custom orbital ring patterns */
+        .orbital-bg {
+            background-image: 
+                radial-gradient(circle at 20% 30%, transparent 120px, rgba(244, 140, 37, 0.05) 121px, rgba(244, 140, 37, 0.05) 122px, transparent 123px),
+                radial-gradient(circle at 80% 70%, transparent 180px, rgba(13, 148, 136, 0.05) 181px, rgba(13, 148, 136, 0.05) 182px, transparent 183px),
+                radial-gradient(circle at 50% 10%, transparent 90px, rgba(244, 63, 94, 0.05) 91px, rgba(244, 63, 94, 0.05) 92px, transparent 93px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 overflow-x-hidden selection:bg-primary/30">
+<div class="relative flex min-h-screen w-full flex-col orbital-bg">
+<!-- Header -->
+<header class="sticky top-0 z-40 flex items-center justify-between bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-6 py-4 border-b border-primary/10">
+<div class="flex items-center gap-3">
+<div class="bg-primary text-white p-1.5 rounded-lg flex items-center justify-center rotate-12">
+<span class="material-symbols-outlined text-2xl">rocket_launch</span>
+</div>
+<h1 class="text-2xl font-bold tracking-tighter uppercase italic">Anecdote</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined text-2xl">search</span>
+</button>
+<div class="size-10 rounded-full border-2 border-primary overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="User profile avatar close-up portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCDOo5JxkkWKLrtHd0Zc4GrJ5MZFNJEb8JRUk93lCZoYSKf0ymBBWmLHWFj_issES0dmBO1TxZkNH4dRYVh41Wh_DfPcBLs0AS4pFR9G_VSyTfsA49nF2E0uflCBGBACRK6KFMe5xWyinPu8ipQV_rbomFld-rMUONJOGDstehOvyNeB02BcI85NAbE-UGRV8FOyx430IU76W-77e2hwiPivo9kfu3budlfhMzDurRGJQXey8SlJheP_PuRLE305--50YerSb0WSw"/>
+</div>
+</div>
+</header>
+<main class="flex-1 pb-24">
+<!-- Welcome Stats Section -->
+<section class="px-6 pt-8 pb-6">
+<div class="mb-2">
+<p class="text-sm font-bold text-primary uppercase tracking-widest mb-1">Mission Control</p>
+<h2 class="text-3xl font-bold leading-tight">Welcome back, Commander.</h2>
+</div>
+<div class="grid grid-cols-3 gap-3 mt-6">
+<div class="bg-mustard/10 dark:bg-mustard/20 border-2 border-mustard rounded-xl p-4 flex flex-col items-center text-center">
+<span class="text-2xl font-bold text-mustard">24</span>
+<span class="text-[10px] uppercase font-bold text-slate-500 mt-1 leading-none">Systems</span>
+</div>
+<div class="bg-teal-retro/10 dark:bg-teal-retro/20 border-2 border-teal-retro rounded-xl p-4 flex flex-col items-center text-center">
+<span class="text-2xl font-bold text-teal-retro text-nowrap">12k</span>
+<span class="text-[10px] uppercase font-bold text-slate-500 mt-1 leading-none">L-Years</span>
+</div>
+<div class="bg-coral-retro/10 dark:bg-coral-retro/20 border-2 border-coral-retro rounded-xl p-4 flex flex-col items-center text-center">
+<span class="text-2xl font-bold text-coral-retro">08</span>
+<span class="text-[10px] uppercase font-bold text-slate-500 mt-1 leading-none">Stars</span>
+</div>
+</div>
+</section>
+<!-- Filter Tabs -->
+<div class="px-6 mb-6">
+<div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+<button class="bg-primary text-slate-900 px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap border-2 border-primary">All Logs</button>
+<button class="bg-transparent text-slate-600 dark:text-slate-400 px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap border-2 border-slate-200 dark:border-slate-800">Earthly</button>
+<button class="bg-transparent text-slate-600 dark:text-slate-400 px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap border-2 border-slate-200 dark:border-slate-800">Orbiting</button>
+<button class="bg-transparent text-slate-600 dark:text-slate-400 px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap border-2 border-slate-200 dark:border-slate-800">Deep Space</button>
+</div>
+</div>
+<!-- Feed Content -->
+<div class="px-6 flex flex-col gap-8">
+<!-- Card 1: Mustard Theme -->
+<div class="group relative bg-white dark:bg-slate-900 border-[3px] border-slate-900 dark:border-slate-100 rounded-xl overflow-hidden shadow-[8px_8px_0px_0px_rgba(234,179,8,1)]">
+<div class="aspect-[4/3] relative overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Tokyo city neon lights at night" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCX-w7583BzKJw2dvOanYvAh-GaP3C8rnRD0dv4xy7WJH4LZakYgQ_fevnd4Tlv6WpZ7tdlleu9hHwowUl01k7nnowP0fAKsd3ycg_ZdQYb4tbsJGHaTExihH5VZOhzM8VKT5_UTNjqMI_ytisUthK9viuoQKYRgTWL2j4ncOY_3mB2-t9igSxw2w2tEV1pp1ugi2aH1udBGQWbEDjPKbAJC_JvC0SqIBdNIlKO7LRp3iU_237en40hQDiCe7oAGtLNvKiyaF5B2Ps"/>
+<div class="absolute top-4 left-4">
+<span class="bg-mustard text-slate-900 text-[10px] font-bold px-3 py-1 rounded-full border-2 border-slate-900 uppercase">Earthly Delights</span>
+</div>
+</div>
+<div class="p-5">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h3 class="text-xl font-bold uppercase tracking-tight">Tokyo Neon Nights</h3>
+<p class="text-sm font-medium text-slate-500 flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">location_on</span> Shibuya Crossing, Earth
+                                </p>
+</div>
+<button class="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg">
+<span class="material-symbols-outlined text-xl">ios_share</span>
+</button>
+</div>
+<p class="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-4">
+                            The electric hum of the city feels like a starship engine. Mustard yellow filters over the memories of ramen and light.
+                        </p>
+<button class="w-full bg-primary text-slate-900 py-3 rounded-lg font-bold border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:shadow-none transition-all">
+                            LOG DATA RECAP
+                        </button>
+</div>
+</div>
+<!-- Card 2: Teal Theme -->
+<div class="group relative bg-white dark:bg-slate-900 border-[3px] border-slate-900 dark:border-slate-100 rounded-xl overflow-hidden shadow-[8px_8px_0px_0px_rgba(13,148,136,1)]">
+<div class="aspect-[4/3] relative overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="View of Earth from space orbit" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDujqISHvmCS32P8QWQKlUHalPiabvK4kjV6bElMKPZgJvq32t8h2dJTR7FV154RitgjsvvhS5aAIfphTa2DF4lewm-F2yAoLpBlT9OQ8Z1BCGlSsoCU9jflFXVEXM2yBwODJY3A8XkCnrH_ZbE20AqWkpAGiHZenbSsyIyaL8SvPssxQ2zD2Hflcgg-KUsnJ6d-IiDPd8_O-w09-tfh5KHmMIi-X-gnjaJ1cquRWAU_W-YkGjgZYtCW79J7FLhyzABp-Vsp0FGPHA"/>
+<div class="absolute top-4 left-4">
+<span class="bg-teal-retro text-white text-[10px] font-bold px-3 py-1 rounded-full border-2 border-slate-900 uppercase">Orbiting</span>
+</div>
+</div>
+<div class="p-5">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h3 class="text-xl font-bold uppercase tracking-tight">The Blue Marble</h3>
+<p class="text-sm font-medium text-slate-500 flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-teal-retro">location_on</span> Low Earth Orbit
+                                </p>
+</div>
+<button class="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg">
+<span class="material-symbols-outlined text-xl">favorite</span>
+</button>
+</div>
+<p class="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-4">
+                            Floating 400km above, everything looks so peaceful. The curves of the atmosphere glow in a vibrant teal hue.
+                        </p>
+<button class="w-full bg-teal-retro text-white py-3 rounded-lg font-bold border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:shadow-none transition-all">
+                            LOG DATA RECAP
+                        </button>
+</div>
+</div>
+<!-- Card 3: Coral Theme -->
+<div class="group relative bg-white dark:bg-slate-900 border-[3px] border-slate-900 dark:border-slate-100 rounded-xl overflow-hidden shadow-[8px_8px_0px_0px_rgba(244,63,94,1)]">
+<div class="aspect-[4/3] relative overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Abstract space nebulae with coral colors" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA4uwTFMZwV5DA3UDjRHXHdHr1uAF8bYi7nRHYuxv8al3PVHveYLtTovGZGPYrXLGLYb8IfbMADpU_62FU2eG2bHIkLZ4eXcynP5rC9aa6Y49hGjVlYlTMmBVTng0rnbp3c6fQJ7aG_0bkofKOZOjxsz5cjainBLWwv74ML1BhnpkFwn9AHZKiksqzIcIM32DMQMV7uCwCEzJbVVdvF3jgqt9H3_vbCnlvzZWodbs9lVLRt1ISSOqcUxYAfIf5_FGaqVahfP7wV8EE"/>
+<div class="absolute top-4 left-4">
+<span class="bg-coral-retro text-white text-[10px] font-bold px-3 py-1 rounded-full border-2 border-slate-900 uppercase">Deep Space</span>
+</div>
+</div>
+<div class="p-5">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h3 class="text-xl font-bold uppercase tracking-tight">Nebula Dreams</h3>
+<p class="text-sm font-medium text-slate-500 flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-coral-retro">location_on</span> Orion's Belt
+                                </p>
+</div>
+<button class="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg">
+<span class="material-symbols-outlined text-xl">more_horiz</span>
+</button>
+</div>
+<p class="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-4">
+                            The dust clouds here are colored like coral reefs. A psychedelic journey through the heart of the galaxy.
+                        </p>
+<button class="w-full bg-coral-retro text-white py-3 rounded-lg font-bold border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:shadow-none transition-all">
+                            LOG DATA RECAP
+                        </button>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Button -->
+<div class="fixed bottom-24 right-6 z-50">
+<button class="size-16 bg-primary rounded-full flex items-center justify-center border-[3px] border-slate-900 shadow-[0_6px_0_0_#925417] active:shadow-none active:translate-y-1 transition-all">
+<span class="material-symbols-outlined text-slate-900 text-4xl leading-none">star</span>
+</button>
+</div>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 w-full bg-background-light dark:bg-background-dark border-t-2 border-primary/20 pb-8 pt-3 px-6 z-50">
+<div class="flex justify-between items-center max-w-md mx-auto">
+<a class="flex flex-col items-center gap-1 active-nav text-primary" href="#">
+<span class="material-symbols-outlined text-3xl">home</span>
+<span class="text-[10px] font-bold uppercase">Base</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined text-3xl">public</span>
+<span class="text-[10px] font-bold uppercase">Galaxy</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined text-3xl">analytics</span>
+<span class="text-[10px] font-bold uppercase">Stats</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined text-3xl">person</span>
+<span class="text-[10px] font-bold uppercase">Profile</span>
+</a>
+</div>
+</nav>
+<!-- Decorative Elements -->
+<div class="fixed top-1/4 -right-12 size-48 rounded-full border border-primary/5 -z-10 pointer-events-none"></div>
+<div class="fixed bottom-1/3 -left-20 size-64 rounded-full border border-teal-retro/5 -z-10 pointer-events-none"></div>
+</div>
+</body></html>

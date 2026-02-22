@@ -9,35 +9,25 @@ export default function Checklist({ items, onToggle }: Props) {
   const done = items.filter((i) => i.checked).length;
 
   return (
-    <div className="border-4 border-[#2D3436] rounded-[24px] p-5 bg-white shadow-[4px_4px_0px_0px_#2D3436]">
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-slate-900 retro-shadow">
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <h3 className="text-sm font-black italic uppercase tracking-tighter text-[#2D3436]">Checklist</h3>
-          <div className="h-[3px] flex-1 bg-[#2D3436]/10 rounded-full" />
-        </div>
-        <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border-2 border-[#2D3436] bg-[#4ECDC4]/20">
+        <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">Checklist</h3>
+        <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border-2 border-[#0d9488] bg-[#0d9488]/10 text-[#0d9488]">
           {done}/{items.length}
         </span>
-      </div>
-      {/* 진행률 바 */}
-      <div className="w-full h-3 bg-[#F9F4E8] rounded-full border-2 border-[#2D3436]/10 mb-4 overflow-hidden">
-        <div
-          className="h-full bg-[#4ECDC4] rounded-full transition-all duration-500"
-          style={{ width: items.length > 0 ? `${(done / items.length) * 100}%` : '0%' }}
-        />
       </div>
       <div className="space-y-2">
         {items.map((item, i) => (
           <label
             key={i}
-            className="flex items-center gap-3 p-3 rounded-xl bg-[#F9F4E8] border-2 border-[#2D3436]/10 hover:border-[#2D3436]/30 cursor-pointer transition-colors"
+            className="flex items-center gap-3 p-3 rounded-xl bg-[#F9F4E8] dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 hover:border-[#f48c25] cursor-pointer transition-colors"
           >
             <div
               onClick={onToggle ? (e) => { e.preventDefault(); onToggle(i); } : undefined}
               className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center shrink-0 transition-colors ${
                 item.checked
-                  ? 'bg-[#4ECDC4] border-[#2D3436]'
-                  : 'border-[#2D3436]/30 bg-white'
+                  ? 'bg-[#0d9488] border-slate-900'
+                  : 'border-slate-300 bg-white'
               }`}
             >
               {item.checked && (
@@ -46,11 +36,7 @@ export default function Checklist({ items, onToggle }: Props) {
                 </svg>
               )}
             </div>
-            <span
-              className={`text-sm font-bold ${
-                item.checked ? 'line-through text-[#2D3436]/30' : 'text-[#2D3436]'
-              }`}
-            >
+            <span className={`text-sm font-bold ${item.checked ? 'line-through text-slate-300' : 'text-slate-900 dark:text-slate-100'}`}>
               {item.text}
             </span>
           </label>
