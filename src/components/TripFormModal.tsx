@@ -164,28 +164,30 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
       onClick={handleBackdropClick}
     >
       <div
-        className={`bg-[var(--color-bg)] w-full sm:max-w-lg sm:rounded-3xl rounded-t-3xl max-h-[85vh] overflow-y-auto shadow-2xl transition-all duration-300 ${
+        className={`bg-[#F9F4E8] w-full sm:max-w-lg sm:rounded-[32px] rounded-t-[32px] max-h-[85vh] overflow-y-auto border-4 border-[#2D3436] sm:shadow-[8px_8px_0px_0px_#2D3436] transition-all duration-300 ${
           visible ? 'translate-y-0 opacity-100' : 'translate-y-full sm:translate-y-8 opacity-0'
         }`}
       >
         {/* 헤더 */}
-        <div className="sticky top-0 bg-[var(--color-bg)] px-6 pt-5 pb-3 border-b border-[var(--color-border)] z-10">
+        <div className="sticky top-0 bg-[#F9F4E8] px-6 pt-5 pb-3 border-b-4 border-[#2D3436] z-10">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-[#2D3436]">새 행성 만들기</h2>
+            <h2 className="text-xl font-black italic uppercase tracking-tighter text-[#2D3436]">
+              New Planet
+            </h2>
             <button
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+              className="w-9 h-9 flex items-center justify-center rounded-xl border-2 border-[#2D3436] bg-white shadow-[2px_2px_0px_0px_#2D3436] hover:bg-[#FF6B6B]/10 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
             >
-              <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="w-5 h-5 text-[#2D3436]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
           {/* 드래그 핸들 (모바일) */}
-          <div className="sm:hidden flex justify-center mt-1">
-            <div className="w-10 h-1 rounded-full bg-gray-300" />
+          <div className="sm:hidden flex justify-center mt-2">
+            <div className="w-12 h-1.5 rounded-full bg-[#2D3436]/20" />
           </div>
         </div>
 
@@ -193,15 +195,15 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
           {/* 상태 선택 */}
           <div>
-            <label className="block text-sm font-medium text-[#4A4A4A] mb-2">상태</label>
+            <label className="block text-xs font-black uppercase tracking-widest text-[#2D3436]/60 mb-2">Status</label>
             <div className="flex gap-3">
               <button
                 type="button"
                 onClick={() => setStatus('planned')}
-                className={`flex-1 py-3 rounded-2xl text-sm font-medium transition-colors cursor-pointer ${
+                className={`flex-1 py-3 rounded-2xl text-sm font-black uppercase tracking-tight transition-all cursor-pointer border-2 border-[#2D3436] ${
                   status === 'planned'
-                    ? 'bg-amber-500 text-white shadow-md'
-                    : 'bg-white text-gray-500 border border-[#F0EEE6]'
+                    ? 'bg-[#FFD166] text-[#2D3436] shadow-[3px_3px_0px_0px_#2D3436]'
+                    : 'bg-white text-[#2D3436]/40 shadow-none'
                 }`}
               >
                 계획 중
@@ -209,10 +211,10 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
               <button
                 type="button"
                 onClick={() => setStatus('completed')}
-                className={`flex-1 py-3 rounded-2xl text-sm font-medium transition-colors cursor-pointer ${
+                className={`flex-1 py-3 rounded-2xl text-sm font-black uppercase tracking-tight transition-all cursor-pointer border-2 border-[#2D3436] ${
                   status === 'completed'
-                    ? 'bg-emerald-500 text-white shadow-md'
-                    : 'bg-white text-gray-500 border border-[#F0EEE6]'
+                    ? 'bg-[#4ECDC4] text-[#2D3436] shadow-[3px_3px_0px_0px_#2D3436]'
+                    : 'bg-white text-[#2D3436]/40 shadow-none'
                 }`}
               >
                 완료
@@ -222,8 +224,8 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
 
           {/* 여행 제목 */}
           <div>
-            <label className="block text-sm font-medium text-[#4A4A4A] mb-2">
-              여행 제목 <span className="text-[#FF6B6B]">*</span>
+            <label className="block text-xs font-black uppercase tracking-widest text-[#2D3436]/60 mb-2">
+              Title <span className="text-[#FF6B6B]">*</span>
             </label>
             <input
               type="text"
@@ -232,7 +234,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
               placeholder="예: 도쿄 벚꽃 여행"
               required
               autoFocus
-              className="w-full px-4 py-3 rounded-2xl border border-[#F0EEE6] text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40 focus:border-transparent"
+              className="w-full px-4 py-3 rounded-xl border-2 border-[#2D3436] text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40 focus:border-[#FF6B6B]"
             />
           </div>
 
@@ -242,36 +244,36 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
           {/* 날짜 */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[#4A4A4A] mb-2">시작일</label>
+              <label className="block text-xs font-black uppercase tracking-widest text-[#2D3436]/60 mb-2">Start</label>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-4 py-3 rounded-2xl border border-[#F0EEE6] text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-xl border-2 border-[#2D3436] text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40 focus:border-[#FF6B6B]"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#4A4A4A] mb-2">종료일</label>
+              <label className="block text-xs font-black uppercase tracking-widest text-[#2D3436]/60 mb-2">End</label>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-4 py-3 rounded-2xl border border-[#F0EEE6] text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-xl border-2 border-[#2D3436] text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40 focus:border-[#FF6B6B]"
               />
             </div>
           </div>
 
           {/* 메모 */}
           <div>
-            <label className="block text-sm font-medium text-[#4A4A4A] mb-2">
-              {status === 'completed' ? '한줄 후기' : '메모'}
+            <label className="block text-xs font-black uppercase tracking-widest text-[#2D3436]/60 mb-2">
+              {status === 'completed' ? 'Review' : 'Memo'}
             </label>
             <textarea
               value={memo}
               onChange={(e) => setMemo(e.target.value)}
               placeholder={status === 'completed' ? '이 여행 어땠어요?' : '여행에 대한 메모...'}
               rows={3}
-              className="w-full px-4 py-3 rounded-2xl border border-[#F0EEE6] text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40 focus:border-transparent resize-none"
+              className="w-full px-4 py-3 rounded-xl border-2 border-[#2D3436] text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/40 focus:border-[#FF6B6B] resize-none"
             />
           </div>
 
@@ -281,16 +283,16 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="flex-1 py-3 rounded-2xl text-sm font-medium text-gray-500 bg-[#F0EEE6] hover:bg-[#e8e5db] transition-colors cursor-pointer"
+              className="flex-1 py-3.5 rounded-2xl text-sm font-black uppercase tracking-tight text-[#2D3436]/60 bg-white border-2 border-[#2D3436] hover:bg-gray-50 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
             >
-              취소
+              Cancel
             </button>
             <button
               type="submit"
               disabled={saving || !title.trim()}
-              className="flex-1 py-3 rounded-2xl text-sm font-bold text-white bg-[#FF6B6B] hover:bg-[#e85d5d] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-[#FF6B6B]/20"
+              className="flex-1 py-3.5 rounded-2xl text-sm font-black uppercase tracking-tight text-white bg-[#FF6B6B] border-2 border-[#2D3436] shadow-[4px_4px_0px_0px_#2D3436] hover:bg-[#e85d5d] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {saving ? '저장 중...' : '행성 만들기'}
+              {saving ? 'Saving...' : 'Launch Planet'}
             </button>
           </div>
         </form>
