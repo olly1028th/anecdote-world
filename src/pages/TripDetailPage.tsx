@@ -1,25 +1,165 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useTrip, deleteTrip, toggleChecklistItem } from '../hooks/useTrips';
-import { isSupabaseConfigured } from '../lib/supabase';
+import { useTrip, deleteTrip, toggleChecklistItem, saveExpenses, saveChecklistItems, updateDemoTrip, deleteDemoTrip } from '../hooks/useTrips';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { useSharesForTrip, createShare, removeShare, updateSharePermission } from '../hooks/useShares';
+import { useAuth } from '../contexts/AuthContext';
 import ExpenseTable from '../components/ExpenseTable';
 import Timeline from '../components/Timeline';
 import PlaceList from '../components/PlaceList';
 import Checklist from '../components/Checklist';
 import PhotoGallery from '../components/PhotoGallery';
-import { formatDate, calcDuration, totalExpenses, formatCurrency } from '../utils/format';
+import PhotoUpload from '../components/PhotoUpload';
+import { formatDate, calcDuration, totalExpenses, formatCurrency, expenseCategoryLabel } from '../utils/format';
+import type { Expense, ExpenseCategory, ChecklistItem, Place, PlacePriority } from '../types/trip';
+import type { SharePermission } from '../types/database';
+
+const EXPENSE_CATEGORIES: ExpenseCategory[] = [
+  'flight', 'hotel', 'food', 'transport', 'activity', 'shopping', 'other',
+];
+
+const PLACE_PRIORITIES: { value: PlacePriority; label: string }[] = [
+  { value: 'must', label: '필수' },
+  { value: 'want', label: '가고싶음' },
+  { value: 'maybe', label: '여유되면' },
+];
+
+function EditButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-[10px] font-bold uppercase tracking-widest text-[#f48c25] hover:text-[#d97a1e] cursor-pointer border-2 border-[#f48c25] px-3 py-1 rounded-full hover:bg-[#f48c25]/10 transition-colors bg-transparent"
+    >
+      Edit
+    </button>
+  );
+}
+
+function SaveCancelButtons({ onSave, onCancel, saving }: { onSave: () => void; onCancel: () => void; saving?: boolean }) {
+  return (
+    <div className="flex gap-2 mt-4">
+      <button
+        type="button"
+        onClick={onCancel}
+        className="flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-tight text-slate-500 bg-white border-2 border-slate-900 cursor-pointer hover:bg-gray-50 transition-all"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        onClick={onSave}
+        disabled={saving}
+        className="flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-tight text-white bg-[#f48c25] border-2 border-slate-900 retro-shadow hover:bg-[#d97a1e] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer disabled:opacity-50"
+      >
+        {saving ? 'Saving...' : 'Save'}
+      </button>
+    </div>
+  );
+}
 
 export default function TripDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { trip, loading, error, refetch } = useTrip(id);
   const [deleting, setDeleting] = useState(false);
+  const { user } = useAuth();
+  const { shares, loading: sharesLoading } = useSharesForTrip(id);
 
-  const handleChecklistToggle = async (index: number) => {
+  // Share modal state
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [invitePermission, setInvitePermission] = useState<SharePermission>('read');
+  const [inviting, setInviting] = useState(false);
+
+  const handleInvite = async () => {
+    if (!id || !inviteEmail.trim() || !user) return;
+    try {
+      setInviting(true);
+      await createShare(id, user.id, inviteEmail.trim(), invitePermission, trip?.title);
+      setInviteEmail('');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '초대 실패');
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const handleRemoveShare = async (shareId: string) => {
+    if (!window.confirm('이 공유를 취소하시겠습니까?')) return;
+    try {
+      await removeShare(shareId);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '삭제 실패');
+    }
+  };
+
+  const handlePermissionChange = async (shareId: string, perm: SharePermission) => {
+    try {
+      await updateSharePermission(shareId, perm);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '권한 변경 실패');
+    }
+  };
+
+  // Inline edit states
+  const [editingPhotos, setEditingPhotos] = useState(false);
+  const [editingExpenses, setEditingExpenses] = useState(false);
+  const [editingChecklist, setEditingChecklist] = useState(false);
+  const [editingPlaces, setEditingPlaces] = useState(false);
+  const [editingMemo, setEditingMemo] = useState(false);
+
+  // Edit form data
+  const [draftPhotos, setDraftPhotos] = useState<string[]>([]);
+  const [draftCover, setDraftCover] = useState('');
+  const [draftExpenses, setDraftExpenses] = useState<Expense[]>([]);
+  const [draftChecklist, setDraftChecklist] = useState<ChecklistItem[]>([]);
+  const [draftPlaces, setDraftPlaces] = useState<Place[]>([]);
+  const [draftMemo, setDraftMemo] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  // --- Photo inline edit ---
+  const startEditPhotos = () => {
     if (!trip) return;
+    setDraftPhotos([...trip.photos]);
+    setDraftCover(trip.coverImage || trip.photos[0] || '');
+    setEditingPhotos(true);
+  };
+  const savePhotosInline = async () => {
+    if (!trip || !id) return;
+    try {
+      setSaving(true);
+      if (!isSupabaseConfigured) {
+        updateDemoTrip(id, { photos: draftPhotos, coverImage: draftCover });
+      } else {
+        // Supabase: 커버 이미지만 DB에 저장 (사진은 Storage 사용)
+        await supabase.from('trips').update({ cover_image: draftCover }).eq('id', id);
+      }
+      setEditingPhotos(false);
+      refetch();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '저장 실패');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // --- Checklist Toggle (demo + supabase) ---
+  const handleChecklistToggle = async (index: number) => {
+    if (!trip || !id) return;
     const item = trip.checklist[index];
-    if (!item?.id) return;
-    if (!isSupabaseConfigured) return;
+    if (!item) return;
+
+    if (!isSupabaseConfigured) {
+      const updated = trip.checklist.map((c, i) =>
+        i === index ? { ...c, checked: !c.checked } : c,
+      );
+      updateDemoTrip(id, { checklist: updated });
+      refetch();
+      return;
+    }
+
+    if (!item.id) return;
     try {
       await toggleChecklistItem(item.id, !item.checked);
       refetch();
@@ -28,20 +168,138 @@ export default function TripDetailPage() {
     }
   };
 
+  // --- Delete (demo + supabase) ---
   const handleDelete = async () => {
     if (!id) return;
-    if (!isSupabaseConfigured) {
-      alert('데모 모드에서는 삭제할 수 없습니다.');
-      return;
-    }
     if (!window.confirm('이 여행을 삭제하시겠습니까? 되돌릴 수 없습니다.')) return;
+
     try {
       setDeleting(true);
-      await deleteTrip(id);
+      if (!isSupabaseConfigured) {
+        deleteDemoTrip(id);
+        window.dispatchEvent(new CustomEvent('trip-added'));
+      } else {
+        await deleteTrip(id);
+      }
       navigate('/');
     } catch (err) {
       alert(err instanceof Error ? err.message : '삭제에 실패했습니다');
       setDeleting(false);
+    }
+  };
+
+  // --- Expense inline edit ---
+  const startEditExpenses = () => {
+    if (!trip) return;
+    setDraftExpenses(trip.expenses.length > 0 ? [...trip.expenses] : []);
+    setEditingExpenses(true);
+  };
+  const addDraftExpense = () => setDraftExpenses([...draftExpenses, { category: 'other', amount: 0, label: '' }]);
+  const removeDraftExpense = (i: number) => setDraftExpenses(draftExpenses.filter((_, idx) => idx !== i));
+  const updateDraftExpense = (i: number, field: keyof Expense, value: string | number) => {
+    setDraftExpenses(draftExpenses.map((e, idx) => (idx === i ? { ...e, [field]: value } : e)));
+  };
+  const saveExpensesInline = async () => {
+    if (!trip || !id) return;
+    const valid = draftExpenses.filter((e) => e.amount > 0);
+    try {
+      setSaving(true);
+      if (!isSupabaseConfigured) {
+        updateDemoTrip(id, { expenses: valid });
+      } else {
+        await saveExpenses(id, valid);
+      }
+      setEditingExpenses(false);
+      refetch();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '저장 실패');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // --- Checklist inline edit ---
+  const startEditChecklist = () => {
+    if (!trip) return;
+    setDraftChecklist(trip.checklist.length > 0 ? [...trip.checklist] : []);
+    setEditingChecklist(true);
+  };
+  const addDraftChecklistItem = () => setDraftChecklist([...draftChecklist, { text: '', checked: false }]);
+  const removeDraftChecklistItem = (i: number) => setDraftChecklist(draftChecklist.filter((_, idx) => idx !== i));
+  const updateDraftChecklistText = (i: number, text: string) => {
+    setDraftChecklist(draftChecklist.map((c, idx) => (idx === i ? { ...c, text } : c)));
+  };
+  const saveChecklistInline = async () => {
+    if (!trip || !id) return;
+    const valid = draftChecklist.filter((c) => c.text.trim());
+    try {
+      setSaving(true);
+      if (!isSupabaseConfigured) {
+        updateDemoTrip(id, { checklist: valid });
+      } else {
+        await saveChecklistItems(id, valid);
+      }
+      setEditingChecklist(false);
+      refetch();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '저장 실패');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // --- Places inline edit ---
+  const startEditPlaces = () => {
+    if (!trip) return;
+    setDraftPlaces(trip.places.length > 0 ? [...trip.places] : []);
+    setEditingPlaces(true);
+  };
+  const addDraftPlace = () => setDraftPlaces([...draftPlaces, { name: '', priority: 'want', note: '' }]);
+  const removeDraftPlace = (i: number) => setDraftPlaces(draftPlaces.filter((_, idx) => idx !== i));
+  const updateDraftPlace = (i: number, field: keyof Place, value: string) => {
+    setDraftPlaces(draftPlaces.map((p, idx) => (idx === i ? { ...p, [field]: value } : p)));
+  };
+  const savePlacesInline = async () => {
+    if (!trip || !id) return;
+    const valid = draftPlaces.filter((p) => p.name.trim());
+    try {
+      setSaving(true);
+      if (!isSupabaseConfigured) {
+        updateDemoTrip(id, { places: valid });
+      } else {
+        // Supabase에는 places 테이블이 없으므로 데모와 동일하게 처리
+        updateDemoTrip(id, { places: valid });
+      }
+      setEditingPlaces(false);
+      refetch();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '저장 실패');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // --- Memo inline edit ---
+  const startEditMemo = () => {
+    if (!trip) return;
+    setDraftMemo(trip.memo || '');
+    setEditingMemo(true);
+  };
+  const saveMemoInline = async () => {
+    if (!trip || !id) return;
+    try {
+      setSaving(true);
+      if (!isSupabaseConfigured) {
+        updateDemoTrip(id, { memo: draftMemo.trim() });
+      } else {
+        await supabase.from('trips').update({ memo: draftMemo.trim() }).eq('id', id);
+      }
+      setEditingMemo(false);
+      refetch();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '저장 실패');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -92,14 +350,12 @@ export default function TripDetailPage() {
         Back
       </Link>
 
-      {/* 프로필 스타일 헤더 — code(detail) 참조 */}
+      {/* 프로필 스타일 헤더 */}
       <section className="flex flex-col items-center text-center space-y-4">
-        {/* 커버 이미지 (행성 스타일) */}
         <div className="relative">
           <div className="w-32 h-32 rounded-full border-[3px] border-slate-900 overflow-hidden bg-white retro-shadow relative z-10">
             <img src={trip.coverImage} alt={trip.title} className="w-full h-full object-cover" />
           </div>
-          {/* 상태 뱃지 */}
           <div className={`absolute -bottom-2 -right-2 border-[3px] border-slate-900 rounded-lg px-2 py-1 text-[10px] font-bold uppercase tracking-widest z-20 ${
             isCompleted ? 'bg-[#0d9488] text-white' : 'bg-[#eab308] text-slate-900'
           }`}>
@@ -123,7 +379,7 @@ export default function TripDetailPage() {
           </p>
         </div>
 
-        {/* 수정/삭제 버튼 */}
+        {/* 수정/공유/삭제 버튼 */}
         <div className="flex gap-3 w-full">
           <Link
             to={`/trip/edit/${trip.id}`}
@@ -131,6 +387,14 @@ export default function TripDetailPage() {
           >
             Edit Mission
           </Link>
+          <button
+            onClick={() => setShareModalOpen(true)}
+            className="bg-[#0d9488] hover:bg-[#0d9488]/90 text-white font-bold py-3 px-4 rounded-xl border-[3px] border-slate-900 retro-shadow transition-transform active:translate-y-0.5 active:translate-x-0.5 cursor-pointer"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+          </button>
           <button
             onClick={handleDelete}
             disabled={deleting}
@@ -141,11 +405,148 @@ export default function TripDetailPage() {
             </svg>
           </button>
         </div>
+
+        {/* 공유된 유저 뱃지 */}
+        {shares.length > 0 && (
+          <div className="flex flex-wrap gap-2 w-full">
+            {shares.map((s) => (
+              <span
+                key={s.id}
+                className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border-2 ${
+                  s.status === 'accepted'
+                    ? 'bg-[#0d9488]/10 border-[#0d9488] text-[#0d9488]'
+                    : s.status === 'pending'
+                    ? 'bg-[#eab308]/10 border-[#eab308] text-[#eab308]'
+                    : 'bg-slate-100 border-slate-300 text-slate-400'
+                }`}
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                {s.invited_email.split('@')[0]}
+                <span className="opacity-60">({s.permission === 'edit' ? '편집' : '읽기'})</span>
+                {s.status === 'pending' && <span className="opacity-60">대기중</span>}
+              </span>
+            ))}
+          </div>
+        )}
       </section>
 
-      {/* Stats Grid — code(detail) 2x2 패턴 */}
+      {/* 공유 모달 */}
+      {shareModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center" onClick={() => setShareModalOpen(false)}>
+          <div
+            className="bg-white dark:bg-slate-800 w-full max-w-md rounded-t-2xl sm:rounded-2xl border-[3px] border-slate-900 retro-shadow p-6 space-y-5 max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Share Mission</h3>
+              <button
+                onClick={() => setShareModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer bg-transparent border-0 p-1"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* 초대 폼 */}
+            <div className="space-y-3">
+              <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Invite</p>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  placeholder="이메일 주소 입력"
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleInvite(); } }}
+                  className="flex-1 min-w-0 px-3 py-2.5 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
+                />
+                <select
+                  value={invitePermission}
+                  onChange={(e) => setInvitePermission(e.target.value as SharePermission)}
+                  className="w-20 shrink-0 px-2 py-2.5 rounded-xl border-2 border-slate-900 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
+                >
+                  <option value="read">읽기</option>
+                  <option value="edit">편집</option>
+                </select>
+              </div>
+              <button
+                type="button"
+                onClick={handleInvite}
+                disabled={inviting || !inviteEmail.trim()}
+                className="w-full py-2.5 rounded-xl text-sm font-bold uppercase tracking-tight text-white bg-[#0d9488] border-2 border-slate-900 retro-shadow hover:bg-[#0d9488]/90 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {inviting ? '초대 중...' : '초대 보내기'}
+              </button>
+            </div>
+
+            {/* 공유 목록 */}
+            {shares.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Shared With</p>
+                <div className="space-y-2">
+                  {shares.map((s) => (
+                    <div
+                      key={s.id}
+                      className="flex items-center justify-between p-3 bg-[#F9F4E8] dark:bg-slate-700 rounded-xl border-2 border-slate-200 dark:border-slate-600"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                          s.status === 'accepted' ? 'bg-[#0d9488] text-white' : 'bg-[#eab308] text-slate-900'
+                        }`}>
+                          {s.invited_email[0].toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">{s.invited_email}</p>
+                          <p className="text-[10px] text-slate-400 font-medium">
+                            {s.status === 'pending' ? '수락 대기중' : s.status === 'accepted' ? '수락됨' : '거절됨'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <select
+                          value={s.permission}
+                          onChange={(e) => handlePermissionChange(s.id, e.target.value as SharePermission)}
+                          className="px-2 py-1 rounded-lg border-2 border-slate-300 text-[10px] font-bold bg-white focus:outline-none"
+                        >
+                          <option value="read">읽기</option>
+                          <option value="edit">편집</option>
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveShare(s.id)}
+                          className="text-slate-300 hover:text-[#f43f5e] transition-colors cursor-pointer bg-transparent border-0 p-1"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {shares.length === 0 && !sharesLoading && (
+              <div className="text-center py-6">
+                <p className="text-3xl mb-2">🔗</p>
+                <p className="text-sm text-slate-400 font-medium">아직 공유된 사람이 없습니다</p>
+                <p className="text-xs text-slate-300 mt-1">이메일로 초대하여 함께 여행을 계획해보세요!</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Stats Grid */}
       <section className="grid grid-cols-2 gap-4">
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border-[3px] border-slate-900 retro-shadow flex flex-col gap-2">
+        <div
+          onClick={startEditPlaces}
+          className="bg-white dark:bg-slate-800 p-4 rounded-xl border-[3px] border-slate-900 retro-shadow flex flex-col gap-2 cursor-pointer hover:border-[#f48c25] transition-colors"
+        >
           <div className="w-10 h-10 rounded-lg bg-[#0d9488]/20 border-2 border-[#0d9488] flex items-center justify-center">
             <svg className="w-5 h-5 text-[#0d9488]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -155,7 +556,10 @@ export default function TripDetailPage() {
           <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{trip.places.length}</p>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border-[3px] border-slate-900 retro-shadow flex flex-col gap-2">
+        <div
+          onClick={startEditExpenses}
+          className="bg-white dark:bg-slate-800 p-4 rounded-xl border-[3px] border-slate-900 retro-shadow flex flex-col gap-2 cursor-pointer hover:border-[#f48c25] transition-colors"
+        >
           <div className="w-10 h-10 rounded-lg bg-[#eab308]/20 border-2 border-[#eab308] flex items-center justify-center">
             <svg className="w-5 h-5 text-[#eab308]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -167,7 +571,10 @@ export default function TripDetailPage() {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border-[3px] border-slate-900 retro-shadow flex flex-col gap-2">
+        <div
+          onClick={startEditPhotos}
+          className="bg-white dark:bg-slate-800 p-4 rounded-xl border-[3px] border-slate-900 retro-shadow flex flex-col gap-2 cursor-pointer hover:border-[#f48c25] transition-colors"
+        >
           <div className="w-10 h-10 rounded-lg bg-[#f43f5e]/20 border-2 border-[#f43f5e] flex items-center justify-center">
             <svg className="w-5 h-5 text-[#f43f5e]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -177,7 +584,10 @@ export default function TripDetailPage() {
           <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{trip.photos.length}</p>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border-[3px] border-slate-900 retro-shadow flex flex-col gap-2">
+        <div
+          onClick={startEditChecklist}
+          className="bg-white dark:bg-slate-800 p-4 rounded-xl border-[3px] border-slate-900 retro-shadow flex flex-col gap-2 cursor-pointer hover:border-[#f48c25] transition-colors"
+        >
           <div className="w-10 h-10 rounded-lg bg-[#f48c25]/20 border-2 border-[#f48c25] flex items-center justify-center">
             <svg className="w-5 h-5 text-[#f48c25]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -188,7 +598,7 @@ export default function TripDetailPage() {
         </div>
       </section>
 
-      {/* Progress Bar — code(detail) 참조 */}
+      {/* Progress Bar */}
       {checklistTotal > 0 && (
         <section className="bg-white dark:bg-slate-800 p-6 rounded-xl border-[3px] border-slate-900 retro-shadow space-y-4">
           <div className="flex justify-between items-end">
@@ -214,42 +624,304 @@ export default function TripDetailPage() {
         </section>
       )}
 
-      {/* 한줄 후기 (완료 여행) */}
-      {isCompleted && trip.memo && (
+      {/* 한줄 후기 (완료 여행) — 인라인 편집 */}
+      {isCompleted && (
         <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border-[3px] border-slate-900 retro-shadow">
-          <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">Mission Review</h3>
-          <p className="text-slate-900 dark:text-slate-100 font-medium italic">"{trip.memo}"</p>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">Mission Review</h3>
+            {!editingMemo && <EditButton onClick={startEditMemo} />}
+          </div>
+          {editingMemo ? (
+            <>
+              <textarea
+                value={draftMemo}
+                onChange={(e) => setDraftMemo(e.target.value)}
+                placeholder="이 여행 어땠어요?"
+                rows={3}
+                className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25] resize-none"
+              />
+              <SaveCancelButtons onSave={saveMemoInline} onCancel={() => setEditingMemo(false)} saving={saving} />
+            </>
+          ) : trip.memo ? (
+            <p className="text-slate-900 dark:text-slate-100 font-medium italic">"{trip.memo}"</p>
+          ) : (
+            <p
+              onClick={startEditMemo}
+              className="text-slate-300 text-sm font-medium italic cursor-pointer hover:text-[#f48c25] transition-colors"
+            >
+              탭하여 후기를 작성해보세요
+            </p>
+          )}
         </div>
       )}
 
       {/* 콘텐츠 섹션들 */}
       <div className="space-y-6">
-        {trip.photos.length > 0 && <PhotoGallery photos={trip.photos} />}
-        {isCompleted && trip.itinerary.length > 0 && <Timeline items={trip.itinerary} />}
-        {!isCompleted && trip.places.length > 0 && <PlaceList places={trip.places} />}
-        {trip.expenses.length > 0 && <ExpenseTable expenses={trip.expenses} isEstimate={!isCompleted} />}
-        {!isCompleted && trip.checklist.length > 0 && <Checklist items={trip.checklist} onToggle={handleChecklistToggle} />}
-
-        {/* 계획 여행: 메모 */}
-        {!isCompleted && trip.memo && (
-          <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border-[3px] border-slate-900 retro-shadow">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">Mission Notes</h3>
-            <p className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-relaxed">{trip.memo}</p>
+        {/* 사진 — 인라인 편집 */}
+        {editingPhotos ? (
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-slate-900 retro-shadow">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-4">Photos</h3>
+            <PhotoUpload
+              photos={draftPhotos}
+              onChange={setDraftPhotos}
+              coverImage={draftCover}
+              onCoverChange={setDraftCover}
+            />
+            <SaveCancelButtons onSave={savePhotosInline} onCancel={() => setEditingPhotos(false)} saving={saving} />
+          </div>
+        ) : trip.photos.length > 0 ? (
+          <div className="relative">
+            <div className="absolute top-5 right-5 z-10">
+              <EditButton onClick={startEditPhotos} />
+            </div>
+            <PhotoGallery photos={trip.photos} />
+          </div>
+        ) : (
+          <div
+            onClick={startEditPhotos}
+            className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-dashed border-slate-300 cursor-pointer hover:border-[#f48c25] transition-colors"
+          >
+            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">Photos</h3>
+            <p className="text-xs text-slate-300 font-medium text-center py-4">탭하여 사진을 추가해보세요</p>
           </div>
         )}
 
-        {/* 비어있는 계획 여행 — 등록 유도 */}
-        {!isCompleted && trip.expenses.length === 0 && trip.places.length === 0 && trip.checklist.length === 0 && (
-          <div className="border-[3px] border-dashed border-slate-300 rounded-xl p-8 text-center">
-            <p className="text-3xl mb-3">🚀</p>
-            <p className="text-base font-bold text-slate-400">아직 등록된 정보가 없어요</p>
-            <p className="text-xs text-slate-300 font-medium mt-1 mb-4">경비, 루트, 숙소, 체크리스트 등을 등록해보세요!</p>
-            <Link
-              to={`/trip/edit/${trip.id}`}
-              className="inline-block bg-[#f48c25] text-white px-5 py-2.5 rounded-xl text-sm font-bold uppercase tracking-wider no-underline border-[3px] border-slate-900 retro-shadow active:translate-x-0.5 active:translate-y-0.5 transition-all"
+        {isCompleted && trip.itinerary.length > 0 && <Timeline items={trip.itinerary} />}
+
+        {/* 장소 (계획 여행) — 인라인 편집 */}
+        {!isCompleted && (
+          editingPlaces ? (
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-slate-900 retro-shadow">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">Route & Places</h3>
+                <button
+                  type="button"
+                  onClick={addDraftPlace}
+                  className="text-[10px] font-bold uppercase tracking-widest text-[#f48c25] hover:text-[#d97a1e] cursor-pointer border-2 border-[#f48c25] px-3 py-1 rounded-full hover:bg-[#f48c25]/10 transition-colors bg-transparent"
+                >
+                  + Add
+                </button>
+              </div>
+              {draftPlaces.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center py-4 font-medium">아직 등록된 장소가 없습니다.</p>
+              ) : (
+                <div className="space-y-3">
+                  {draftPlaces.map((place, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <input
+                        type="text"
+                        value={place.name}
+                        onChange={(e) => updateDraftPlace(i, 'name', e.target.value)}
+                        placeholder="장소명"
+                        className="flex-1 min-w-0 px-3 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
+                      />
+                      <select
+                        value={place.priority}
+                        onChange={(e) => updateDraftPlace(i, 'priority', e.target.value)}
+                        className="w-20 shrink-0 px-2 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
+                      >
+                        {PLACE_PRIORITIES.map((p) => (
+                          <option key={p.value} value={p.value}>{p.label}</option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => removeDraftPlace(i)}
+                        className="shrink-0 w-8 h-8 flex items-center justify-center text-slate-300 hover:text-[#f43f5e] transition-colors cursor-pointer mt-0.5 bg-transparent border-0"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <SaveCancelButtons onSave={savePlacesInline} onCancel={() => setEditingPlaces(false)} saving={saving} />
+            </div>
+          ) : trip.places.length > 0 ? (
+            <div className="relative">
+              <div className="absolute top-5 right-5 z-10">
+                <EditButton onClick={startEditPlaces} />
+              </div>
+              <PlaceList places={trip.places} />
+            </div>
+          ) : (
+            <div
+              onClick={startEditPlaces}
+              className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-dashed border-slate-300 cursor-pointer hover:border-[#f48c25] transition-colors"
             >
-              Launch Mission Setup
-            </Link>
+              <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">Route & Places</h3>
+              <p className="text-xs text-slate-300 font-medium text-center py-4">탭하여 장소를 추가해보세요</p>
+            </div>
+          )
+        )}
+
+        {/* 경비 — 인라인 편집 */}
+        {editingExpenses ? (
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-slate-900 retro-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">
+                {isCompleted ? 'Expenses' : 'Est. Budget'}
+              </h3>
+              <button
+                type="button"
+                onClick={addDraftExpense}
+                className="text-[10px] font-bold uppercase tracking-widest text-[#f48c25] hover:text-[#d97a1e] cursor-pointer border-2 border-[#f48c25] px-3 py-1 rounded-full hover:bg-[#f48c25]/10 transition-colors bg-transparent"
+              >
+                + Add
+              </button>
+            </div>
+            {draftExpenses.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-4 font-medium">아직 경비 항목이 없습니다.</p>
+            ) : (
+              <div className="space-y-3">
+                {draftExpenses.map((expense, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <select
+                      value={expense.category}
+                      onChange={(e) => updateDraftExpense(i, 'category', e.target.value)}
+                      className="w-24 shrink-0 px-2 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
+                    >
+                      {EXPENSE_CATEGORIES.map((cat) => (
+                        <option key={cat} value={cat}>{expenseCategoryLabel(cat)}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      value={expense.amount || ''}
+                      onChange={(e) => updateDraftExpense(i, 'amount', Number(e.target.value))}
+                      placeholder="금액"
+                      min={0}
+                      className="w-24 shrink-0 px-3 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
+                    />
+                    <input
+                      type="text"
+                      value={expense.label}
+                      onChange={(e) => updateDraftExpense(i, 'label', e.target.value)}
+                      placeholder="설명"
+                      className="flex-1 min-w-0 px-3 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeDraftExpense(i)}
+                      className="shrink-0 w-8 h-8 flex items-center justify-center text-slate-300 hover:text-[#f43f5e] transition-colors cursor-pointer mt-0.5 bg-transparent border-0"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <SaveCancelButtons onSave={saveExpensesInline} onCancel={() => setEditingExpenses(false)} saving={saving} />
+          </div>
+        ) : trip.expenses.length > 0 ? (
+          <div className="relative">
+            <div className="absolute top-5 right-5 z-10">
+              <EditButton onClick={startEditExpenses} />
+            </div>
+            <ExpenseTable expenses={trip.expenses} isEstimate={!isCompleted} />
+          </div>
+        ) : (
+          <div
+            onClick={startEditExpenses}
+            className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-dashed border-slate-300 cursor-pointer hover:border-[#f48c25] transition-colors"
+          >
+            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">
+              {isCompleted ? 'Expenses' : 'Est. Budget'}
+            </h3>
+            <p className="text-xs text-slate-300 font-medium text-center py-4">탭하여 경비를 추가해보세요</p>
+          </div>
+        )}
+
+        {/* 체크리스트 — 인라인 편집 */}
+        {editingChecklist ? (
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-slate-900 retro-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">Checklist</h3>
+              <button
+                type="button"
+                onClick={addDraftChecklistItem}
+                className="text-[10px] font-bold uppercase tracking-widest text-[#f48c25] hover:text-[#d97a1e] cursor-pointer border-2 border-[#f48c25] px-3 py-1 rounded-full hover:bg-[#f48c25]/10 transition-colors bg-transparent"
+              >
+                + Add
+              </button>
+            </div>
+            {draftChecklist.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-4 font-medium">아직 체크리스트가 없습니다.</p>
+            ) : (
+              <div className="space-y-2">
+                {draftChecklist.map((item, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={item.text}
+                      onChange={(e) => updateDraftChecklistText(i, e.target.value)}
+                      placeholder="예: 항공편 예약"
+                      className="flex-1 min-w-0 px-3 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeDraftChecklistItem(i)}
+                      className="shrink-0 w-8 h-8 flex items-center justify-center text-slate-300 hover:text-[#f43f5e] transition-colors cursor-pointer bg-transparent border-0"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <SaveCancelButtons onSave={saveChecklistInline} onCancel={() => setEditingChecklist(false)} saving={saving} />
+          </div>
+        ) : trip.checklist.length > 0 ? (
+          <div className="relative">
+            <div className="absolute top-5 right-5 z-10">
+              <EditButton onClick={startEditChecklist} />
+            </div>
+            <Checklist items={trip.checklist} onToggle={handleChecklistToggle} />
+          </div>
+        ) : (
+          <div
+            onClick={startEditChecklist}
+            className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-dashed border-slate-300 cursor-pointer hover:border-[#f48c25] transition-colors"
+          >
+            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">Checklist</h3>
+            <p className="text-xs text-slate-300 font-medium text-center py-4">탭하여 체크리스트를 추가해보세요</p>
+          </div>
+        )}
+
+        {/* 계획 여행: 메모 — 인라인 편집 */}
+        {!isCompleted && (
+          <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border-[3px] border-slate-900 retro-shadow">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">Mission Notes</h3>
+              {!editingMemo && <EditButton onClick={startEditMemo} />}
+            </div>
+            {editingMemo ? (
+              <>
+                <textarea
+                  value={draftMemo}
+                  onChange={(e) => setDraftMemo(e.target.value)}
+                  placeholder="여행에 대한 메모를 남겨보세요..."
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25] resize-none"
+                />
+                <SaveCancelButtons onSave={saveMemoInline} onCancel={() => setEditingMemo(false)} saving={saving} />
+              </>
+            ) : trip.memo ? (
+              <p className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-relaxed">{trip.memo}</p>
+            ) : (
+              <p
+                onClick={startEditMemo}
+                className="text-xs text-slate-300 font-medium text-center py-4 cursor-pointer hover:text-[#f48c25] transition-colors"
+              >
+                탭하여 메모를 추가해보세요
+              </p>
+            )}
           </div>
         )}
       </div>

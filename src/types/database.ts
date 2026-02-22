@@ -94,6 +94,22 @@ export interface ChecklistItem {
   created_at: string;
 }
 
+// ---- trip_shares (공유/초대) ----
+export type SharePermission = 'read' | 'edit';
+export type ShareStatus = 'pending' | 'accepted' | 'declined';
+
+export interface TripShare {
+  id: string;
+  trip_id: string;
+  owner_id: string;
+  invited_email: string;
+  invited_user_id: string | null;
+  permission: SharePermission;
+  status: ShareStatus;
+  created_at: string;
+  updated_at: string;
+}
+
 // ============================================================
 // 관계를 포함한 확장 타입 (JOIN 결과)
 // ============================================================
