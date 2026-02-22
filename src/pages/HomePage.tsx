@@ -235,7 +235,7 @@ export default function HomePage() {
           )}
 
           {/* 핀 필터 오버레이 */}
-          <div className="absolute top-4 left-4 flex gap-1.5 z-[1000]">
+          <div className="absolute top-4 left-4 flex gap-1.5 z-[10]">
             {pinFilters.map((f) => (
               <button
                 key={f.key}
@@ -252,7 +252,7 @@ export default function HomePage() {
           </div>
 
           {/* 범례 */}
-          <div className="absolute bottom-4 left-4 flex items-center gap-3 z-[1000] bg-white rounded-full px-4 py-2 border-2 border-slate-900">
+          <div className="absolute bottom-4 left-4 flex items-center gap-3 z-[10] bg-white rounded-full px-4 py-2 border-2 border-slate-900">
             <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider">
               <span className="w-3 h-3 rounded-full bg-[#0d9488] inline-block border border-slate-900" /> 방문
             </span>

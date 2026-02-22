@@ -62,8 +62,8 @@ export default function TripCard({ trip, colorIndex = 0 }: Props) {
           </div>
         </div>
 
-        {/* 후기 또는 비용 */}
-        {trip.status === 'completed' && trip.memo ? (
+        {/* 후기/메모 또는 비용 */}
+        {trip.memo ? (
           <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-4 line-clamp-2">
             {trip.memo}
           </p>
