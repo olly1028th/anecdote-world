@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import type { VisitStatus } from '../types/database';
 import { useTrips } from '../hooks/useTrips';
 import { usePins } from '../hooks/usePins';
-import { useFavoritePhotos, type FavoritePhoto } from '../hooks/useFavoritePhotos';
 import { formatDate } from '../utils/format';
 import { getCountryFlagUrl } from '../utils/countryFlag';
 import TripCard from '../components/TripCard';
@@ -20,24 +19,11 @@ export default function HomePage() {
   const [activeStatsTab, setActiveStatsTab] = useState<StatsTab>(null);
   const { trips, loading, error } = useTrips();
   const { pins, loading: pinsLoading } = usePins();
-  const { photos: favoritePhotos, loading: favLoading } = useFavoritePhotos();
-
   const filteredPins =
     pinFilter === 'all' ? pins : pins.filter((p) => p.visit_status === pinFilter);
 
   const completedTrips = trips.filter((t) => t.status === 'completed');
   const plannedTrips = trips.filter((t) => t.status === 'planned');
-
-  // favorite 사진을 여행지별로 그룹핑
-  const photosByTrip = favoritePhotos.reduce<Record<string, FavoritePhoto[]>>((acc, photo) => {
-    const key = photo.tripTitle || '기타';
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(photo);
-    return acc;
-  }, {});
-  const tripGroups = Object.entries(photosByTrip).sort(
-    ([, a], [, b]) => new Date(a[0].date).getTime() - new Date(b[0].date).getTime(),
-  );
 
   const pinFilters: { key: PinFilter; label: string }[] = [
     { key: 'all', label: `전체 (${pins.length})` },
@@ -91,7 +77,7 @@ export default function HomePage() {
           }`}
         >
           <span className="text-2xl font-bold text-[#0d9488]">{plannedTrips.length}</span>
-          <span className="text-[10px] uppercase font-bold text-slate-500 mt-1 leading-none">Planned</span>
+          <span className="text-[10px] uppercase font-bold text-slate-500 mt-1 leading-none">정복 예정</span>
         </button>
         <button
           type="button"
@@ -235,7 +221,7 @@ export default function HomePage() {
           )}
 
           {/* 핀 필터 오버레이 */}
-          <div className="absolute top-4 left-4 flex gap-1.5 z-[1000]">
+          <div className="absolute top-4 left-4 flex gap-1.5 z-[10]">
             {pinFilters.map((f) => (
               <button
                 key={f.key}
@@ -252,7 +238,7 @@ export default function HomePage() {
           </div>
 
           {/* 범례 */}
-          <div className="absolute bottom-4 left-4 flex items-center gap-3 z-[1000] bg-white rounded-full px-4 py-2 border-2 border-slate-900">
+          <div className="absolute bottom-4 left-4 flex items-center gap-3 z-[10] bg-white rounded-full px-4 py-2 border-2 border-slate-900">
             <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider">
               <span className="w-3 h-3 rounded-full bg-[#0d9488] inline-block border border-slate-900" /> 방문
             </span>
@@ -266,54 +252,21 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Trip Feed Cards */}
-      <section className="space-y-8">
-        {trips.map((trip, i) => (
-          <TripCard key={trip.id} trip={trip} colorIndex={i} />
-        ))}
-      </section>
-
-      {/* Life Journey */}
+      {/* Favorite Moments — 정복 완료된 여행만 카드로 표시 */}
       <section>
         <p className="text-sm font-bold text-[#f48c25] uppercase tracking-widest mb-1">Life Journey</p>
         <h3 className="text-2xl font-bold text-[#1c140d] dark:text-slate-100 mb-4">Favorite Moments</h3>
 
-        {favLoading ? (
-          <div className="text-center py-12">
-            <div className="animate-pulse text-slate-400 font-bold uppercase tracking-widest text-sm">Loading...</div>
-          </div>
-        ) : favoritePhotos.length === 0 ? (
+        {completedTrips.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-3xl mb-3">🖼️</p>
-            <p className="text-base font-bold text-slate-400">아직 대표 사진이 없어요</p>
-            <p className="text-xs font-medium text-slate-300 mt-1">여행지 상세에서 사진을 즐겨찾기로 지정해보세요!</p>
+            <p className="text-3xl mb-3">🌍</p>
+            <p className="text-base font-bold text-slate-400">아직 정복한 행성이 없어요</p>
+            <p className="text-xs font-medium text-slate-300 mt-1">여행을 완료하면 이곳에 기록됩니다!</p>
           </div>
         ) : (
           <div className="space-y-8">
-            {tripGroups.map(([tripTitle, photos]) => (
-              <div key={tripTitle}>
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-sm font-bold text-[#f48c25] uppercase tracking-tight">{tripTitle}</span>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{photos[0].destination}</span>
-                </div>
-                <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory">
-                  {photos.map((photo) => (
-                    <div key={photo.id} className="snap-start shrink-0 w-[200px]">
-                      <div className="bg-white p-2 rounded-xl border-[3px] border-slate-900 retro-shadow">
-                        <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
-                          <img src={photo.url} alt={photo.caption} className="w-full h-full object-cover" />
-                        </div>
-                        <div className="mt-2 px-1 pb-1">
-                          <p className="text-xs font-bold text-slate-900 truncate">{photo.caption}</p>
-                          <p className="text-[10px] text-slate-400 mt-0.5 font-medium uppercase tracking-wider">
-                            {new Date(photo.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric' })}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            {completedTrips.map((trip, i) => (
+              <TripCard key={trip.id} trip={trip} colorIndex={i} />
             ))}
           </div>
         )}

@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import type { TripStatus, ExpenseCategory, Expense, ChecklistItem } from '../types/trip';
-import { createTrip, updateTrip, saveExpenses, saveChecklistItems, useTrip } from '../hooks/useTrips';
+import { createTrip, updateTrip, saveExpenses, saveChecklistItems, useTrip, addDemoTrip, updateDemoTrip } from '../hooks/useTrips';
 import { createPin } from '../hooks/usePins';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { uploadTripPhoto } from '../lib/storage';
@@ -77,13 +77,55 @@ export default function TripFormPage() {
     e.preventDefault();
     if (!title.trim()) return;
 
-    if (!isSupabaseConfigured) {
-      alert('데모 모드에서는 저장할 수 없습니다. Supabase를 연결해주세요.');
-      return;
-    }
-
     try {
       setSaving(true);
+
+      // 데모 모드: localStorage에 저장
+      if (!isSupabaseConfigured) {
+        const now = new Date().toISOString();
+        const validExpenses = expenses.filter((e) => e.amount > 0);
+        const validChecklist = checklist.filter((c) => c.text.trim());
+
+        if (isEdit && id) {
+          updateDemoTrip(id, {
+            title: title.trim(),
+            status,
+            destination: destination.name,
+            startDate: startDate || '',
+            endDate: endDate || '',
+            coverImage: coverImage.trim(),
+            memo: memo.trim(),
+            photos,
+            expenses: validExpenses,
+            checklist: validChecklist,
+          });
+          window.dispatchEvent(new CustomEvent('trip-added'));
+          navigate(`/trip/${id}`);
+        } else {
+          const tripId = `demo-${Date.now()}`;
+          addDemoTrip({
+            id: tripId,
+            title: title.trim(),
+            destination: destination.name,
+            status,
+            startDate: startDate || '',
+            endDate: endDate || '',
+            coverImage: coverImage.trim(),
+            memo: memo.trim(),
+            expenses: validExpenses,
+            itinerary: [],
+            photos,
+            places: [],
+            checklist: validChecklist,
+            createdAt: now,
+            updatedAt: now,
+          });
+          window.dispatchEvent(new CustomEvent('trip-added'));
+          navigate(`/trip/${tripId}`);
+        }
+        return;
+      }
+
       setSaveStatus('여행 저장 중...');
       const input = {
         title: title.trim(),

@@ -31,6 +31,31 @@ export function addDemoTrip(trip: Trip) {
   localStorage.setItem(DEMO_TRIPS_KEY, JSON.stringify(demoExtraTrips));
 }
 
+/** demoExtraTrips + sampleTrips 병합 (demoExtraTrips가 동일 ID의 샘플을 오버라이드) */
+function getDemoTrips(): Trip[] {
+  const demoIds = new Set(demoExtraTrips.map((t) => t.id));
+  return [...demoExtraTrips, ...sampleTrips.filter((t) => !demoIds.has(t.id))];
+}
+
+export function updateDemoTrip(id: string, updates: Partial<Trip>) {
+  // 데모 추가 여행에서 업데이트
+  const idx = demoExtraTrips.findIndex((t) => t.id === id);
+  if (idx !== -1) {
+    demoExtraTrips = demoExtraTrips.map((t) =>
+      t.id === id ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t,
+    );
+    localStorage.setItem(DEMO_TRIPS_KEY, JSON.stringify(demoExtraTrips));
+    return;
+  }
+  // 샘플 여행이면 demoExtraTrips에 복사본을 추가하여 오버라이드
+  const sample = sampleTrips.find((t) => t.id === id);
+  if (sample) {
+    const updated = { ...sample, ...updates, updatedAt: new Date().toISOString() };
+    demoExtraTrips = [updated, ...demoExtraTrips];
+    localStorage.setItem(DEMO_TRIPS_KEY, JSON.stringify(demoExtraTrips));
+  }
+}
+
 /**
  * DB 행(snake_case) → UI Trip 타입(camelCase) 매핑.
  * pins → itinerary/places/destination, pin_photos → photos 로 변환.
@@ -123,7 +148,7 @@ export function useTrips() {
   const fetchTrips = useCallback(async () => {
     // Supabase 미설정 → 데모 모드 (로컬 추가 여행 포함)
     if (!isSupabaseConfigured) {
-      setTrips([...demoExtraTrips, ...sampleTrips]);
+      setTrips(getDemoTrips());
       setLoading(false);
       return;
     }
@@ -140,7 +165,7 @@ export function useTrips() {
       if (tripsErr) throw tripsErr;
       if (!dbTrips || dbTrips.length === 0) {
         // DB에 여행 없으면 데모 데이터 + 로컬 추가분 표시
-        setTrips([...demoExtraTrips, ...sampleTrips]);
+        setTrips(getDemoTrips());
         return;
       }
 
@@ -190,7 +215,7 @@ export function useTrips() {
       setTrips([...demoExtraTrips, ...mapped]);
     } catch {
       // Supabase 실패 시 데모 데이터로 폴백
-      setTrips([...demoExtraTrips, ...sampleTrips]);
+      setTrips(getDemoTrips());
       setError(null);
     } finally {
       setLoading(false);
@@ -320,8 +345,7 @@ export function useTrip(id: string | undefined) {
 
     // 데모 모드 (로컬 추가 여행 포함)
     if (!isSupabaseConfigured) {
-      const allDemoTrips = [...demoExtraTrips, ...sampleTrips];
-      setTrip(allDemoTrips.find((t) => t.id === id) ?? null);
+      setTrip(getDemoTrips().find((t) => t.id === id) ?? null);
       setLoading(false);
       return;
     }
@@ -338,7 +362,8 @@ export function useTrip(id: string | undefined) {
 
       if (tripErr) throw tripErr;
       if (!dbTrip) {
-        setTrip(null);
+        // DB에 없으면 데모 데이터에서 검색 (useTrips와 동일한 폴백 로직)
+        setTrip(getDemoTrips().find((t) => t.id === id) ?? null);
         return;
       }
 
@@ -388,9 +413,10 @@ export function useTrip(id: string | undefined) {
           storagePhotos,
         ),
       );
-    } catch (err) {
-      const message = err instanceof Error ? err.message : '여행을 불러오지 못했습니다';
-      setError(message);
+    } catch {
+      // Supabase 실패 시 데모 데이터로 폴백 (useTrips와 동일한 폴백 로직)
+      setTrip(getDemoTrips().find((t) => t.id === id) ?? null);
+      setError(null);
     } finally {
       setLoading(false);
     }
