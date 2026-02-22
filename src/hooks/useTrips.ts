@@ -37,6 +37,11 @@ function getDemoTrips(): Trip[] {
   return [...demoExtraTrips, ...sampleTrips.filter((t) => !demoIds.has(t.id))];
 }
 
+export function deleteDemoTrip(id: string) {
+  demoExtraTrips = demoExtraTrips.filter((t) => t.id !== id);
+  localStorage.setItem(DEMO_TRIPS_KEY, JSON.stringify(demoExtraTrips));
+}
+
 export function updateDemoTrip(id: string, updates: Partial<Trip>) {
   // 데모 추가 여행에서 업데이트
   const idx = demoExtraTrips.findIndex((t) => t.id === id);
