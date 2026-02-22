@@ -1,4 +1,4 @@
-export type TripStatus = 'completed' | 'planned';
+export type TripStatus = 'completed' | 'planned' | 'wishlist';
 
 export type ExpenseCategory = 'flight' | 'hotel' | 'food' | 'transport' | 'activity' | 'shopping' | 'other';
 

@@ -353,9 +353,9 @@ export default function TripDetailPage() {
             <img src={trip.coverImage} alt={trip.title} className="w-full h-full object-cover" />
           </div>
           <div className={`absolute -bottom-2 -right-2 border-[3px] border-slate-900 rounded-lg px-2 py-1 text-[10px] font-bold uppercase tracking-widest z-20 ${
-            isCompleted ? 'bg-[#0d9488] text-white' : 'bg-[#eab308] text-slate-900'
+            isCompleted ? 'bg-[#0d9488] text-white' : trip.status === 'wishlist' ? 'bg-[#6366f1] text-white' : 'bg-[#eab308] text-slate-900'
           }`}>
-            {isCompleted ? 'Visited' : 'Planned'}
+            {isCompleted ? 'Visited' : trip.status === 'wishlist' ? 'Wish' : 'Planned'}
           </div>
         </div>
 

@@ -132,7 +132,9 @@ npm run preview
 | Phase 3 | 세계지도 + 핀 시스템 (Leaflet, 마커, 핀 CRUD 폼) | Done |
 | Phase 4 | 여행/핀 CRUD 폼, 사진 갤러리, 라이트박스, 대표 이미지 | Done |
 | Phase 5 | 상세 페이지 인라인 편집, 데모 모드 데이터 영속성, 사진 인라인 편집 | Done |
-| Phase 6 | 여행 공유 기능 (초대/수락/거절, read/edit 권한), UI/UX 개선 | Done |
+| Phase 6 | 여행 공유 기능 (초대/수락/거절, read/edit 권한) | Done |
+| Phase 7 | UI/UX 개선 (정복 완료/예정 라벨, 행성 마커, Favorite Moments) | Done |
+| Phase 8 | 위시리스트 상태 추가, 데모 모드 저장 버그 수정, 이미지 압축 | Done |
 
 ## Database Schema
 
@@ -152,6 +154,19 @@ Supabase (PostgreSQL) 테이블 구성:
 
 ## Recent Changes
 
+### Phase 8 — 위시리스트 & 버그 수정
+- 여행 상태에 '위시' (wishlist) 옵션 추가
+- 홈페이지 Quick Stats에 위시리스트 카운트 및 목록 패널 추가
+- 데모 모드 저장 실패 수정 (`isDemo` 플래그로 데이터 소스 판별)
+- 사진 업로드 시 이미지 압축 (800px/JPEG 70%) 적용
+
+### Phase 7 — UI/UX 개선
+- 'Planned' → '정복 예정', 'Completed' → '정복 완료' 라벨 변경
+- 지도 마커를 행성 아이콘으로 변경 (방문 상태별 색상 유지)
+- Favorite Moments 섹션에 정복 완료된 여행만 표시
+- 모달 z-index 오버랩 수정 (지도 필터 위에 모달 표시)
+- 상세 페이지 네비게이션 오류 수정 (데모 데이터 폴백)
+
 ### Phase 6 — 여행 공유 기능
 - 이메일 기반 초대 시스템 (read/edit 권한 선택)
 - 초대받은 유저의 수락/거절 플로우
@@ -165,13 +180,6 @@ Supabase (PostgreSQL) 테이블 구성:
 - 빈 섹션에 "탭하여 추가" 플레이스홀더 표시
 - 데모 모드 데이터 영속성 수정 (체크리스트 토글, 여행 삭제 등)
 - 인라인 사진 업로드/편집 지원
-
-### UI/UX 개선
-- 'Planned' → '정복 예정', 'Completed' → '정복 완료' 라벨 변경
-- 지도 마커를 행성 아이콘으로 변경 (방문 상태별 색상 유지)
-- Favorite Moments 섹션에 정복 완료된 여행만 표시
-- 모달 z-index 오버랩 수정 (지도 필터 위에 모달 표시)
-- 상세 페이지 네비게이션 오류 수정 (데모 데이터 폴백)
 
 ## Deploy
 

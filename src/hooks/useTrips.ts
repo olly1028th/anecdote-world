@@ -248,7 +248,7 @@ export function useTrips() {
 
 export interface TripInput {
   title: string;
-  status: 'planned' | 'completed';
+  status: 'planned' | 'completed' | 'wishlist';
   start_date?: string;
   end_date?: string;
   cover_image?: string;

@@ -153,7 +153,7 @@ export default function TripFormPage() {
             lng: destination.lng,
             country: destination.country,
             city: destination.city,
-            visit_status: status === 'completed' ? 'visited' : 'planned',
+            visit_status: status === 'completed' ? 'visited' : status === 'wishlist' ? 'wishlist' : 'planned',
             visited_at: status === 'completed' ? (startDate || undefined) : undefined,
             category: 'landmark',
             trip_id: tripId,
@@ -248,6 +248,17 @@ export default function TripFormPage() {
               }`}
             >
               완료
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatus('wishlist')}
+              className={`flex-1 py-3 rounded-xl text-sm font-bold uppercase tracking-tight transition-all cursor-pointer border-2 border-slate-900 ${
+                status === 'wishlist'
+                  ? 'bg-[#6366f1] text-white retro-shadow'
+                  : 'bg-white text-slate-400 shadow-none'
+              }`}
+            >
+              위시
             </button>
           </div>
         </div>
@@ -370,7 +381,7 @@ export default function TripFormPage() {
         </div>
 
         {/* 체크리스트 입력 */}
-        {status === 'planned' && (
+        {(status === 'planned' || status === 'wishlist') && (
           <div className="bg-white dark:bg-slate-800 border-[3px] border-slate-900 rounded-xl p-5 retro-shadow">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">Checklist</h3>

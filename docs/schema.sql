@@ -52,8 +52,8 @@ CREATE TABLE public.trips (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id     UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   title       TEXT NOT NULL,                    -- "도쿄 벚꽃 여행"
-  status      TEXT NOT NULL DEFAULT 'planned'   -- 'planned' | 'completed'
-                CHECK (status IN ('planned', 'completed')),
+  status      TEXT NOT NULL DEFAULT 'planned'   -- 'planned' | 'completed' | 'wishlist'
+                CHECK (status IN ('planned', 'completed', 'wishlist')),
   start_date  DATE,
   end_date    DATE,
   cover_image TEXT DEFAULT '',                  -- 대표 이미지 URL
