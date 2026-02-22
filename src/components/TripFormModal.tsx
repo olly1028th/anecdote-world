@@ -89,7 +89,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
             lng: destination.lng,
             country: destination.country,
             city: destination.city,
-            visit_status: status === 'completed' ? 'visited' : 'planned',
+            visit_status: status === 'completed' ? 'visited' : status === 'wishlist' ? 'wishlist' : 'planned',
             visited_at: status === 'completed' ? (startDate || null) : null,
             category: 'landmark',
             rating: null,
@@ -121,7 +121,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
                 lng: destination.lng,
                 country: destination.country,
                 city: destination.city,
-                visit_status: status === 'completed' ? 'visited' : 'planned',
+                visit_status: status === 'completed' ? 'visited' : status === 'wishlist' ? 'wishlist' : 'planned',
                 visited_at: status === 'completed' ? (startDate || undefined) : undefined,
                 category: 'landmark',
                 trip_id: tripId,
@@ -218,6 +218,17 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
                 }`}
               >
                 완료
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatus('wishlist')}
+                className={`flex-1 py-3 rounded-2xl text-sm font-bold uppercase tracking-tight transition-all cursor-pointer border-2 border-slate-900 ${
+                  status === 'wishlist'
+                    ? 'bg-[#6366f1] text-white shadow-[3px_3px_0px_0px_#1c140d]'
+                    : 'bg-white text-[#1c140d]/40 shadow-none'
+                }`}
+              >
+                위시
               </button>
             </div>
           </div>

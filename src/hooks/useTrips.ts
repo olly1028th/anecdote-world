@@ -14,6 +14,7 @@ import type {
 // ---- 데모 모드 로컬 저장소 (localStorage 영구 보관) ----
 
 const DEMO_TRIPS_KEY = 'anecdote-demo-trips';
+const DEMO_DELETED_KEY = 'anecdote-demo-deleted';
 
 function loadDemoTrips(): Trip[] {
   try {
@@ -24,22 +25,43 @@ function loadDemoTrips(): Trip[] {
   }
 }
 
+function loadDeletedIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DEMO_DELETED_KEY);
+    return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
 let demoExtraTrips: Trip[] = loadDemoTrips();
+let demoDeletedIds: Set<string> = loadDeletedIds();
 
 export function addDemoTrip(trip: Trip) {
   demoExtraTrips = [trip, ...demoExtraTrips];
   localStorage.setItem(DEMO_TRIPS_KEY, JSON.stringify(demoExtraTrips));
+  // 삭제 기록에서 제거 (같은 ID로 다시 추가하는 경우)
+  if (demoDeletedIds.has(trip.id)) {
+    demoDeletedIds.delete(trip.id);
+    localStorage.setItem(DEMO_DELETED_KEY, JSON.stringify([...demoDeletedIds]));
+  }
 }
 
-/** demoExtraTrips + sampleTrips 병합 (demoExtraTrips가 동일 ID의 샘플을 오버라이드) */
+/** demoExtraTrips + sampleTrips 병합 (demoExtraTrips가 동일 ID의 샘플을 오버라이드, 삭제된 ID 제외) */
 function getDemoTrips(): Trip[] {
   const demoIds = new Set(demoExtraTrips.map((t) => t.id));
-  return [...demoExtraTrips, ...sampleTrips.filter((t) => !demoIds.has(t.id))];
+  return [
+    ...demoExtraTrips.filter((t) => !demoDeletedIds.has(t.id)),
+    ...sampleTrips.filter((t) => !demoIds.has(t.id) && !demoDeletedIds.has(t.id)),
+  ];
 }
 
 export function deleteDemoTrip(id: string) {
   demoExtraTrips = demoExtraTrips.filter((t) => t.id !== id);
   localStorage.setItem(DEMO_TRIPS_KEY, JSON.stringify(demoExtraTrips));
+  // 샘플 여행 삭제도 추적
+  demoDeletedIds.add(id);
+  localStorage.setItem(DEMO_DELETED_KEY, JSON.stringify([...demoDeletedIds]));
 }
 
 export function updateDemoTrip(id: string, updates: Partial<Trip>) {
