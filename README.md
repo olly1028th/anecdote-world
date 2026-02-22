@@ -8,16 +8,19 @@
 
 ## Features
 
-- **여행 CRUD** — 완료된 여행 기록 및 계획 중인 여행 관리 (추가/수정/삭제)
-- **인터랙티브 지도** — Leaflet + OpenStreetMap 기반 핀 시각화 (방문/계획/위시리스트 색상 구분)
+- **여행 CRUD** — 완료된 여행 기록(정복 완료) 및 계획 중인 여행(정복 예정) 관리 (추가/수정/삭제)
+- **인터랙티브 지도** — Leaflet + OpenStreetMap 기반 핀 시각화, 행성 아이콘 마커 (방문/계획/위시리스트 색상 구분)
 - **핀 관리** — 지도 클릭으로 장소 등록, 카테고리·별점·메모 관리, 여행 연결
-- **사진 갤러리** — URL/파일 업로드, 라이트박스 뷰어 (이전/다음 네비게이션), 대표 이미지 설정
-- **경비 추적** — 항공, 숙박, 식비, 교통 등 7개 카테고리별 비용 기록
+- **인라인 편집** — 상세 페이지에서 항목별(사진, 경비, 체크리스트, 장소, 메모) 카드를 클릭하여 바로 편집
+- **사진 갤러리** — URL/파일 업로드, 라이트박스 뷰어 (이전/다음 네비게이션), 대표 이미지 설정, 인라인 사진 편집
+- **경비 추적** — 항공, 숙박, 식비, 교통 등 7개 카테고리별 비용 기록 (인라인 추가/삭제)
 - **여행 타임라인** — 일자별 일정 표시
-- **준비 체크리스트** — 계획 중인 여행의 준비 사항 관리 및 진행률 표시
-- **추천 장소** — must / want / maybe 우선순위 태그
+- **준비 체크리스트** — 여행 준비 사항 관리 및 진행률 표시 (인라인 추가/삭제/토글)
+- **추천 장소** — must / want / maybe 우선순위 태그 (인라인 추가/삭제)
+- **여행 공유** — 이메일로 다른 유저 초대, 수락/거절, read/edit 권한 관리
+- **Favorite Moments** — 정복 완료된 여행만 카드로 표시
 - **OAuth 인증** — Google · Kakao 소셜 로그인 (Supabase Auth)
-- **데모 모드** — Supabase 설정 없이도 샘플 데이터로 전체 기능 체험 가능
+- **데모 모드** — Supabase 설정 없이도 샘플 데이터로 전체 기능 체험 가능 (localStorage 기반 CRUD 완전 지원)
 - **에러 바운더리** — 런타임 에러 시 흰 화면 대신 에러 메시지 표시
 
 ## Tech Stack
@@ -62,7 +65,8 @@ src/
 │   └── AuthContext.tsx       # 인증 상태 + 데모 모드
 ├── hooks/             # 커스텀 훅
 │   ├── useTrips.ts           # 여행 CRUD + Supabase 연동
-│   └── usePins.ts            # 핀 CRUD + Supabase 연동
+│   ├── usePins.ts            # 핀 CRUD + Supabase 연동
+│   └── useShares.ts          # 여행 공유/초대 CRUD
 ├── types/             # TypeScript 타입 정의
 │   ├── trip.ts               # UI 모델
 │   └── database.ts           # DB 스키마 (Supabase)
@@ -127,6 +131,8 @@ npm run preview
 | Phase 2 | Supabase 인증 (Google/Kakao OAuth), DB 연동, 데모 모드 | Done |
 | Phase 3 | 세계지도 + 핀 시스템 (Leaflet, 마커, 핀 CRUD 폼) | Done |
 | Phase 4 | 여행/핀 CRUD 폼, 사진 갤러리, 라이트박스, 대표 이미지 | Done |
+| Phase 5 | 상세 페이지 인라인 편집, 데모 모드 데이터 영속성, 사진 인라인 편집 | Done |
+| Phase 6 | 여행 공유 기능 (초대/수락/거절, read/edit 권한), UI/UX 개선 | Done |
 
 ## Database Schema
 
@@ -140,8 +146,32 @@ Supabase (PostgreSQL) 테이블 구성:
 | `pin_photos` | 핀 관련 사진 |
 | `expenses` | 경비 내역 (카테고리, 금액) |
 | `checklist_items` | 준비 체크리스트 |
+| `trip_shares` | 여행 공유/초대 (권한: read/edit, 상태: pending/accepted/declined) |
 
 자세한 스키마는 [docs/DATABASE.md](docs/DATABASE.md) 및 [docs/schema.sql](docs/schema.sql)을 참고하세요.
+
+## Recent Changes
+
+### Phase 6 — 여행 공유 기능
+- 이메일 기반 초대 시스템 (read/edit 권한 선택)
+- 초대받은 유저의 수락/거절 플로우
+- 홈페이지에 대기 중인 초대 알림 표시
+- 공유된 여행에 대한 권한별 접근 제어
+- `trip_shares` 테이블 및 RLS 정책 추가
+
+### Phase 5 — 인라인 편집 및 데모 모드 개선
+- 상세 페이지 항목별 인라인 편집 (경비, 체크리스트, 장소, 메모, 사진)
+- 스탯 카드 클릭 시 해당 섹션 편집 모드 진입
+- 빈 섹션에 "탭하여 추가" 플레이스홀더 표시
+- 데모 모드 데이터 영속성 수정 (체크리스트 토글, 여행 삭제 등)
+- 인라인 사진 업로드/편집 지원
+
+### UI/UX 개선
+- 'Planned' → '정복 예정', 'Completed' → '정복 완료' 라벨 변경
+- 지도 마커를 행성 아이콘으로 변경 (방문 상태별 색상 유지)
+- Favorite Moments 섹션에 정복 완료된 여행만 표시
+- 모달 z-index 오버랩 수정 (지도 필터 위에 모달 표시)
+- 상세 페이지 네비게이션 오류 수정 (데모 데이터 폴백)
 
 ## Deploy
 
