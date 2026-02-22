@@ -127,7 +127,8 @@ export function useTrips() {
 
       if (tripsErr) throw tripsErr;
       if (!dbTrips || dbTrips.length === 0) {
-        setTrips([]);
+        // DB에 여행 없으면 데모 데이터 + 로컬 추가분 표시
+        setTrips([...demoExtraTrips, ...sampleTrips]);
         return;
       }
 
@@ -174,11 +175,11 @@ export function useTrips() {
         ),
       );
 
-      setTrips(mapped);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : '여행 데이터를 불러오지 못했습니다';
-      setError(message);
-      console.error('useTrips error:', err);
+      setTrips([...demoExtraTrips, ...mapped]);
+    } catch {
+      // Supabase 실패 시 데모 데이터로 폴백
+      setTrips([...demoExtraTrips, ...sampleTrips]);
+      setError(null);
     } finally {
       setLoading(false);
     }
