@@ -8,7 +8,7 @@ interface Props {
 }
 
 /** 이미지를 리사이즈/압축하여 localStorage 용량 초과를 방지 */
-function compressImage(dataUrl: string, maxWidth = 800, quality = 0.7): Promise<string> {
+function compressImage(dataUrl: string, maxWidth = 480, quality = 0.5): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
@@ -22,11 +22,34 @@ function compressImage(dataUrl: string, maxWidth = 800, quality = 0.7): Promise<
       canvas.height = height;
       const ctx = canvas.getContext('2d')!;
       ctx.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', quality));
+      const compressed = canvas.toDataURL('image/jpeg', quality);
+      // 압축 후에도 100KB 초과 시 더 낮은 quality로 재압축
+      if (compressed.length > 100_000 && quality > 0.2) {
+        const ctx2 = canvas.getContext('2d')!;
+        ctx2.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.3));
+      } else {
+        resolve(compressed);
+      }
     };
-    img.onerror = () => resolve(dataUrl); // 압축 실패 시 원본 유지
+    img.onerror = () => resolve(dataUrl);
     img.src = dataUrl;
   });
+}
+
+/** localStorage 남은 용량 추정 (bytes) */
+function estimateLocalStorageRemaining(): number {
+  try {
+    let used = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key) used += key.length + (localStorage.getItem(key)?.length ?? 0);
+    }
+    // 대부분의 브라우저 한도: ~5MB (문자열은 UTF-16이므로 ×2)
+    return Math.max(0, 5 * 1024 * 1024 - used * 2);
+  } catch {
+    return 0;
+  }
 }
 
 export default function PhotoUpload({ photos, onChange, coverImage, onCoverChange }: Props) {
@@ -41,29 +64,53 @@ export default function PhotoUpload({ photos, onChange, coverImage, onCoverChang
     if (!coverImage && photos.length === 0) onCoverChange(url);
   };
 
+  const [uploading, setUploading] = useState(false);
+
   const handleFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
+    if (!files || files.length === 0) return;
 
-    const newUrls: string[] = [];
-    for (const file of Array.from(files)) {
-      const dataUrl = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(file);
-      });
-      // 이미지 리사이즈/압축 (localStorage 용량 절약)
-      const compressed = await compressImage(dataUrl);
-      newUrls.push(compressed);
+    // 용량 체크
+    const remaining = estimateLocalStorageRemaining();
+    if (remaining < 50_000) {
+      alert('저장 공간이 부족합니다. 기존 사진을 삭제한 후 다시 시도해주세요.');
+      e.target.value = '';
+      return;
     }
 
-    const next = [...photos, ...newUrls];
-    onChange(next);
-    if (!coverImage && photos.length === 0 && newUrls.length > 0) {
-      onCoverChange(newUrls[0]);
-    }
+    setUploading(true);
+    try {
+      const newUrls: string[] = [];
+      for (const file of Array.from(files)) {
+        // 파일 크기가 15MB 초과 시 건너뛰기
+        if (file.size > 15 * 1024 * 1024) {
+          alert(`"${file.name}" 파일이 너무 큽니다 (15MB 이하만 가능).`);
+          continue;
+        }
 
-    e.target.value = '';
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error('파일 읽기 실패'));
+          reader.readAsDataURL(file);
+        });
+        const compressed = await compressImage(dataUrl);
+        newUrls.push(compressed);
+      }
+
+      if (newUrls.length > 0) {
+        const next = [...photos, ...newUrls];
+        onChange(next);
+        if (!coverImage && photos.length === 0) {
+          onCoverChange(newUrls[0]);
+        }
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '사진 업로드에 실패했습니다.');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
   };
 
   const remove = (index: number) => {
@@ -105,9 +152,10 @@ export default function PhotoUpload({ photos, onChange, coverImage, onCoverChang
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg cursor-pointer border-0 hover:bg-gray-200 transition-colors"
+          disabled={uploading}
+          className="px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg cursor-pointer border-0 hover:bg-gray-200 transition-colors disabled:opacity-50"
         >
-          파일
+          {uploading ? '압축중...' : '파일'}
         </button>
         <input
           ref={fileInputRef}
