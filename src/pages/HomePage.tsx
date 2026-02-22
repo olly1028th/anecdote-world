@@ -3,6 +3,7 @@ import type { VisitStatus } from '../types/database';
 import { useTrips } from '../hooks/useTrips';
 import { usePins } from '../hooks/usePins';
 import { useFavoritePhotos, type FavoritePhoto } from '../hooks/useFavoritePhotos';
+import SpaceTrips from '../components/SpaceTrips';
 
 const WorldMap = lazy(() =>
   import('../components/Map').then((m) => ({ default: m.WorldMap })),
@@ -60,7 +61,26 @@ export default function HomePage() {
 
   return (
     <div className="px-6 space-y-8">
-      {/* 세계지도 히어로 */}
+      {/* Quick Stats — 지도 상단 */}
+      <section className="bg-[#FFD166]/10 p-5 rounded-3xl border-2 border-dashed border-[#FFD166]">
+        <h3 className="text-sm font-bold text-[#FF9F43] mb-3">Where have you been? 🌍</h3>
+        <div className="flex gap-3 overflow-x-auto pb-1">
+          <div className="bg-white p-3 rounded-2xl shadow-sm min-w-[100px] text-center">
+            <span className="block text-xl">✈️</span>
+            <span className="block text-xs font-bold mt-1">{completedCount} 여행 완료</span>
+          </div>
+          <div className="bg-white p-3 rounded-2xl shadow-sm min-w-[100px] text-center">
+            <span className="block text-xl">📋</span>
+            <span className="block text-xs font-bold mt-1">{plannedCount} 계획 중</span>
+          </div>
+          <div className="bg-white p-3 rounded-2xl shadow-sm min-w-[100px] text-center">
+            <span className="block text-xl">📍</span>
+            <span className="block text-xs font-bold mt-1">{pins.length} 핀</span>
+          </div>
+        </div>
+      </section>
+
+      {/* 세계지도 */}
       <section>
         <div className="relative h-[380px] rounded-3xl overflow-hidden shadow-md">
           {pinsLoading ? (
@@ -105,29 +125,13 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Quick Stats */}
-      <section className="bg-[#FFD166]/10 p-5 rounded-3xl border-2 border-dashed border-[#FFD166]">
-        <h3 className="text-sm font-bold text-[#FF9F43] mb-3">Where have you been? 🌍</h3>
-        <div className="flex gap-3 overflow-x-auto pb-1">
-          <div className="bg-white p-3 rounded-2xl shadow-sm min-w-[100px] text-center">
-            <span className="block text-xl">✈️</span>
-            <span className="block text-xs font-bold mt-1">{completedCount} 여행 완료</span>
-          </div>
-          <div className="bg-white p-3 rounded-2xl shadow-sm min-w-[100px] text-center">
-            <span className="block text-xl">📋</span>
-            <span className="block text-xs font-bold mt-1">{plannedCount} 계획 중</span>
-          </div>
-          <div className="bg-white p-3 rounded-2xl shadow-sm min-w-[100px] text-center">
-            <span className="block text-xl">📍</span>
-            <span className="block text-xs font-bold mt-1">{pins.length} 핀</span>
-          </div>
-        </div>
-      </section>
+      {/* My Universe — 여행 행성 궤도 뷰 */}
+      <SpaceTrips trips={trips} />
 
-      {/* My Shiny Journal — Favorite 사진 액자 갤러리 */}
+      {/* Life Journey — Favorite 사진 액자 갤러리 */}
       <section>
         <div className="flex items-center gap-2 mb-6">
-          <h2 className="text-xl font-bold text-[#2D3436]">My Shiny Journal</h2>
+          <h2 className="text-xl font-bold text-[#2D3436]">Life Journey</h2>
           <div className="h-[2px] flex-1 bg-[#F0EEE6]" />
         </div>
 

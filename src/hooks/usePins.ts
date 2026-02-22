@@ -3,6 +3,12 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { Pin } from '../types/database';
 
 /** 데모 모드용 샘플 핀 데이터 */
+let demoExtraPins: Pin[] = [];
+
+export function addDemoPin(pin: Pin) {
+  demoExtraPins = [pin, ...demoExtraPins];
+}
+
 const samplePins: Pin[] = [
   {
     id: 'pin-1',
@@ -153,7 +159,7 @@ export function usePins() {
 
   const fetchPins = useCallback(async () => {
     if (!isSupabaseConfigured) {
-      setPins(samplePins);
+      setPins([...demoExtraPins, ...samplePins]);
       setLoading(false);
       return;
     }
@@ -168,10 +174,12 @@ export function usePins() {
         .order('created_at', { ascending: false });
 
       if (err) throw err;
-      setPins((data as Pin[]) ?? []);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : '핀 데이터를 불러오지 못했습니다';
-      setError(message);
+      const dbPins = (data as Pin[]) ?? [];
+      setPins([...demoExtraPins, ...dbPins]);
+    } catch {
+      // Supabase 실패 시 데모 데이터로 폴백
+      setPins([...demoExtraPins, ...samplePins]);
+      setError(null);
     } finally {
       setLoading(false);
     }
@@ -179,6 +187,13 @@ export function usePins() {
 
   useEffect(() => {
     fetchPins();
+  }, [fetchPins]);
+
+  // 핀 추가 시 자동 refetch
+  useEffect(() => {
+    const handler = () => fetchPins();
+    window.addEventListener('pin-added', handler);
+    return () => window.removeEventListener('pin-added', handler);
   }, [fetchPins]);
 
   return { pins, loading, error, refetch: fetchPins };

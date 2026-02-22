@@ -49,17 +49,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
     try {
       setSaving(true);
 
-      if (isSupabaseConfigured) {
-        // Supabase 모드: DB에 저장
-        await createTrip({
-          title: title.trim(),
-          status,
-          start_date: startDate || undefined,
-          end_date: endDate || undefined,
-          memo: memo.trim() || undefined,
-        });
-      } else {
-        // 데모 모드: 로컬 상태에 추가
+      const saveDemoTrip = () => {
         const now = new Date().toISOString();
         addDemoTrip({
           id: `demo-${Date.now()}`,
@@ -78,6 +68,23 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
           createdAt: now,
           updatedAt: now,
         });
+      };
+
+      if (isSupabaseConfigured) {
+        try {
+          await createTrip({
+            title: title.trim(),
+            status,
+            start_date: startDate || undefined,
+            end_date: endDate || undefined,
+            memo: memo.trim() || undefined,
+          });
+        } catch {
+          // Supabase 실패 시 데모 모드로 폴백
+          saveDemoTrip();
+        }
+      } else {
+        saveDemoTrip();
       }
 
       // useTrips refetch 트리거
@@ -112,7 +119,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
         {/* 헤더 */}
         <div className="sticky top-0 bg-[var(--color-bg)] px-6 pt-5 pb-3 border-b border-[var(--color-border)] z-10">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-[#2D3436]">새 여행 추가</h2>
+            <h2 className="text-lg font-bold text-[#2D3436]">새 행성 만들기</h2>
             <button
               type="button"
               onClick={onClose}
@@ -228,7 +235,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
               disabled={saving || !title.trim()}
               className="flex-1 py-3 rounded-2xl text-sm font-bold text-white bg-[#FF6B6B] hover:bg-[#e85d5d] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-[#FF6B6B]/20"
             >
-              {saving ? '저장 중...' : '여행 추가'}
+              {saving ? '저장 중...' : '행성 만들기'}
             </button>
           </div>
         </form>
