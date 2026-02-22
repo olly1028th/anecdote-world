@@ -306,9 +306,10 @@ export function useTrip(id: string | undefined) {
   const refetch = useCallback(async () => {
     if (!id) return;
 
-    // 데모 모드
+    // 데모 모드 (로컬 추가 여행 포함)
     if (!isSupabaseConfigured) {
-      setTrip(sampleTrips.find((t) => t.id === id) ?? null);
+      const allDemoTrips = [...demoExtraTrips, ...sampleTrips];
+      setTrip(allDemoTrips.find((t) => t.id === id) ?? null);
       setLoading(false);
       return;
     }
