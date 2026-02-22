@@ -13,10 +13,9 @@ export default function Header() {
 
   return (
     <header className="px-6 pt-6 pb-4 flex justify-between items-end">
-      <Link to="/" className="no-underline">
-        <h1 className="text-2xl font-bold text-[#FF6B6B] tracking-tight">
+      <Link to="/" className="no-underline group">
+        <h1 className="text-2xl font-bold text-[#FF6B6B] tracking-tight transition-transform duration-200 group-hover:scale-105 origin-left">
           Anecdote World
-          <span className="text-[9px] text-gray-300 ml-1 font-normal align-super">v2</span>
         </h1>
       </Link>
 
@@ -25,23 +24,25 @@ export default function Header() {
           {/* 다크 모드 토글 */}
           <button
             onClick={toggleDark}
-            className="w-9 h-9 flex items-center justify-center rounded-full text-gray-400 hover:text-[#FF6B6B] hover:bg-[#FF6B6B]/10 transition-colors cursor-pointer"
+            className="w-9 h-9 flex items-center justify-center rounded-full text-gray-400 hover:text-[#FF6B6B] hover:bg-[#FF6B6B]/10 transition-all cursor-pointer btn-press"
             title={isDark ? '라이트 모드' : '다크 모드'}
           >
-            {isDark ? (
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-              </svg>
-            )}
+            <div className="transition-transform duration-300" style={{ transform: isDark ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+              {isDark ? (
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+              )}
+            </div>
           </button>
 
           {/* 유저 프로필 */}
           <Link to="/profile" className="no-underline">
-            <div className="bg-[#FFD166] p-1.5 rounded-full shadow-sm hover:scale-105 transition-transform">
+            <div className="bg-[#FFD166] p-1.5 rounded-full shadow-sm hover:scale-110 active:scale-95 transition-transform">
               {avatarUrl ? (
                 <img
                   src={avatarUrl}
@@ -66,7 +67,7 @@ export default function Header() {
           {!isDemo && (
             <button
               onClick={signOut}
-              className="text-xs text-gray-400 hover:text-[#FF6B6B] transition-colors cursor-pointer"
+              className="text-xs text-gray-400 hover:text-[#FF6B6B] transition-colors cursor-pointer btn-press"
             >
               로그아웃
             </button>

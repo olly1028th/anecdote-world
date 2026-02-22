@@ -3,12 +3,16 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 import { useStats } from '../hooks/useStats';
+import { useScrollReveal } from '../hooks/useScrollReveal';
 import { formatCurrency, formatDate } from '../utils/format';
 
 export default function ProfilePage() {
   const { profile, isDemo } = useAuth();
   const { updating, error: profileError, updateProfile } = useProfile();
   const stats = useStats();
+
+  const statsRef = useScrollReveal<HTMLElement>();
+  const countriesRef = useScrollReveal<HTMLElement>();
 
   const [editing, setEditing] = useState(false);
   const [nickname, setNickname] = useState(profile?.nickname ?? '');
@@ -48,18 +52,19 @@ export default function ProfilePage() {
   // 로딩 상태
   if (stats.loading) {
     return (
-      <div className="px-6 py-20 text-center">
-        <div className="animate-pulse text-gray-400">프로필을 불러오는 중...</div>
+      <div className="px-6 py-20 text-center page-enter">
+        <div className="w-8 h-8 mx-auto border-3 border-[#FF6B6B]/30 border-t-[#FF6B6B] rounded-full" style={{ animation: 'spin 0.8s linear infinite' }} />
+        <p className="text-gray-400 mt-4 text-sm">프로필을 불러오는 중...</p>
       </div>
     );
   }
 
   return (
-    <div className="px-6 space-y-8">
+    <div className="px-6 space-y-8 page-enter">
       {/* 뒤로가기 */}
       <Link
         to="/"
-        className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-[#FF6B6B] transition-colors no-underline"
+        className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-[#FF6B6B] transition-colors no-underline btn-press"
       >
         <svg
           className="w-4 h-4"
@@ -78,7 +83,7 @@ export default function ProfilePage() {
       </Link>
 
       {/* ── 프로필 헤더 ── */}
-      <section className="bg-white rounded-3xl p-6 shadow-md shadow-gray-200/50">
+      <section className="bg-white rounded-3xl p-6 shadow-md shadow-gray-200/50 scale-in">
         <div className="flex items-start gap-5">
           {/* 아바타 */}
           {profile?.avatar_url ? (
@@ -133,14 +138,14 @@ export default function ProfilePage() {
                   <button
                     onClick={handleSave}
                     disabled={updating}
-                    className="px-4 py-2 bg-[#FF6B6B] text-white text-sm font-medium rounded-xl hover:bg-[#e85d5d] disabled:opacity-50 transition-colors cursor-pointer"
+                    className="px-4 py-2 bg-[#FF6B6B] text-white text-sm font-medium rounded-xl hover:bg-[#e85d5d] disabled:opacity-50 transition-colors cursor-pointer btn-press"
                   >
                     {updating ? '저장 중...' : '저장'}
                   </button>
                   <button
                     onClick={handleCancel}
                     disabled={updating}
-                    className="px-4 py-2 bg-gray-100 text-gray-500 text-sm font-medium rounded-xl hover:bg-gray-200 disabled:opacity-50 transition-colors cursor-pointer"
+                    className="px-4 py-2 bg-gray-100 text-gray-500 text-sm font-medium rounded-xl hover:bg-gray-200 disabled:opacity-50 transition-colors cursor-pointer btn-press"
                   >
                     취소
                   </button>
@@ -173,7 +178,7 @@ export default function ProfilePage() {
 
                 <button
                   onClick={handleEdit}
-                  className="mt-3 px-4 py-2 bg-[#F0EEE6] text-[#4A4A4A] text-sm font-medium rounded-xl hover:bg-[#e8e5db] transition-colors cursor-pointer"
+                  className="mt-3 px-4 py-2 bg-[#F0EEE6] text-[#4A4A4A] text-sm font-medium rounded-xl hover:bg-[#e8e5db] transition-colors cursor-pointer btn-press"
                 >
                   수정
                 </button>
@@ -184,55 +189,37 @@ export default function ProfilePage() {
       </section>
 
       {/* ── 나의 통계 ── */}
-      <section>
+      <section ref={statsRef} className="fade-up">
         <div className="flex items-center gap-2 mb-4">
           <h2 className="text-lg font-bold text-[#2D3436]">나의 통계</h2>
           <div className="h-[2px] flex-1 bg-[#F0EEE6]" />
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <div className="bg-white rounded-3xl p-5 shadow-md shadow-gray-200/50 text-center">
-            <span className="block text-xl mb-1">✈️</span>
-            <p className="text-2xl font-bold text-[#2D3436]">
-              {stats.completedCount}
-            </p>
-            <p className="text-xs font-medium text-gray-400 mt-1">다녀온 여행</p>
-          </div>
-
-          <div className="bg-white rounded-3xl p-5 shadow-md shadow-gray-200/50 text-center">
-            <span className="block text-xl mb-1">🌍</span>
-            <p className="text-2xl font-bold text-[#2D3436]">
-              {stats.countriesVisited.length}
-            </p>
-            <p className="text-xs font-medium text-gray-400 mt-1">방문 국가</p>
-          </div>
-
-          <div className="bg-white rounded-3xl p-5 shadow-md shadow-gray-200/50 text-center">
-            <span className="block text-xl mb-1">💰</span>
-            <p className="text-2xl font-bold text-[#2D3436]">
-              {formatCurrency(stats.totalSpent)}
-            </p>
-            <p className="text-xs font-medium text-gray-400 mt-1">총 경비</p>
-          </div>
-
-          <div className="bg-white rounded-3xl p-5 shadow-md shadow-gray-200/50 text-center">
-            <span className="block text-xl mb-1">📍</span>
-            <p className="text-2xl font-bold text-[#2D3436]">{totalPins}</p>
-            <p className="text-xs font-medium text-gray-400 mt-1">등록한 핀</p>
-          </div>
-
-          <div className="bg-white rounded-3xl p-5 shadow-md shadow-gray-200/50 text-center">
-            <span className="block text-xl mb-1">📸</span>
-            <p className="text-2xl font-bold text-[#2D3436]">
-              {stats.totalPhotos}
-            </p>
-            <p className="text-xs font-medium text-gray-400 mt-1">촬영한 사진</p>
-          </div>
+          {[
+            { emoji: '✈️', value: stats.completedCount, label: '다녀온 여행' },
+            { emoji: '🌍', value: stats.countriesVisited.length, label: '방문 국가' },
+            { emoji: '💰', value: formatCurrency(stats.totalSpent), label: '총 경비' },
+            { emoji: '📍', value: totalPins, label: '등록한 핀' },
+            { emoji: '📸', value: stats.totalPhotos, label: '촬영한 사진' },
+          ].map((item, idx) => (
+            <div
+              key={item.label}
+              className="bg-white rounded-3xl p-5 shadow-md shadow-gray-200/50 text-center card-hover scale-in"
+              style={{ animationDelay: `${idx * 0.06}s` }}
+            >
+              <span className="block text-xl mb-1">{item.emoji}</span>
+              <p className="text-2xl font-bold text-[#2D3436] count-pop" style={{ animationDelay: `${idx * 0.06 + 0.2}s` }}>
+                {item.value}
+              </p>
+              <p className="text-xs font-medium text-gray-400 mt-1">{item.label}</p>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* ── 방문 국가 ── */}
-      <section>
+      <section ref={countriesRef} className="fade-up">
         <div className="flex items-center gap-2 mb-4">
           <h2 className="text-lg font-bold text-[#2D3436]">방문 국가</h2>
           <div className="h-[2px] flex-1 bg-[#F0EEE6]" />
@@ -241,10 +228,11 @@ export default function ProfilePage() {
         <div className="bg-white rounded-3xl p-6 shadow-md shadow-gray-200/50">
           {stats.countriesVisited.length > 0 ? (
             <div className="flex flex-wrap gap-2">
-              {stats.countriesVisited.map((country) => (
+              {stats.countriesVisited.map((country, idx) => (
                 <span
                   key={country}
-                  className="inline-flex items-center px-3 py-1.5 bg-[#FFD166]/15 text-[#FF9F43] text-sm font-medium rounded-full"
+                  className="inline-flex items-center px-3 py-1.5 bg-[#FFD166]/15 text-[#FF9F43] text-sm font-medium rounded-full scale-in"
+                  style={{ animationDelay: `${idx * 0.05}s` }}
                 >
                   {country}
                 </span>

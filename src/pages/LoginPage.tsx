@@ -12,21 +12,44 @@ export default function LoginPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)]">
-        <div className="animate-pulse text-gray-400">로딩 중...</div>
+        <div className="w-8 h-8 border-3 border-[#FF6B6B]/30 border-t-[#FF6B6B] rounded-full" style={{ animation: 'spin 0.8s linear infinite' }} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)] px-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)] px-4 relative overflow-hidden">
+      {/* Background decorative elements */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-20 -right-20 w-72 h-72 bg-[#FF6B6B]/5 rounded-full blur-3xl" />
+        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-[#FFD166]/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 left-1/4 w-48 h-48 bg-[#7EC8E3]/5 rounded-full blur-3xl" />
+      </div>
+
+      <div className="w-full max-w-sm relative z-10 page-enter">
         {/* 로고 영역 */}
         <div className="text-center mb-10">
+          {/* Globe icon */}
+          <div className="w-20 h-20 mx-auto mb-6 relative">
+            <div
+              className="w-full h-full rounded-full float"
+              style={{
+                background: 'linear-gradient(135deg, #FF6B6B 0%, #FFD166 50%, #7EC8E3 100%)',
+                boxShadow: '0 8px 32px rgba(255, 107, 107, 0.3)',
+              }}
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.354-5.646M12 21a9.004 9.004 0 01-8.354-5.646M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5a17.92 17.92 0 01-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
+              </svg>
+            </div>
+          </div>
+
           <h1 className="text-3xl font-bold text-[#FF6B6B] tracking-tight">
             Anecdote World
           </h1>
           <p className="text-sm text-gray-400 mt-2 italic">
-            Capturing your shiny moments... ✨
+            Capturing your shiny moments...
           </p>
         </div>
 
@@ -34,7 +57,7 @@ export default function LoginPage() {
         <div className="space-y-3">
           <button
             onClick={signInWithGoogle}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border border-[#F0EEE6] rounded-2xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer shadow-sm"
+            className="w-full flex items-center justify-center gap-3 px-4 py-3.5 bg-white border border-[#F0EEE6] rounded-2xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all cursor-pointer shadow-sm card-hover btn-press scale-in"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -59,7 +82,8 @@ export default function LoginPage() {
 
           <button
             onClick={signInWithKakao}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#FEE500] rounded-2xl text-sm font-medium text-[#191919] hover:bg-[#FDD800] transition-colors cursor-pointer shadow-sm"
+            className="w-full flex items-center justify-center gap-3 px-4 py-3.5 bg-[#FEE500] rounded-2xl text-sm font-medium text-[#191919] hover:bg-[#FDD800] transition-all cursor-pointer shadow-sm card-hover btn-press scale-in"
+            style={{ animationDelay: '0.08s' }}
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#191919">
               <path d="M12 3C6.48 3 2 6.36 2 10.44c0 2.63 1.76 4.94 4.4 6.26-.14.53-.92 3.41-.95 3.63 0 0-.02.17.09.24.11.06.24.01.24.01.32-.04 3.7-2.44 4.28-2.86.62.09 1.27.14 1.94.14 5.52 0 10-3.36 10-7.42C22 6.36 17.52 3 12 3z" />

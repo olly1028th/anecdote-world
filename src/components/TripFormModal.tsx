@@ -226,14 +226,14 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="flex-1 py-3 rounded-2xl text-sm font-medium text-gray-500 bg-[#F0EEE6] hover:bg-[#e8e5db] transition-colors cursor-pointer"
+              className="flex-1 py-3 rounded-2xl text-sm font-medium text-gray-500 bg-[#F0EEE6] hover:bg-[#e8e5db] transition-colors cursor-pointer btn-press"
             >
               취소
             </button>
             <button
               type="submit"
               disabled={saving || !title.trim()}
-              className="flex-1 py-3 rounded-2xl text-sm font-bold text-white bg-[#FF6B6B] hover:bg-[#e85d5d] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-[#FF6B6B]/20"
+              className="flex-1 py-3 rounded-2xl text-sm font-bold text-white bg-[#FF6B6B] hover:bg-[#e85d5d] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-[#FF6B6B]/20 btn-press"
             >
               {saving ? '저장 중...' : '행성 만들기'}
             </button>

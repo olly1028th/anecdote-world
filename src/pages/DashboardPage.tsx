@@ -1,5 +1,7 @@
 import { useStats } from '../hooks/useStats';
+import { useScrollReveal } from '../hooks/useScrollReveal';
 import { formatCurrency, expenseCategoryLabel } from '../utils/format';
+import { StatsSkeleton } from '../components/Skeleton';
 
 const EXPENSE_CATEGORY_COLORS: Record<string, string> = {
   flight: 'bg-sky-500',
@@ -14,11 +16,22 @@ const EXPENSE_CATEGORY_COLORS: Record<string, string> = {
 export default function DashboardPage() {
   const stats = useStats();
 
+  const expenseRef = useScrollReveal<HTMLElement>();
+  const pinRef = useScrollReveal<HTMLElement>();
+  const activityRef = useScrollReveal<HTMLElement>();
+
   // 로딩 상태
   if (stats.loading) {
     return (
-      <div className="px-6 py-20 text-center">
-        <div className="animate-pulse text-gray-400">통계를 불러오는 중...</div>
+      <div className="px-6 space-y-8 page-enter">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-xl font-bold text-[#2D3436]">Dashboard</h1>
+            <div className="h-[2px] flex-1 bg-[#F0EEE6]" />
+          </div>
+          <p className="text-sm text-gray-400">나의 여행 통계를 한눈에 확인하세요.</p>
+        </div>
+        <StatsSkeleton />
       </div>
     );
   }
@@ -29,7 +42,7 @@ export default function DashboardPage() {
     stats.pinsByStatus.visited + stats.pinsByStatus.planned + stats.pinsByStatus.wishlist;
 
   return (
-    <div className="px-6 space-y-8">
+    <div className="px-6 space-y-8 page-enter">
       {/* 페이지 헤더 */}
       <div>
         <div className="flex items-center gap-2 mb-1">
@@ -41,14 +54,14 @@ export default function DashboardPage() {
 
       {/* ── 1. 히어로 통계 카드 ── */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard value={stats.completedCount} label="다녀온 여행" emoji="✈️" />
-        <StatCard value={stats.plannedCount} label="계획 중" emoji="📋" />
-        <StatCard value={stats.countriesVisited.length} label="방문 국가" emoji="🌍" />
-        <StatCard value={stats.citiesVisited.length} label="방문 도시" emoji="🏙️" />
+        <StatCard value={stats.completedCount} label="다녀온 여행" emoji="✈️" delay={0} />
+        <StatCard value={stats.plannedCount} label="계획 중" emoji="📋" delay={1} />
+        <StatCard value={stats.countriesVisited.length} label="방문 국가" emoji="🌍" delay={2} />
+        <StatCard value={stats.citiesVisited.length} label="방문 도시" emoji="🏙️" delay={3} />
       </section>
 
       {/* ── 2. 지출 분석 섹션 ── */}
-      <section className="bg-white rounded-3xl p-6 shadow-md shadow-gray-200/50">
+      <section ref={expenseRef} className="bg-white rounded-3xl p-6 shadow-md shadow-gray-200/50 fade-up">
         <h2 className="text-lg font-bold text-[#2D3436] mb-4">지출 분석</h2>
 
         {/* 총 지출 / 평균 지출 */}
@@ -73,7 +86,7 @@ export default function DashboardPage() {
             {stats.expenseByCategory
               .slice()
               .sort((a, b) => b.amount - a.amount)
-              .map((item) => {
+              .map((item, idx) => {
                 const widthPercent = (item.amount / maxExpense) * 100;
                 const barColor = EXPENSE_CATEGORY_COLORS[item.category] || 'bg-gray-400';
 
@@ -87,8 +100,8 @@ export default function DashboardPage() {
                     </div>
                     <div className="w-full bg-[#F0EEE6] rounded-full h-3">
                       <div
-                        className={`${barColor} h-3 rounded-full transition-all`}
-                        style={{ width: `${widthPercent}%` }}
+                        className={`${barColor} h-3 rounded-full bar-grow`}
+                        style={{ width: `${widthPercent}%`, animationDelay: `${idx * 0.1}s` }}
                       />
                     </div>
                   </div>
@@ -101,7 +114,7 @@ export default function DashboardPage() {
       </section>
 
       {/* ── 3. 핀 통계 섹션 ── */}
-      <section className="bg-white rounded-3xl p-6 shadow-md shadow-gray-200/50">
+      <section ref={pinRef} className="bg-white rounded-3xl p-6 shadow-md shadow-gray-200/50 fade-up">
         <h2 className="text-lg font-bold text-[#2D3436] mb-4">핀 통계</h2>
 
         {/* 핀 상태 요약 */}
@@ -131,10 +144,11 @@ export default function DashboardPage() {
           <div className="mb-6">
             <h3 className="text-sm font-medium text-gray-400 mb-2">방문한 국가</h3>
             <div className="flex flex-wrap gap-2">
-              {stats.countriesVisited.map((country) => (
+              {stats.countriesVisited.map((country, idx) => (
                 <span
                   key={country}
-                  className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#FFD166]/15 text-[#FF9F43]"
+                  className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#FFD166]/15 text-[#FF9F43] scale-in"
+                  style={{ animationDelay: `${idx * 0.05}s` }}
                 >
                   {country}
                 </span>
@@ -151,7 +165,7 @@ export default function DashboardPage() {
               {stats.pinsByCategory
                 .slice()
                 .sort((a, b) => b.count - a.count)
-                .map((item) => {
+                .map((item, idx) => {
                   const widthPercent = (item.count / maxPinCategory) * 100;
 
                   return (
@@ -161,8 +175,8 @@ export default function DashboardPage() {
                       </span>
                       <div className="flex-1 bg-[#F0EEE6] rounded-full h-2">
                         <div
-                          className="bg-[#FF6B6B] h-2 rounded-full transition-all"
-                          style={{ width: `${widthPercent}%` }}
+                          className="bg-[#FF6B6B] h-2 rounded-full bar-grow"
+                          style={{ width: `${widthPercent}%`, animationDelay: `${idx * 0.08}s` }}
                         />
                       </div>
                       <span className="text-xs text-gray-500 w-8 text-right">{item.count}</span>
@@ -179,12 +193,12 @@ export default function DashboardPage() {
       </section>
 
       {/* ── 4. 활동 요약 섹션 ── */}
-      <section className="bg-white rounded-3xl p-6 shadow-md shadow-gray-200/50">
+      <section ref={activityRef} className="bg-white rounded-3xl p-6 shadow-md shadow-gray-200/50 fade-up">
         <h2 className="text-lg font-bold text-[#2D3436] mb-4">활동 요약</h2>
 
         <div className="grid grid-cols-2 gap-4">
           {/* 사진 수 */}
-          <div className="bg-[#FF6B6B]/5 rounded-2xl p-4 flex items-center gap-4 border border-[#FF6B6B]/10">
+          <div className="bg-[#FF6B6B]/5 rounded-2xl p-4 flex items-center gap-4 border border-[#FF6B6B]/10 card-hover">
             <div className="w-10 h-10 rounded-full bg-[#FF6B6B]/15 flex items-center justify-center shrink-0">
               <svg
                 className="w-5 h-5 text-[#FF6B6B]"
@@ -206,13 +220,13 @@ export default function DashboardPage() {
               </svg>
             </div>
             <div>
-              <p className="text-2xl font-bold text-[#2D3436]">{stats.totalPhotos}</p>
+              <p className="text-2xl font-bold text-[#2D3436] count-pop">{stats.totalPhotos}</p>
               <p className="text-sm text-gray-500">총 사진</p>
             </div>
           </div>
 
           {/* 체크리스트 진행률 */}
-          <div className="bg-emerald-50 rounded-2xl p-4 flex items-center gap-4 border border-emerald-100">
+          <div className="bg-emerald-50 rounded-2xl p-4 flex items-center gap-4 border border-emerald-100 card-hover">
             <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
               <svg
                 className="w-5 h-5 text-emerald-500"
@@ -231,7 +245,7 @@ export default function DashboardPage() {
             <div>
               {stats.checklistProgress.total > 0 ? (
                 <>
-                  <p className="text-2xl font-bold text-[#2D3436]">
+                  <p className="text-2xl font-bold text-[#2D3436] count-pop">
                     {stats.checklistProgress.checked}
                     <span className="text-base font-normal text-gray-400">
                       {' '}
@@ -242,9 +256,10 @@ export default function DashboardPage() {
                   {/* 프로그레스 바 */}
                   <div className="w-full bg-[#F0EEE6] rounded-full h-1.5 mt-2">
                     <div
-                      className="bg-emerald-500 h-1.5 rounded-full transition-all"
+                      className="bg-emerald-500 h-1.5 rounded-full bar-grow"
                       style={{
                         width: `${(stats.checklistProgress.checked / stats.checklistProgress.total) * 100}%`,
+                        animationDelay: '0.3s',
                       }}
                     />
                   </div>
@@ -269,15 +284,20 @@ function StatCard({
   value,
   label,
   emoji,
+  delay,
 }: {
   value: number;
   label: string;
   emoji: string;
+  delay: number;
 }) {
   return (
-    <div className="bg-white rounded-3xl p-5 shadow-md shadow-gray-200/50 text-center">
+    <div
+      className="bg-white rounded-3xl p-5 shadow-md shadow-gray-200/50 text-center card-hover scale-in"
+      style={{ animationDelay: `${delay * 0.08}s` }}
+    >
       <span className="block text-2xl mb-1">{emoji}</span>
-      <p className="text-2xl font-bold text-[#2D3436]">{value}</p>
+      <p className="text-2xl font-bold text-[#2D3436] count-pop" style={{ animationDelay: `${delay * 0.08 + 0.2}s` }}>{value}</p>
       <p className="text-xs font-medium text-gray-400 mt-1">{label}</p>
     </div>
   );

@@ -12,14 +12,14 @@ export default function TripCard({ trip }: Props) {
   return (
     <Link
       to={`/trip/${trip.id}`}
-      className="block bg-white rounded-3xl overflow-hidden shadow-md shadow-gray-200/50 hover:shadow-lg transition-shadow duration-300 no-underline"
+      className="block bg-white rounded-3xl overflow-hidden shadow-md shadow-gray-200/50 no-underline card-hover group"
     >
       {/* 커버 이미지 */}
       <div className="relative h-56 overflow-hidden">
         <img
           src={trip.coverImage}
           alt={trip.title}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
         <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[12px] font-bold text-[#FF6B6B]">
           {trip.destination || (trip.status === 'completed' ? '완료' : '계획 중')}

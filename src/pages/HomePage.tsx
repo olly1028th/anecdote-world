@@ -3,7 +3,9 @@ import type { VisitStatus } from '../types/database';
 import { useTrips } from '../hooks/useTrips';
 import { usePins } from '../hooks/usePins';
 import { useFavoritePhotos, type FavoritePhoto } from '../hooks/useFavoritePhotos';
+import { useScrollReveal } from '../hooks/useScrollReveal';
 import SpaceTrips from '../components/SpaceTrips';
+import { QuickStatsSkeleton, MapSkeleton, PhotoGallerySkeleton } from '../components/Skeleton';
 
 const WorldMap = lazy(() =>
   import('../components/Map').then((m) => ({ default: m.WorldMap })),
@@ -16,6 +18,10 @@ export default function HomePage() {
   const { trips, loading, error } = useTrips();
   const { pins, loading: pinsLoading } = usePins();
   const { photos: favoritePhotos, loading: favLoading } = useFavoritePhotos();
+
+  const mapRef = useScrollReveal<HTMLElement>();
+  const spaceRef = useScrollReveal<HTMLElement>();
+  const galleryRef = useScrollReveal<HTMLElement>();
 
   const filteredPins =
     pinFilter === 'all' ? pins : pins.filter((p) => p.visit_status === pinFilter);
@@ -44,15 +50,17 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="px-6 py-20 text-center">
-        <div className="animate-pulse text-gray-400">여행 데이터를 불러오는 중...</div>
+      <div className="px-6 space-y-8 page-enter">
+        <QuickStatsSkeleton />
+        <MapSkeleton />
+        <PhotoGallerySkeleton />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="px-6 py-20 text-center">
+      <div className="px-6 py-20 text-center page-enter">
         <p className="text-[#FF6B6B]">{error}</p>
         <p className="text-sm text-gray-400 mt-2">새로고침해주세요.</p>
       </div>
@@ -60,35 +68,33 @@ export default function HomePage() {
   }
 
   return (
-    <div className="px-6 space-y-8">
+    <div className="px-6 space-y-8 page-enter">
       {/* Quick Stats — 지도 상단 */}
       <section className="bg-[#FFD166]/10 p-5 rounded-3xl border-2 border-dashed border-[#FFD166]">
-        <h3 className="text-sm font-bold text-[#FF9F43] mb-3">Where have you been? 🌍</h3>
+        <h3 className="text-sm font-bold text-[#FF9F43] mb-3">Where have you been?</h3>
         <div className="flex gap-3 overflow-x-auto pb-1">
-          <div className="bg-white p-3 rounded-2xl shadow-sm min-w-[100px] text-center">
+          <div className="bg-white p-3 rounded-2xl shadow-sm min-w-[100px] text-center card-hover">
             <span className="block text-xl">✈️</span>
-            <span className="block text-xs font-bold mt-1">{completedCount} 여행 완료</span>
+            <span className="block text-xs font-bold mt-1 count-pop">{completedCount} 여행 완료</span>
           </div>
-          <div className="bg-white p-3 rounded-2xl shadow-sm min-w-[100px] text-center">
+          <div className="bg-white p-3 rounded-2xl shadow-sm min-w-[100px] text-center card-hover">
             <span className="block text-xl">📋</span>
-            <span className="block text-xs font-bold mt-1">{plannedCount} 계획 중</span>
+            <span className="block text-xs font-bold mt-1 count-pop" style={{ animationDelay: '0.1s' }}>{plannedCount} 계획 중</span>
           </div>
-          <div className="bg-white p-3 rounded-2xl shadow-sm min-w-[100px] text-center">
+          <div className="bg-white p-3 rounded-2xl shadow-sm min-w-[100px] text-center card-hover">
             <span className="block text-xl">📍</span>
-            <span className="block text-xs font-bold mt-1">{pins.length} 핀</span>
+            <span className="block text-xs font-bold mt-1 count-pop" style={{ animationDelay: '0.2s' }}>{pins.length} 핀</span>
           </div>
         </div>
       </section>
 
       {/* 세계지도 */}
-      <section>
+      <section ref={mapRef} className="fade-up">
         <div className="relative h-[380px] rounded-3xl overflow-hidden shadow-md">
           {pinsLoading ? (
-            <div className="w-full h-full flex items-center justify-center bg-white">
-              <div className="animate-pulse text-gray-400">지도를 불러오는 중...</div>
-            </div>
+            <MapSkeleton />
           ) : (
-            <Suspense fallback={<div className="w-full h-full flex items-center justify-center bg-white"><div className="animate-pulse text-gray-400">지도를 불러오는 중...</div></div>}>
+            <Suspense fallback={<MapSkeleton />}>
               <WorldMap pins={filteredPins} />
             </Suspense>
           )}
@@ -99,7 +105,7 @@ export default function HomePage() {
               <button
                 key={f.key}
                 onClick={() => setPinFilter(f.key)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer backdrop-blur-md ${
+                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer backdrop-blur-md btn-press ${
                   pinFilter === f.key
                     ? 'bg-[#FF6B6B] text-white shadow-md'
                     : 'bg-white/80 text-gray-600 hover:bg-white'
@@ -126,22 +132,22 @@ export default function HomePage() {
       </section>
 
       {/* My Universe — 여행 행성 궤도 뷰 */}
-      <SpaceTrips trips={trips} />
+      <section ref={spaceRef} className="fade-up">
+        <SpaceTrips trips={trips} />
+      </section>
 
       {/* Life Journey — Favorite 사진 액자 갤러리 */}
-      <section>
+      <section ref={galleryRef} className="fade-up">
         <div className="flex items-center gap-2 mb-6">
           <h2 className="text-xl font-bold text-[#2D3436]">Life Journey</h2>
           <div className="h-[2px] flex-1 bg-[#F0EEE6]" />
         </div>
 
         {favLoading ? (
-          <div className="text-center py-12">
-            <div className="animate-pulse text-gray-400">사진을 불러오는 중...</div>
-          </div>
+          <PhotoGallerySkeleton />
         ) : favoritePhotos.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
-            <p className="text-3xl mb-3">🖼️</p>
+            <p className="text-3xl mb-3 float">🖼️</p>
             <p className="text-base font-medium">아직 대표 사진이 없어요</p>
             <p className="text-sm mt-1">여행지 상세에서 사진을 즐겨찾기로 지정해보세요!</p>
           </div>
@@ -163,12 +169,12 @@ export default function HomePage() {
                       className="snap-start shrink-0 w-[200px]"
                     >
                       {/* 액자 프레임 */}
-                      <div className="bg-white p-2 rounded-lg shadow-md shadow-gray-200/60 border border-gray-100">
+                      <div className="bg-white p-2 rounded-lg shadow-md shadow-gray-200/60 border border-gray-100 card-hover">
                         <div className="relative aspect-[4/3] rounded overflow-hidden">
                           <img
                             src={photo.url}
                             alt={photo.caption}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
                           />
                         </div>
                         {/* 캡션 영역 */}
