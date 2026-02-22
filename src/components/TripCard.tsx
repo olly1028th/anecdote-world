@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import type { Trip } from '../types/trip';
 import { formatCurrency, totalExpenses } from '../utils/format';
+import { getCountryFlagUrl } from '../utils/countryFlag';
 
 interface Props {
   trip: Trip;
@@ -17,6 +18,7 @@ const CARD_THEMES = [
 export default function TripCard({ trip, colorIndex = 0 }: Props) {
   const theme = CARD_THEMES[colorIndex % CARD_THEMES.length];
   const total = totalExpenses(trip.expenses);
+  const coverSrc = trip.coverImage || getCountryFlagUrl(trip.destination, 640);
 
   return (
     <Link
@@ -25,11 +27,17 @@ export default function TripCard({ trip, colorIndex = 0 }: Props) {
     >
       {/* 커버 이미지 */}
       <div className="aspect-[4/3] relative overflow-hidden">
-        <img
-          src={trip.coverImage}
-          alt={trip.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-        />
+        {coverSrc ? (
+          <img
+            src={coverSrc}
+            alt={trip.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-[#f48c25]/30 via-[#eab308]/20 to-[#0d9488]/30 flex items-center justify-center">
+            <span className="text-5xl">🌍</span>
+          </div>
+        )}
         <div className="absolute top-4 left-4">
           <span className={`text-[10px] font-bold px-3 py-1 rounded-full border-2 border-slate-900 uppercase ${theme.badge}`}>
             {trip.status === 'completed' ? 'Visited' : 'Planned'}

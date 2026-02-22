@@ -5,6 +5,7 @@ import { useTrips } from '../hooks/useTrips';
 import { usePins } from '../hooks/usePins';
 import { useFavoritePhotos, type FavoritePhoto } from '../hooks/useFavoritePhotos';
 import { formatDate } from '../utils/format';
+import { getCountryFlagUrl } from '../utils/countryFlag';
 import TripCard from '../components/TripCard';
 
 const WorldMap = lazy(() =>
@@ -80,7 +81,7 @@ export default function HomePage() {
           }`}
         >
           <span className="text-2xl font-bold text-[#eab308]">{completedTrips.length}</span>
-          <span className="text-[10px] uppercase font-bold text-slate-500 mt-1 leading-none">Systems</span>
+          <span className="text-[10px] uppercase font-bold text-slate-500 mt-1 leading-none">정복 완료</span>
         </button>
         <button
           type="button"
@@ -113,14 +114,20 @@ export default function HomePage() {
               {completedTrips.length === 0 ? (
                 <p className="text-sm text-slate-400 text-center py-4 font-medium">완료된 여행이 없습니다.</p>
               ) : (
-                completedTrips.map((trip) => (
+                completedTrips.map((trip) => {
+                  const thumbSrc = trip.coverImage || getCountryFlagUrl(trip.destination, 160);
+                  return (
                   <Link
                     key={trip.id}
                     to={`/trip/${trip.id}`}
                     className="flex items-center gap-3 bg-[#F9F4E8] dark:bg-slate-800 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-[#f48c25] transition-colors no-underline"
                   >
-                    <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border-[3px] border-slate-900">
-                      <img src={trip.coverImage} alt={trip.title} className="w-full h-full object-cover" />
+                    <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border-[3px] border-slate-900 bg-[#eab308]/20 flex items-center justify-center">
+                      {thumbSrc ? (
+                        <img src={thumbSrc} alt={trip.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-lg">🌍</span>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{trip.title}</p>
@@ -131,7 +138,8 @@ export default function HomePage() {
                     </div>
                     <span className="text-slate-300 text-lg font-bold shrink-0">›</span>
                   </Link>
-                ))
+                  );
+                })
               )}
             </div>
           )}
@@ -142,14 +150,20 @@ export default function HomePage() {
               {plannedTrips.length === 0 ? (
                 <p className="text-sm text-slate-400 text-center py-4 font-medium">계획 중인 여행이 없습니다.</p>
               ) : (
-                plannedTrips.map((trip) => (
+                plannedTrips.map((trip) => {
+                  const thumbSrc = trip.coverImage || getCountryFlagUrl(trip.destination, 160);
+                  return (
                   <Link
                     key={trip.id}
                     to={`/trip/${trip.id}`}
                     className="flex items-center gap-3 bg-[#F9F4E8] dark:bg-slate-800 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-[#f48c25] transition-colors no-underline"
                   >
-                    <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border-[3px] border-slate-900">
-                      <img src={trip.coverImage} alt={trip.title} className="w-full h-full object-cover" />
+                    <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border-[3px] border-slate-900 bg-[#0d9488]/20 flex items-center justify-center">
+                      {thumbSrc ? (
+                        <img src={thumbSrc} alt={trip.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-lg">🌍</span>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{trip.title}</p>
@@ -160,7 +174,8 @@ export default function HomePage() {
                     </div>
                     <span className="text-slate-300 text-lg font-bold shrink-0">›</span>
                   </Link>
-                ))
+                  );
+                })
               )}
             </div>
           )}
@@ -203,13 +218,6 @@ export default function HomePage() {
           )}
         </section>
       )}
-
-      {/* Trip Feed Cards */}
-      <section className="space-y-8">
-        {trips.map((trip, i) => (
-          <TripCard key={trip.id} trip={trip} colorIndex={i} />
-        ))}
-      </section>
 
       {/* 세계지도 */}
       <section>
@@ -256,6 +264,13 @@ export default function HomePage() {
             </span>
           </div>
         </div>
+      </section>
+
+      {/* Trip Feed Cards */}
+      <section className="space-y-8">
+        {trips.map((trip, i) => (
+          <TripCard key={trip.id} trip={trip} colorIndex={i} />
+        ))}
       </section>
 
       {/* Life Journey */}
