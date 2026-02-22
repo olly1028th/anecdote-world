@@ -7,6 +7,28 @@ interface Props {
   onCoverChange: (url: string) => void;
 }
 
+/** 이미지를 리사이즈/압축하여 localStorage 용량 초과를 방지 */
+function compressImage(dataUrl: string, maxWidth = 800, quality = 0.7): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let { width, height } = img;
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(dataUrl); // 압축 실패 시 원본 유지
+    img.src = dataUrl;
+  });
+}
+
 export default function PhotoUpload({ photos, onChange, coverImage, onCoverChange }: Props) {
   const [urlInput, setUrlInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -30,7 +52,9 @@ export default function PhotoUpload({ photos, onChange, coverImage, onCoverChang
         reader.onload = () => resolve(reader.result as string);
         reader.readAsDataURL(file);
       });
-      newUrls.push(dataUrl);
+      // 이미지 리사이즈/압축 (localStorage 용량 절약)
+      const compressed = await compressImage(dataUrl);
+      newUrls.push(compressed);
     }
 
     const next = [...photos, ...newUrls];

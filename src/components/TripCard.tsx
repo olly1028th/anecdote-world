@@ -40,7 +40,7 @@ export default function TripCard({ trip, colorIndex = 0 }: Props) {
         )}
         <div className="absolute top-4 left-4">
           <span className={`text-[10px] font-bold px-3 py-1 rounded-full border-2 border-slate-900 uppercase ${theme.badge}`}>
-            {trip.status === 'completed' ? 'Visited' : 'Planned'}
+            {trip.status === 'completed' ? 'Visited' : trip.status === 'wishlist' ? 'Wish' : 'Planned'}
           </span>
         </div>
       </div>

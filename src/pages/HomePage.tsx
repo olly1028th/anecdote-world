@@ -14,7 +14,7 @@ const WorldMap = lazy(() =>
 );
 
 type PinFilter = 'all' | VisitStatus;
-type StatsTab = 'completed' | 'planned' | 'pins' | null;
+type StatsTab = 'completed' | 'planned' | 'wishlist' | 'pins' | null;
 
 export default function HomePage() {
   const [pinFilter, setPinFilter] = useState<PinFilter>('all');
@@ -44,6 +44,7 @@ export default function HomePage() {
 
   const completedTrips = trips.filter((t) => t.status === 'completed');
   const plannedTrips = trips.filter((t) => t.status === 'planned');
+  const wishlistTrips = trips.filter((t) => t.status === 'wishlist');
 
   const pinFilters: { key: PinFilter; label: string }[] = [
     { key: 'all', label: `전체 (${pins.length})` },
@@ -124,11 +125,11 @@ export default function HomePage() {
       )}
 
       {/* Quick Stats */}
-      <section className="grid grid-cols-3 gap-3">
+      <section className="grid grid-cols-4 gap-2">
         <button
           type="button"
           onClick={() => setActiveStatsTab(activeStatsTab === 'completed' ? null : 'completed')}
-          className={`border-2 border-[#eab308] rounded-xl p-4 flex flex-col items-center text-center transition-all cursor-pointer ${
+          className={`border-2 border-[#eab308] rounded-xl p-3 flex flex-col items-center text-center transition-all cursor-pointer ${
             activeStatsTab === 'completed' ? 'bg-[#eab308]/30 -translate-y-1' : 'bg-[#eab308]/10'
           }`}
         >
@@ -138,7 +139,7 @@ export default function HomePage() {
         <button
           type="button"
           onClick={() => setActiveStatsTab(activeStatsTab === 'planned' ? null : 'planned')}
-          className={`border-2 border-[#0d9488] rounded-xl p-4 flex flex-col items-center text-center transition-all cursor-pointer ${
+          className={`border-2 border-[#0d9488] rounded-xl p-3 flex flex-col items-center text-center transition-all cursor-pointer ${
             activeStatsTab === 'planned' ? 'bg-[#0d9488]/30 -translate-y-1' : 'bg-[#0d9488]/10'
           }`}
         >
@@ -147,8 +148,18 @@ export default function HomePage() {
         </button>
         <button
           type="button"
+          onClick={() => setActiveStatsTab(activeStatsTab === 'wishlist' ? null : 'wishlist')}
+          className={`border-2 border-[#6366f1] rounded-xl p-3 flex flex-col items-center text-center transition-all cursor-pointer ${
+            activeStatsTab === 'wishlist' ? 'bg-[#6366f1]/30 -translate-y-1' : 'bg-[#6366f1]/10'
+          }`}
+        >
+          <span className="text-2xl font-bold text-[#6366f1]">{wishlistTrips.length}</span>
+          <span className="text-[10px] uppercase font-bold text-slate-500 mt-1 leading-none">위시</span>
+        </button>
+        <button
+          type="button"
           onClick={() => setActiveStatsTab(activeStatsTab === 'pins' ? null : 'pins')}
-          className={`border-2 border-[#f43f5e] rounded-xl p-4 flex flex-col items-center text-center transition-all cursor-pointer ${
+          className={`border-2 border-[#f43f5e] rounded-xl p-3 flex flex-col items-center text-center transition-all cursor-pointer ${
             activeStatsTab === 'pins' ? 'bg-[#f43f5e]/30 -translate-y-1' : 'bg-[#f43f5e]/10'
           }`}
         >
@@ -222,6 +233,41 @@ export default function HomePage() {
                       <p className="text-[10px] text-slate-400 mt-0.5 uppercase tracking-wider font-bold">
                         {trip.destination && <span>{trip.destination} · </span>}
                         {formatDate(trip.startDate)} ~ {formatDate(trip.endDate)}
+                      </p>
+                    </div>
+                    <span className="text-slate-300 text-lg font-bold shrink-0">›</span>
+                  </Link>
+                  );
+                })
+              )}
+            </div>
+          )}
+
+          {activeStatsTab === 'wishlist' && (
+            <div className="space-y-2">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">Wishlist</h3>
+              {wishlistTrips.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-4 font-medium">위시리스트가 비어있습니다.</p>
+              ) : (
+                wishlistTrips.map((trip) => {
+                  const thumbSrc = trip.coverImage || getCountryFlagUrl(trip.destination, 160);
+                  return (
+                  <Link
+                    key={trip.id}
+                    to={`/trip/${trip.id}`}
+                    className="flex items-center gap-3 bg-[#F9F4E8] dark:bg-slate-800 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-[#f48c25] transition-colors no-underline"
+                  >
+                    <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border-[3px] border-slate-900 bg-[#6366f1]/20 flex items-center justify-center">
+                      {thumbSrc ? (
+                        <img src={thumbSrc} alt={trip.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-lg">🌍</span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{trip.title}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5 uppercase tracking-wider font-bold">
+                        {trip.destination && <span>{trip.destination}</span>}
                       </p>
                     </div>
                     <span className="text-slate-300 text-lg font-bold shrink-0">›</span>

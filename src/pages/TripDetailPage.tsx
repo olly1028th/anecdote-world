@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTrip, deleteTrip, toggleChecklistItem, saveExpenses, saveChecklistItems, updateDemoTrip, deleteDemoTrip } from '../hooks/useTrips';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { useSharesForTrip, createShare, removeShare, updateSharePermission } from '../hooks/useShares';
 import { useAuth } from '../contexts/AuthContext';
 import ExpenseTable from '../components/ExpenseTable';
@@ -61,7 +61,7 @@ function SaveCancelButtons({ onSave, onCancel, saving }: { onSave: () => void; o
 export default function TripDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { trip, loading, error, refetch } = useTrip(id);
+  const { trip, loading, error, refetch, isDemo } = useTrip(id);
   const [deleting, setDeleting] = useState(false);
   const { user } = useAuth();
   const { shares, loading: sharesLoading } = useSharesForTrip(id);
@@ -129,7 +129,7 @@ export default function TripDetailPage() {
     if (!trip || !id) return;
     try {
       setSaving(true);
-      if (!isSupabaseConfigured) {
+      if (isDemo) {
         updateDemoTrip(id, { photos: draftPhotos, coverImage: draftCover });
       } else {
         // Supabase: 커버 이미지만 DB에 저장 (사진은 Storage 사용)
@@ -150,7 +150,7 @@ export default function TripDetailPage() {
     const item = trip.checklist[index];
     if (!item) return;
 
-    if (!isSupabaseConfigured) {
+    if (isDemo) {
       const updated = trip.checklist.map((c, i) =>
         i === index ? { ...c, checked: !c.checked } : c,
       );
@@ -175,7 +175,7 @@ export default function TripDetailPage() {
 
     try {
       setDeleting(true);
-      if (!isSupabaseConfigured) {
+      if (isDemo) {
         deleteDemoTrip(id);
         window.dispatchEvent(new CustomEvent('trip-added'));
       } else {
@@ -204,7 +204,7 @@ export default function TripDetailPage() {
     const valid = draftExpenses.filter((e) => e.amount > 0);
     try {
       setSaving(true);
-      if (!isSupabaseConfigured) {
+      if (isDemo) {
         updateDemoTrip(id, { expenses: valid });
       } else {
         await saveExpenses(id, valid);
@@ -234,7 +234,7 @@ export default function TripDetailPage() {
     const valid = draftChecklist.filter((c) => c.text.trim());
     try {
       setSaving(true);
-      if (!isSupabaseConfigured) {
+      if (isDemo) {
         updateDemoTrip(id, { checklist: valid });
       } else {
         await saveChecklistItems(id, valid);
@@ -264,12 +264,8 @@ export default function TripDetailPage() {
     const valid = draftPlaces.filter((p) => p.name.trim());
     try {
       setSaving(true);
-      if (!isSupabaseConfigured) {
-        updateDemoTrip(id, { places: valid });
-      } else {
-        // Supabase에는 places 테이블이 없으므로 데모와 동일하게 처리
-        updateDemoTrip(id, { places: valid });
-      }
+      // places는 항상 로컬(데모) 저장 (Supabase에는 별도 places 테이블 없음)
+      updateDemoTrip(id, { places: valid });
       setEditingPlaces(false);
       refetch();
     } catch (err) {
@@ -289,7 +285,7 @@ export default function TripDetailPage() {
     if (!trip || !id) return;
     try {
       setSaving(true);
-      if (!isSupabaseConfigured) {
+      if (isDemo) {
         updateDemoTrip(id, { memo: draftMemo.trim() });
       } else {
         await supabase.from('trips').update({ memo: draftMemo.trim() }).eq('id', id);
@@ -357,9 +353,9 @@ export default function TripDetailPage() {
             <img src={trip.coverImage} alt={trip.title} className="w-full h-full object-cover" />
           </div>
           <div className={`absolute -bottom-2 -right-2 border-[3px] border-slate-900 rounded-lg px-2 py-1 text-[10px] font-bold uppercase tracking-widest z-20 ${
-            isCompleted ? 'bg-[#0d9488] text-white' : 'bg-[#eab308] text-slate-900'
+            isCompleted ? 'bg-[#0d9488] text-white' : trip.status === 'wishlist' ? 'bg-[#6366f1] text-white' : 'bg-[#eab308] text-slate-900'
           }`}>
-            {isCompleted ? 'Visited' : 'Planned'}
+            {isCompleted ? 'Visited' : trip.status === 'wishlist' ? 'Wish' : 'Planned'}
           </div>
         </div>
 

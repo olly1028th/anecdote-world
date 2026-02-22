@@ -46,18 +46,21 @@ export function updateDemoTrip(id: string, updates: Partial<Trip>) {
   // 데모 추가 여행에서 업데이트
   const idx = demoExtraTrips.findIndex((t) => t.id === id);
   if (idx !== -1) {
-    demoExtraTrips = demoExtraTrips.map((t) =>
+    const next = demoExtraTrips.map((t) =>
       t.id === id ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t,
     );
-    localStorage.setItem(DEMO_TRIPS_KEY, JSON.stringify(demoExtraTrips));
+    // localStorage에 먼저 저장 시도 (QuotaExceededError 방지)
+    localStorage.setItem(DEMO_TRIPS_KEY, JSON.stringify(next));
+    demoExtraTrips = next;
     return;
   }
   // 샘플 여행이면 demoExtraTrips에 복사본을 추가하여 오버라이드
   const sample = sampleTrips.find((t) => t.id === id);
   if (sample) {
     const updated = { ...sample, ...updates, updatedAt: new Date().toISOString() };
-    demoExtraTrips = [updated, ...demoExtraTrips];
-    localStorage.setItem(DEMO_TRIPS_KEY, JSON.stringify(demoExtraTrips));
+    const next = [updated, ...demoExtraTrips];
+    localStorage.setItem(DEMO_TRIPS_KEY, JSON.stringify(next));
+    demoExtraTrips = next;
   }
 }
 
@@ -245,7 +248,7 @@ export function useTrips() {
 
 export interface TripInput {
   title: string;
-  status: 'planned' | 'completed';
+  status: 'planned' | 'completed' | 'wishlist';
   start_date?: string;
   end_date?: string;
   cover_image?: string;
@@ -344,6 +347,7 @@ export function useTrip(id: string | undefined) {
   const [trip, setTrip] = useState<Trip | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDemo, setIsDemo] = useState(false);
 
   const refetch = useCallback(async () => {
     if (!id) return;
@@ -351,6 +355,7 @@ export function useTrip(id: string | undefined) {
     // 데모 모드 (로컬 추가 여행 포함)
     if (!isSupabaseConfigured) {
       setTrip(getDemoTrips().find((t) => t.id === id) ?? null);
+      setIsDemo(true);
       setLoading(false);
       return;
     }
@@ -369,6 +374,7 @@ export function useTrip(id: string | undefined) {
       if (!dbTrip) {
         // DB에 없으면 데모 데이터에서 검색 (useTrips와 동일한 폴백 로직)
         setTrip(getDemoTrips().find((t) => t.id === id) ?? null);
+        setIsDemo(true);
         return;
       }
 
@@ -418,9 +424,11 @@ export function useTrip(id: string | undefined) {
           storagePhotos,
         ),
       );
+      setIsDemo(false);
     } catch {
       // Supabase 실패 시 데모 데이터로 폴백 (useTrips와 동일한 폴백 로직)
       setTrip(getDemoTrips().find((t) => t.id === id) ?? null);
+      setIsDemo(true);
       setError(null);
     } finally {
       setLoading(false);
@@ -435,5 +443,5 @@ export function useTrip(id: string | undefined) {
     refetch();
   }, [id, refetch]);
 
-  return { trip, loading, error, refetch };
+  return { trip, loading, error, refetch, isDemo };
 }
