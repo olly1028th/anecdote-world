@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { uploadToCloudinary, isCloudinaryConfigured } from '../lib/cloudinary';
 
 interface Props {
   photos: string[];
@@ -7,33 +8,82 @@ interface Props {
   onCoverChange: (url: string) => void;
 }
 
-/** 이미지를 리사이즈/압축하여 localStorage 용량 초과를 방지 */
-function compressImage(dataUrl: string, maxWidth = 480, quality = 0.5): Promise<string> {
-  return new Promise((resolve) => {
+const MAX_BYTES = 2 * 1024 * 1024; // 2MB
+
+/**
+ * 이미지를 2MB 이하로 점진적 압축.
+ * maxWidth를 줄이고 quality를 낮추면서 목표 크기 이하가 될 때까지 반복.
+ */
+function compressImage(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    // 이미 2MB 이하인 JPEG/WebP는 그대로 반환
+    if (file.size <= MAX_BYTES && /^image\/(jpeg|webp)$/.test(file.type)) {
+      resolve(file);
+      return;
+    }
+
     const img = new Image();
+    const url = URL.createObjectURL(file);
+
     img.onload = () => {
+      URL.revokeObjectURL(url);
       const canvas = document.createElement('canvas');
-      let { width, height } = img;
-      if (width > maxWidth) {
-        height = Math.round((height * maxWidth) / width);
-        width = maxWidth;
-      }
-      canvas.width = width;
-      canvas.height = height;
       const ctx = canvas.getContext('2d')!;
-      ctx.drawImage(img, 0, 0, width, height);
-      const compressed = canvas.toDataURL('image/jpeg', quality);
-      // 압축 후에도 100KB 초과 시 더 낮은 quality로 재압축
-      if (compressed.length > 100_000 && quality > 0.2) {
-        const ctx2 = canvas.getContext('2d')!;
-        ctx2.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.3));
-      } else {
-        resolve(compressed);
+
+      // 점진적 압축: (maxWidth, quality) 조합을 시도
+      const attempts: [number, number][] = [
+        [1920, 0.8], [1280, 0.7], [1024, 0.6],
+        [800, 0.5], [640, 0.4], [480, 0.3],
+      ];
+
+      for (const [maxW, q] of attempts) {
+        let { width, height } = img;
+        if (width > maxW) {
+          height = Math.round((height * maxW) / width);
+          width = maxW;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // toBlob은 비동기이므로 toDataURL로 크기 확인 후 최적 단계에서 toBlob
+        const dataUrl = canvas.toDataURL('image/jpeg', q);
+        // base64 문자열 길이 × 0.75 ≈ 실제 바이트 크기
+        const estimatedSize = (dataUrl.length - dataUrl.indexOf(',') - 1) * 0.75;
+
+        if (estimatedSize <= MAX_BYTES) {
+          canvas.toBlob(
+            (blob) => (blob ? resolve(blob) : reject(new Error('압축 실패'))),
+            'image/jpeg',
+            q,
+          );
+          return;
+        }
       }
+
+      // 모든 시도 후에도 초과 시 최저 설정으로 반환
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error('압축 실패'))),
+        'image/jpeg',
+        0.2,
+      );
     };
-    img.onerror = () => resolve(dataUrl);
-    img.src = dataUrl;
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('이미지 로드 실패'));
+    };
+    img.src = url;
+  });
+}
+
+/** Blob → base64 data URL (데모 모드용) */
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error('파일 읽기 실패'));
+    reader.readAsDataURL(blob);
   });
 }
 
@@ -45,7 +95,6 @@ function estimateLocalStorageRemaining(): number {
       const key = localStorage.key(i);
       if (key) used += key.length + (localStorage.getItem(key)?.length ?? 0);
     }
-    // 대부분의 브라우저 한도: ~5MB (문자열은 UTF-16이므로 ×2)
     return Math.max(0, 5 * 1024 * 1024 - used * 2);
   } catch {
     return 0;
@@ -65,37 +114,52 @@ export default function PhotoUpload({ photos, onChange, coverImage, onCoverChang
   };
 
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState('');
 
   const handleFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    // 용량 체크
-    const remaining = estimateLocalStorageRemaining();
-    if (remaining < 50_000) {
-      alert('저장 공간이 부족합니다. 기존 사진을 삭제한 후 다시 시도해주세요.');
-      e.target.value = '';
-      return;
+    const useCloud = isCloudinaryConfigured;
+
+    // 데모 모드(localStorage) 시 용량 체크
+    if (!useCloud) {
+      const remaining = estimateLocalStorageRemaining();
+      if (remaining < 50_000) {
+        alert('저장 공간이 부족합니다. 기존 사진을 삭제한 후 다시 시도해주세요.\n\nCloudinary를 설정하면 용량 제한 없이 업로드할 수 있습니다.');
+        e.target.value = '';
+        return;
+      }
     }
 
     setUploading(true);
     try {
       const newUrls: string[] = [];
-      for (const file of Array.from(files)) {
-        // 파일 크기가 15MB 초과 시 건너뛰기
-        if (file.size > 15 * 1024 * 1024) {
-          alert(`"${file.name}" 파일이 너무 큽니다 (15MB 이하만 가능).`);
+      const fileList = Array.from(files);
+
+      for (let i = 0; i < fileList.length; i++) {
+        const file = fileList[i];
+        // 원본 파일 10MB 초과 시 건너뛰기
+        if (file.size > 10 * 1024 * 1024) {
+          alert(`"${file.name}" 파일이 너무 큽니다 (10MB 이하만 가능).`);
           continue;
         }
 
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = () => reject(new Error('파일 읽기 실패'));
-          reader.readAsDataURL(file);
-        });
-        const compressed = await compressImage(dataUrl);
-        newUrls.push(compressed);
+        setUploadProgress(`압축 중 (${i + 1}/${fileList.length})`);
+
+        // 2MB 이하로 압축
+        const compressed = await compressImage(file);
+
+        if (useCloud) {
+          // Cloudinary에 직접 업로드
+          setUploadProgress(`업로드 중 (${i + 1}/${fileList.length})`);
+          const url = await uploadToCloudinary(compressed);
+          newUrls.push(url);
+        } else {
+          // 데모 모드: base64로 변환하여 localStorage에 저장
+          const dataUrl = await blobToDataUrl(compressed);
+          newUrls.push(dataUrl);
+        }
       }
 
       if (newUrls.length > 0) {
@@ -109,6 +173,7 @@ export default function PhotoUpload({ photos, onChange, coverImage, onCoverChang
       alert(err instanceof Error ? err.message : '사진 업로드에 실패했습니다.');
     } finally {
       setUploading(false);
+      setUploadProgress('');
       e.target.value = '';
     }
   };
@@ -155,7 +220,7 @@ export default function PhotoUpload({ photos, onChange, coverImage, onCoverChang
           disabled={uploading}
           className="px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg cursor-pointer border-0 hover:bg-gray-200 transition-colors disabled:opacity-50"
         >
-          {uploading ? '압축중...' : '파일'}
+          {uploading ? (uploadProgress || '처리중...') : '파일'}
         </button>
         <input
           ref={fileInputRef}
