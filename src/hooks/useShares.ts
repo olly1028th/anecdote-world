@@ -165,14 +165,12 @@ export async function createShare(
 
   // Supabase: 초대받는 유저가 이미 가입했는지 확인
   let invitedUserId: string | null = null;
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('id', (
-      await supabase.rpc('get_user_id_by_email', { email: invitedEmail })
-    ).data)
-    .single();
-  if (profile) invitedUserId = profile.id;
+  try {
+    const { data: userId } = await supabase.rpc('get_user_id_by_email', { email: invitedEmail });
+    if (userId) invitedUserId = userId;
+  } catch {
+    // 미가입 유저 — invited_user_id = null로 진행 (이메일 기반 초대)
+  }
 
   const { error } = await supabase.from('trip_shares').insert({
     trip_id: tripId,

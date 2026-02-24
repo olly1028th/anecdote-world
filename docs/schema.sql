@@ -119,11 +119,13 @@ CREATE TABLE public.pin_photos (
   user_id     UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   url         TEXT NOT NULL,                    -- Supabase Storage URL
   caption     TEXT DEFAULT '',
+  is_favorite BOOLEAN NOT NULL DEFAULT false,   -- 홈 갤러리에 표시할 사진
   sort_order  INTEGER DEFAULT 0,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_pin_photos_pin ON public.pin_photos(pin_id);
+CREATE INDEX idx_pin_photos_favorite ON public.pin_photos(user_id) WHERE is_favorite = true;
 
 
 -- ========================
@@ -296,6 +298,23 @@ CREATE POLICY "Invited users can view and respond to shares"
   ON public.trip_shares FOR SELECT USING (auth.uid() = invited_user_id);
 CREATE POLICY "Invited users can accept/decline"
   ON public.trip_shares FOR UPDATE USING (auth.uid() = invited_user_id);
+
+
+-- ============================================================
+-- RPC 함수: 이메일로 유저 ID 조회
+-- ============================================================
+-- trip_shares 초대 시 가입 유저 자동 매칭에 사용
+CREATE OR REPLACE FUNCTION public.get_user_id_by_email(email TEXT)
+RETURNS UUID
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT id FROM auth.users WHERE auth.users.email = get_user_id_by_email.email LIMIT 1;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_user_id_by_email(TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_user_id_by_email(TEXT) TO authenticated;
 
 
 -- ============================================================
