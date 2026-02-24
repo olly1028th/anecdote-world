@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import type { VisitStatus } from '../types/database';
 import { useTrips } from '../hooks/useTrips';
 import { usePins } from '../hooks/usePins';
+import { useFavoritePhotos } from '../hooks/useFavoritePhotos';
 import { usePendingInvitations, acceptShare, declineShare } from '../hooks/useShares';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDate } from '../utils/format';
@@ -22,6 +23,7 @@ export default function HomePage() {
   const { trips, loading, error } = useTrips();
   const { pins, loading: pinsLoading } = usePins();
   const { user } = useAuth();
+  const { photos: favoritePhotos, loading: favLoading } = useFavoritePhotos();
   const { invitations } = usePendingInvitations(user?.email ?? undefined);
 
   const handleAcceptInvitation = async (shareId: string) => {
@@ -364,25 +366,59 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Favorite Moments — 정복 완료된 여행만 카드로 표시 */}
+      {/* Favorite Moments — 즐겨찾기 사진 갤러리 */}
       <section>
         <p className="text-sm font-bold text-[#f48c25] uppercase tracking-widest mb-1">Life Journey</p>
         <h3 className="text-2xl font-bold text-[#1c140d] dark:text-slate-100 mb-4">Favorite Moments</h3>
 
-        {completedTrips.length === 0 ? (
+        {favLoading ? (
+          <div className="text-center py-12">
+            <div className="animate-pulse text-[#1c140d]/40 font-bold uppercase tracking-widest text-sm">Loading...</div>
+          </div>
+        ) : favoritePhotos.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-3xl mb-3">🌍</p>
-            <p className="text-base font-bold text-slate-400">아직 정복한 행성이 없어요</p>
-            <p className="text-xs font-medium text-slate-300 mt-1">여행을 완료하면 이곳에 기록됩니다!</p>
+            <p className="text-base font-bold text-slate-400">아직 즐겨찾기한 사진이 없어요</p>
+            <p className="text-xs font-medium text-slate-300 mt-1">여행 사진에서 하트를 눌러 추가해보세요!</p>
           </div>
         ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {favoritePhotos.map((photo) => (
+              <div
+                key={photo.id}
+                className="relative group overflow-hidden rounded-xl border-[3px] border-slate-900 retro-shadow aspect-[4/3]"
+              >
+                <img
+                  src={photo.url}
+                  alt={photo.caption}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute bottom-0 left-0 right-0 p-2.5 translate-y-full group-hover:translate-y-0 transition-transform">
+                  <p className="text-white text-xs font-bold truncate">{photo.caption}</p>
+                  <p className="text-white/70 text-[10px] font-medium truncate">
+                    {photo.destination} · {photo.tripTitle}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Completed Trips */}
+      {completedTrips.length > 0 && (
+        <section>
+          <p className="text-sm font-bold text-[#f48c25] uppercase tracking-widest mb-1">Conquered Planets</p>
+          <h3 className="text-2xl font-bold text-[#1c140d] dark:text-slate-100 mb-4">Completed Missions</h3>
           <div className="space-y-8">
             {completedTrips.map((trip, i) => (
               <TripCard key={trip.id} trip={trip} colorIndex={i} />
             ))}
           </div>
-        )}
-      </section>
+        </section>
+      )}
     </div>
   );
 }

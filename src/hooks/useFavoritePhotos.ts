@@ -78,17 +78,18 @@ export function useFavoritePhotos() {
 
       if (error) throw error;
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase join 결과 타입 추론 한계
       const rows = (data ?? []) as Array<Record<string, any>>;
       const mapped: FavoritePhoto[] = rows.map((row) => {
         const pin = Array.isArray(row.pin) ? row.pin[0] : row.pin;
         const trip = pin ? (Array.isArray(pin.trip) ? pin.trip[0] : pin.trip) : null;
         return {
-          id: row.id,
-          url: row.url,
-          caption: row.caption ?? '',
-          tripTitle: trip?.title ?? '',
-          destination: pin?.name ?? '',
-          date: pin?.visited_at ?? row.created_at,
+          id: String(row.id),
+          url: String(row.url),
+          caption: String(row.caption ?? ''),
+          tripTitle: String(trip?.title ?? ''),
+          destination: String(pin?.name ?? ''),
+          date: String(pin?.visited_at ?? row.created_at),
         };
       });
 

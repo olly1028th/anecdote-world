@@ -4,7 +4,9 @@ import { isSupabaseConfigured } from '../lib/supabase';
 import { createTrip } from '../hooks/useTrips';
 import { addDemoTrip } from '../hooks/useTrips';
 import { createPin, addDemoPin } from '../hooks/usePins';
-import DestinationPicker, { EMPTY_DESTINATION, type DestinationInfo } from './DestinationPicker';
+import DestinationPicker from './DestinationPicker';
+import { EMPTY_DESTINATION } from '../types/destination';
+import type { DestinationInfo } from '../types/destination';
 
 interface Props {
   open: boolean;

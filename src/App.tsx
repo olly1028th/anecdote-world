@@ -6,11 +6,11 @@ import TripFormModal from './components/TripFormModal';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
-import TripDetailPage from './pages/TripDetailPage';
-import TripFormPage from './pages/TripFormPage';
-import DashboardPage from './pages/DashboardPage';
-import ProfilePage from './pages/ProfilePage';
 
+const TripDetailPage = lazy(() => import('./pages/TripDetailPage'));
+const TripFormPage = lazy(() => import('./pages/TripFormPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const PinFormPage = lazy(() => import('./pages/PinFormPage'));
 
 function ProtectedLayout() {
@@ -63,11 +63,11 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route element={<ProtectedLayout />}>
           <Route path="/" element={<HomePage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/trip/new" element={<TripFormPage />} />
-          <Route path="/trip/edit/:id" element={<TripFormPage />} />
-          <Route path="/trip/:id" element={<TripDetailPage />} />
+          <Route path="/dashboard" element={<Suspense fallback={<Loading />}><DashboardPage /></Suspense>} />
+          <Route path="/profile" element={<Suspense fallback={<Loading />}><ProfilePage /></Suspense>} />
+          <Route path="/trip/new" element={<Suspense fallback={<Loading />}><TripFormPage /></Suspense>} />
+          <Route path="/trip/edit/:id" element={<Suspense fallback={<Loading />}><TripFormPage /></Suspense>} />
+          <Route path="/trip/:id" element={<Suspense fallback={<Loading />}><TripDetailPage /></Suspense>} />
           <Route
             path="/pin/new"
             element={<Suspense fallback={<Loading />}><PinFormPage /></Suspense>}

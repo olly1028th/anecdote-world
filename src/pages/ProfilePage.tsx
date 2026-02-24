@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 import { useStats } from '../hooks/useStats';
 import { formatCurrency, formatDate } from '../utils/format';
 
 export default function ProfilePage() {
+  const navigate = useNavigate();
   const { profile, isDemo } = useAuth();
   const { updating, error: profileError, updateProfile } = useProfile();
   const stats = useStats();
@@ -57,9 +58,10 @@ export default function ProfilePage() {
   return (
     <div className="px-6 space-y-8">
       {/* 뒤로가기 */}
-      <Link
-        to="/"
-        className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-[#FF6B6B] transition-colors no-underline"
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-[#FF6B6B] transition-colors bg-transparent border-0 p-0 cursor-pointer"
       >
         <svg
           className="w-4 h-4"
@@ -74,8 +76,8 @@ export default function ProfilePage() {
             d="M15 19l-7-7 7-7"
           />
         </svg>
-        홈으로
-      </Link>
+        뒤로
+      </button>
 
       {/* ── 프로필 헤더 ── */}
       <section className="bg-white rounded-3xl p-6 shadow-md shadow-gray-200/50">

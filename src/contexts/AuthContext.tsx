@@ -43,11 +43,13 @@ const DEMO_PROFILE: Profile = {
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
   const isDemo = !isSupabaseConfigured;
+
+  // 데모 모드: 초기값으로 바로 세팅 (useEffect 내 setState 방지)
+  const [user, setUser] = useState<User | null>(isDemo ? DEMO_USER : null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(isDemo ? DEMO_PROFILE : null);
+  const [loading, setLoading] = useState(!isDemo);
 
   // 프로필 조회
   const fetchProfile = useCallback(async (userId: string) => {
@@ -60,13 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // 데모 모드
-    if (isDemo) {
-      setUser(DEMO_USER);
-      setProfile(DEMO_PROFILE);
-      setLoading(false);
-      return;
-    }
+    if (isDemo) return;
 
     // Supabase 세션 복원
     supabase.auth.getSession().then(({ data: { session: s } }) => {
@@ -131,6 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
