@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { useProfile } from '../hooks/useProfile';
 import { useStats } from '../hooks/useStats';
 import { formatCurrency, formatDate } from '../utils/format';
@@ -8,6 +9,7 @@ import { formatCurrency, formatDate } from '../utils/format';
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { profile, isDemo } = useAuth();
+  const { toast } = useToast();
   const { updating, error: profileError, updateProfile } = useProfile();
   const stats = useStats();
 
@@ -25,11 +27,12 @@ export default function ProfilePage() {
   // 저장
   const handleSave = async () => {
     if (isDemo) {
-      alert('데모 모드에서는 저장할 수 없습니다.');
+      toast('데모 모드에서는 저장할 수 없습니다.', 'info');
       return;
     }
     await updateProfile({ nickname: nickname.trim(), bio: bio.trim() });
     setEditing(false);
+    toast('프로필이 저장되었습니다');
   };
 
   // 취소
@@ -80,7 +83,7 @@ export default function ProfilePage() {
       </button>
 
       {/* ── 프로필 헤더 ── */}
-      <section className="bg-white rounded-3xl p-6 shadow-md shadow-gray-200/50">
+      <section className="bg-white dark:bg-[#2a1f15] rounded-3xl p-6 shadow-md shadow-gray-200/50 dark:shadow-black/20">
         <div className="flex items-start gap-5">
           {/* 아바타 */}
           {profile?.avatar_url ? (
@@ -101,7 +104,7 @@ export default function ProfilePage() {
               /* ── 편집 모드 ── */
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">
+                  <label className="block text-xs text-gray-400 dark:text-slate-500 mb-1">
                     닉네임
                   </label>
                   <input
@@ -109,12 +112,12 @@ export default function ProfilePage() {
                     value={nickname}
                     onChange={(e) => setNickname(e.target.value)}
                     maxLength={20}
-                    className="w-full border border-[#F0EEE6] rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/50"
+                    className="w-full border border-[#F0EEE6] dark:border-[#4a3f35] rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/50 bg-white dark:bg-[#1a1208] dark:text-slate-100"
                     placeholder="닉네임을 입력하세요"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">
+                  <label className="block text-xs text-gray-400 dark:text-slate-500 mb-1">
                     소개
                   </label>
                   <textarea
@@ -122,7 +125,7 @@ export default function ProfilePage() {
                     onChange={(e) => setBio(e.target.value)}
                     maxLength={200}
                     rows={3}
-                    className="w-full border border-[#F0EEE6] rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/50 resize-none"
+                    className="w-full border border-[#F0EEE6] dark:border-[#4a3f35] rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/50 resize-none bg-white dark:bg-[#1a1208] dark:text-slate-100"
                     placeholder="간단한 소개를 적어주세요"
                   />
                 </div>
@@ -142,7 +145,7 @@ export default function ProfilePage() {
                   <button
                     onClick={handleCancel}
                     disabled={updating}
-                    className="px-4 py-2 bg-gray-100 text-gray-500 text-sm font-medium rounded-xl hover:bg-gray-200 disabled:opacity-50 transition-colors cursor-pointer"
+                    className="px-4 py-2 bg-gray-100 dark:bg-[#1a1208] text-gray-500 dark:text-slate-400 text-sm font-medium rounded-xl hover:bg-gray-200 dark:hover:bg-[#2a1f15] disabled:opacity-50 transition-colors cursor-pointer"
                   >
                     취소
                   </button>
@@ -152,7 +155,7 @@ export default function ProfilePage() {
               /* ── 읽기 모드 ── */
               <>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-bold text-[#2D3436] truncate">
+                  <h1 className="text-xl font-bold text-[#2D3436] dark:text-slate-100 truncate">
                     {profile?.nickname || '여행자'}
                   </h1>
                   {isDemo && (
@@ -162,11 +165,11 @@ export default function ProfilePage() {
                   )}
                 </div>
 
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
                   {profile?.bio || '아직 소개가 없습니다.'}
                 </p>
 
-                <p className="text-xs text-gray-400 mt-2">
+                <p className="text-xs text-gray-400 dark:text-slate-500 mt-2">
                   가입일:{' '}
                   {profile?.created_at
                     ? formatDate(profile.created_at)
@@ -175,7 +178,7 @@ export default function ProfilePage() {
 
                 <button
                   onClick={handleEdit}
-                  className="mt-3 px-4 py-2 bg-[#F0EEE6] text-[#4A4A4A] text-sm font-medium rounded-xl hover:bg-[#e8e5db] transition-colors cursor-pointer"
+                  className="mt-3 px-4 py-2 bg-[#F0EEE6] dark:bg-[#1a1208] text-[#4A4A4A] dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-[#e8e5db] dark:hover:bg-[#2a1f15] transition-colors cursor-pointer"
                 >
                   수정
                 </button>
@@ -188,47 +191,47 @@ export default function ProfilePage() {
       {/* ── 나의 통계 ── */}
       <section>
         <div className="flex items-center gap-2 mb-4">
-          <h2 className="text-lg font-bold text-[#2D3436]">나의 통계</h2>
-          <div className="h-[2px] flex-1 bg-[#F0EEE6]" />
+          <h2 className="text-lg font-bold text-[#2D3436] dark:text-slate-100">나의 통계</h2>
+          <div className="h-[2px] flex-1 bg-[#F0EEE6] dark:bg-[#4a3f35]" />
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <div className="bg-white rounded-3xl p-5 shadow-md shadow-gray-200/50 text-center">
+          <div className="bg-white dark:bg-[#2a1f15] rounded-3xl p-5 shadow-md shadow-gray-200/50 dark:shadow-black/20 text-center">
             <span className="block text-xl mb-1">✈️</span>
-            <p className="text-2xl font-bold text-[#2D3436]">
+            <p className="text-2xl font-bold text-[#2D3436] dark:text-slate-100">
               {stats.completedCount}
             </p>
-            <p className="text-xs font-medium text-gray-400 mt-1">다녀온 여행</p>
+            <p className="text-xs font-medium text-gray-400 dark:text-slate-500 mt-1">다녀온 여행</p>
           </div>
 
-          <div className="bg-white rounded-3xl p-5 shadow-md shadow-gray-200/50 text-center">
+          <div className="bg-white dark:bg-[#2a1f15] rounded-3xl p-5 shadow-md shadow-gray-200/50 dark:shadow-black/20 text-center">
             <span className="block text-xl mb-1">🌍</span>
-            <p className="text-2xl font-bold text-[#2D3436]">
+            <p className="text-2xl font-bold text-[#2D3436] dark:text-slate-100">
               {stats.countriesVisited.length}
             </p>
-            <p className="text-xs font-medium text-gray-400 mt-1">방문 국가</p>
+            <p className="text-xs font-medium text-gray-400 dark:text-slate-500 mt-1">방문 국가</p>
           </div>
 
-          <div className="bg-white rounded-3xl p-5 shadow-md shadow-gray-200/50 text-center">
+          <div className="bg-white dark:bg-[#2a1f15] rounded-3xl p-5 shadow-md shadow-gray-200/50 dark:shadow-black/20 text-center">
             <span className="block text-xl mb-1">💰</span>
-            <p className="text-2xl font-bold text-[#2D3436]">
+            <p className="text-2xl font-bold text-[#2D3436] dark:text-slate-100">
               {formatCurrency(stats.totalSpent)}
             </p>
-            <p className="text-xs font-medium text-gray-400 mt-1">총 경비</p>
+            <p className="text-xs font-medium text-gray-400 dark:text-slate-500 mt-1">총 경비</p>
           </div>
 
-          <div className="bg-white rounded-3xl p-5 shadow-md shadow-gray-200/50 text-center">
+          <div className="bg-white dark:bg-[#2a1f15] rounded-3xl p-5 shadow-md shadow-gray-200/50 dark:shadow-black/20 text-center">
             <span className="block text-xl mb-1">📍</span>
-            <p className="text-2xl font-bold text-[#2D3436]">{totalPins}</p>
-            <p className="text-xs font-medium text-gray-400 mt-1">등록한 핀</p>
+            <p className="text-2xl font-bold text-[#2D3436] dark:text-slate-100">{totalPins}</p>
+            <p className="text-xs font-medium text-gray-400 dark:text-slate-500 mt-1">등록한 핀</p>
           </div>
 
-          <div className="bg-white rounded-3xl p-5 shadow-md shadow-gray-200/50 text-center">
+          <div className="bg-white dark:bg-[#2a1f15] rounded-3xl p-5 shadow-md shadow-gray-200/50 dark:shadow-black/20 text-center">
             <span className="block text-xl mb-1">📸</span>
-            <p className="text-2xl font-bold text-[#2D3436]">
+            <p className="text-2xl font-bold text-[#2D3436] dark:text-slate-100">
               {stats.totalPhotos}
             </p>
-            <p className="text-xs font-medium text-gray-400 mt-1">촬영한 사진</p>
+            <p className="text-xs font-medium text-gray-400 dark:text-slate-500 mt-1">촬영한 사진</p>
           </div>
         </div>
       </section>
@@ -236,11 +239,11 @@ export default function ProfilePage() {
       {/* ── 방문 국가 ── */}
       <section>
         <div className="flex items-center gap-2 mb-4">
-          <h2 className="text-lg font-bold text-[#2D3436]">방문 국가</h2>
-          <div className="h-[2px] flex-1 bg-[#F0EEE6]" />
+          <h2 className="text-lg font-bold text-[#2D3436] dark:text-slate-100">방문 국가</h2>
+          <div className="h-[2px] flex-1 bg-[#F0EEE6] dark:bg-[#4a3f35]" />
         </div>
 
-        <div className="bg-white rounded-3xl p-6 shadow-md shadow-gray-200/50">
+        <div className="bg-white dark:bg-[#2a1f15] rounded-3xl p-6 shadow-md shadow-gray-200/50 dark:shadow-black/20">
           {stats.countriesVisited.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {stats.countriesVisited.map((country) => (
@@ -253,7 +256,7 @@ export default function ProfilePage() {
               ))}
             </div>
           ) : (
-            <p className="text-center text-gray-400 py-4">
+            <p className="text-center text-gray-400 dark:text-slate-500 py-4">
               아직 방문한 국가가 없어요
             </p>
           )}

@@ -6,6 +6,7 @@ import type { VisitStatus, PinCategory } from '../types/database';
 import { createPin, updatePin, addDemoPin, usePins } from '../hooks/usePins';
 import { useTrips } from '../hooks/useTrips';
 import { isSupabaseConfigured } from '../lib/supabase';
+import { useToast } from '../contexts/ToastContext';
 import 'leaflet/dist/leaflet.css';
 
 const VISIT_OPTIONS: { value: VisitStatus; label: string; color: string }[] = [
@@ -51,6 +52,7 @@ export default function PinFormPage() {
   const { id } = useParams<{ id: string }>();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { pins } = usePins();
   const { trips } = useTrips();
 
@@ -159,8 +161,9 @@ export default function PinFormPage() {
         }
       }
       navigate('/');
+      toast(isEdit ? '핀이 수정되었습니다' : '핀이 저장되었습니다');
     } catch (err) {
-      alert(err instanceof Error ? err.message : '저장에 실패했습니다');
+      toast(err instanceof Error ? err.message : '저장에 실패했습니다', 'error');
     } finally {
       setSaving(false);
     }

@@ -4,6 +4,7 @@ import { isSupabaseConfigured } from '../lib/supabase';
 import { createTrip } from '../hooks/useTrips';
 import { addDemoTrip } from '../hooks/useTrips';
 import { createPin, addDemoPin } from '../hooks/usePins';
+import { useToast } from '../contexts/ToastContext';
 import DestinationPicker from './DestinationPicker';
 import { EMPTY_DESTINATION } from '../types/destination';
 import type { DestinationInfo } from '../types/destination';
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export default function TripFormModal({ open, onClose, onSaved }: Props) {
+  const { toast } = useToast();
   const [title, setTitle] = useState('');
   const [status, setStatus] = useState<TripStatus>('planned');
   const [destination, setDestination] = useState<DestinationInfo>(EMPTY_DESTINATION);
@@ -145,8 +147,9 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
       window.dispatchEvent(new CustomEvent('trip-added'));
       onSaved();
       onClose();
+      toast('여행이 생성되었습니다');
     } catch (err) {
-      alert(err instanceof Error ? err.message : '저장에 실패했습니다');
+      toast(err instanceof Error ? err.message : '저장에 실패했습니다', 'error');
     } finally {
       setSaving(false);
     }

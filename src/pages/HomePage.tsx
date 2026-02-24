@@ -6,6 +6,7 @@ import { usePins } from '../hooks/usePins';
 import { useFavoritePhotos } from '../hooks/useFavoritePhotos';
 import { usePendingInvitations, acceptShare, declineShare } from '../hooks/useShares';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { formatDate } from '../utils/format';
 import { getCountryFlagUrl } from '../utils/countryFlag';
 import TripCard from '../components/TripCard';
@@ -24,21 +25,24 @@ export default function HomePage() {
   const { pins, loading: pinsLoading } = usePins();
   const { user } = useAuth();
   const { photos: favoritePhotos, loading: favLoading } = useFavoritePhotos();
+  const { toast } = useToast();
   const { invitations } = usePendingInvitations(user?.email ?? undefined);
 
   const handleAcceptInvitation = async (shareId: string) => {
     try {
       await acceptShare(shareId, user?.id);
+      toast('초대를 수락했습니다');
     } catch (err) {
-      alert(err instanceof Error ? err.message : '수락 실패');
+      toast(err instanceof Error ? err.message : '수락 실패', 'error');
     }
   };
 
   const handleDeclineInvitation = async (shareId: string) => {
     try {
       await declineShare(shareId);
+      toast('초대를 거절했습니다');
     } catch (err) {
-      alert(err instanceof Error ? err.message : '거절 실패');
+      toast(err instanceof Error ? err.message : '거절 실패', 'error');
     }
   };
   const filteredPins =

@@ -4,12 +4,14 @@ import { useTrip, deleteTrip, toggleChecklistItem, saveExpenses, saveChecklistIt
 import { supabase } from '../lib/supabase';
 import { useSharesForTrip, createShare, removeShare, updateSharePermission } from '../hooks/useShares';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import ExpenseTable from '../components/ExpenseTable';
 import Timeline from '../components/Timeline';
 import PlaceList from '../components/PlaceList';
 import Checklist from '../components/Checklist';
 import PhotoGallery from '../components/PhotoGallery';
 import PhotoUpload from '../components/PhotoUpload';
+import ConfirmModal from '../components/ConfirmModal';
 import { formatDate, calcDuration, totalExpenses, formatCurrency, expenseCategoryLabel } from '../utils/format';
 import type { Expense, ExpenseCategory, ChecklistItem, Place, PlacePriority } from '../types/trip';
 import type { SharePermission } from '../types/database';
@@ -64,6 +66,7 @@ export default function TripDetailPage() {
   const { trip, loading, error, refetch, isDemo } = useTrip(id);
   const [deleting, setDeleting] = useState(false);
   const { user } = useAuth();
+  const { toast } = useToast();
   const { shares, loading: sharesLoading } = useSharesForTrip(id);
 
   // Share modal state
@@ -72,33 +75,55 @@ export default function TripDetailPage() {
   const [invitePermission, setInvitePermission] = useState<SharePermission>('read');
   const [inviting, setInviting] = useState(false);
 
+  // Confirm modal state
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    danger?: boolean;
+    onConfirm: () => void;
+  }>({ open: false, title: '', message: '', onConfirm: () => {} });
+
   const handleInvite = async () => {
     if (!id || !inviteEmail.trim() || !user) return;
     try {
       setInviting(true);
       await createShare(id, user.id, inviteEmail.trim(), invitePermission, trip?.title);
       setInviteEmail('');
+      toast('초대를 보냈습니다');
     } catch (err) {
-      alert(err instanceof Error ? err.message : '초대 실패');
+      toast(err instanceof Error ? err.message : '초대 실패', 'error');
     } finally {
       setInviting(false);
     }
   };
 
-  const handleRemoveShare = async (shareId: string) => {
-    if (!window.confirm('이 공유를 취소하시겠습니까?')) return;
-    try {
-      await removeShare(shareId);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : '삭제 실패');
-    }
+  const handleRemoveShare = (shareId: string) => {
+    setConfirmModal({
+      open: true,
+      title: '공유 취소',
+      message: '이 공유를 취소하시겠습니까?',
+      confirmLabel: '취소하기',
+      danger: true,
+      onConfirm: async () => {
+        setConfirmModal((p) => ({ ...p, open: false }));
+        try {
+          await removeShare(shareId);
+          toast('공유가 취소되었습니다');
+        } catch (err) {
+          toast(err instanceof Error ? err.message : '삭제 실패', 'error');
+        }
+      },
+    });
   };
 
   const handlePermissionChange = async (shareId: string, perm: SharePermission) => {
     try {
       await updateSharePermission(shareId, perm);
+      toast('권한이 변경되었습니다');
     } catch (err) {
-      alert(err instanceof Error ? err.message : '권한 변경 실패');
+      toast(err instanceof Error ? err.message : '권한 변경 실패', 'error');
     }
   };
 
@@ -132,13 +157,13 @@ export default function TripDetailPage() {
       if (isDemo) {
         updateDemoTrip(id, { photos: draftPhotos, coverImage: draftCover });
       } else {
-        // Supabase: 커버 이미지만 DB에 저장 (사진은 Storage 사용)
         await supabase.from('trips').update({ cover_image: draftCover }).eq('id', id);
       }
       setEditingPhotos(false);
       refetch();
+      toast('사진이 저장되었습니다');
     } catch (err) {
-      alert(err instanceof Error ? err.message : '저장 실패');
+      toast(err instanceof Error ? err.message : '저장 실패', 'error');
     } finally {
       setSaving(false);
     }
@@ -169,23 +194,31 @@ export default function TripDetailPage() {
   };
 
   // --- Delete (demo + supabase) ---
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!id) return;
-    if (!window.confirm('이 여행을 삭제하시겠습니까? 되돌릴 수 없습니다.')) return;
-
-    try {
-      setDeleting(true);
-      if (isDemo) {
-        deleteDemoTrip(id);
-        window.dispatchEvent(new CustomEvent('trip-added'));
-      } else {
-        await deleteTrip(id);
-      }
-      navigate('/');
-    } catch (err) {
-      alert(err instanceof Error ? err.message : '삭제에 실패했습니다');
-      setDeleting(false);
-    }
+    setConfirmModal({
+      open: true,
+      title: '여행 삭제',
+      message: '이 여행을 삭제하시겠습니까? 되돌릴 수 없습니다.',
+      confirmLabel: '삭제',
+      danger: true,
+      onConfirm: async () => {
+        setConfirmModal((p) => ({ ...p, open: false }));
+        try {
+          setDeleting(true);
+          if (isDemo) {
+            deleteDemoTrip(id);
+            window.dispatchEvent(new CustomEvent('trip-added'));
+          } else {
+            await deleteTrip(id);
+          }
+          navigate('/');
+        } catch (err) {
+          toast(err instanceof Error ? err.message : '삭제에 실패했습니다', 'error');
+          setDeleting(false);
+        }
+      },
+    });
   };
 
   // --- Expense inline edit ---
@@ -211,8 +244,9 @@ export default function TripDetailPage() {
       }
       setEditingExpenses(false);
       refetch();
+      toast('경비가 저장되었습니다');
     } catch (err) {
-      alert(err instanceof Error ? err.message : '저장 실패');
+      toast(err instanceof Error ? err.message : '저장 실패', 'error');
     } finally {
       setSaving(false);
     }
@@ -241,8 +275,9 @@ export default function TripDetailPage() {
       }
       setEditingChecklist(false);
       refetch();
+      toast('체크리스트가 저장되었습니다');
     } catch (err) {
-      alert(err instanceof Error ? err.message : '저장 실패');
+      toast(err instanceof Error ? err.message : '저장 실패', 'error');
     } finally {
       setSaving(false);
     }
@@ -264,12 +299,12 @@ export default function TripDetailPage() {
     const valid = draftPlaces.filter((p) => p.name.trim());
     try {
       setSaving(true);
-      // places는 항상 로컬(데모) 저장 (Supabase에는 별도 places 테이블 없음)
       updateDemoTrip(id, { places: valid });
       setEditingPlaces(false);
       refetch();
+      toast('장소가 저장되었습니다');
     } catch (err) {
-      alert(err instanceof Error ? err.message : '저장 실패');
+      toast(err instanceof Error ? err.message : '저장 실패', 'error');
     } finally {
       setSaving(false);
     }
@@ -292,8 +327,9 @@ export default function TripDetailPage() {
       }
       setEditingMemo(false);
       refetch();
+      toast('메모가 저장되었습니다');
     } catch (err) {
-      alert(err instanceof Error ? err.message : '저장 실패');
+      toast(err instanceof Error ? err.message : '저장 실패', 'error');
     } finally {
       setSaving(false);
     }
@@ -922,6 +958,16 @@ export default function TripDetailPage() {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel={confirmModal.confirmLabel}
+        danger={confirmModal.danger}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal((p) => ({ ...p, open: false }))}
+      />
     </div>
   );
 }
