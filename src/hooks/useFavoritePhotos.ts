@@ -78,22 +78,19 @@ export function useFavoritePhotos() {
 
       if (error) throw error;
 
-      interface PinPhotoRow {
-        id: string;
-        url: string;
-        caption: string;
-        created_at: string;
-        pin: { name: string; visited_at: string | null; trip: { title: string; start_date: string | null } | null } | null;
-      }
-
-      const mapped: FavoritePhoto[] = (data as PinPhotoRow[] ?? []).map((row) => ({
-        id: row.id,
-        url: row.url,
-        caption: row.caption,
-        tripTitle: row.pin?.trip?.title ?? '',
-        destination: row.pin?.name ?? '',
-        date: row.pin?.visited_at ?? row.created_at,
-      }));
+      const rows = (data ?? []) as Array<Record<string, any>>;
+      const mapped: FavoritePhoto[] = rows.map((row) => {
+        const pin = Array.isArray(row.pin) ? row.pin[0] : row.pin;
+        const trip = pin ? (Array.isArray(pin.trip) ? pin.trip[0] : pin.trip) : null;
+        return {
+          id: row.id,
+          url: row.url,
+          caption: row.caption ?? '',
+          tripTitle: trip?.title ?? '',
+          destination: pin?.name ?? '',
+          date: pin?.visited_at ?? row.created_at,
+        };
+      });
 
       // 시간순 정렬
       mapped.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
