@@ -78,7 +78,15 @@ export function useFavoritePhotos() {
 
       if (error) throw error;
 
-      const mapped: FavoritePhoto[] = (data ?? []).map((row: any) => ({
+      interface PinPhotoRow {
+        id: string;
+        url: string;
+        caption: string;
+        created_at: string;
+        pin: { name: string; visited_at: string | null; trip: { title: string; start_date: string | null } | null } | null;
+      }
+
+      const mapped: FavoritePhoto[] = (data as PinPhotoRow[] ?? []).map((row) => ({
         id: row.id,
         url: row.url,
         caption: row.caption,
@@ -104,4 +112,15 @@ export function useFavoritePhotos() {
   }, [fetchFavorites]);
 
   return { photos, loading, refetch: fetchFavorites };
+}
+
+/** 사진의 is_favorite 토글 */
+export async function toggleFavoritePhoto(photoId: string, isFavorite: boolean): Promise<void> {
+  if (!isSupabaseConfigured) return;
+
+  const { error } = await supabase
+    .from('pin_photos')
+    .update({ is_favorite: isFavorite })
+    .eq('id', photoId);
+  if (error) throw error;
 }
