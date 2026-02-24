@@ -29,7 +29,7 @@ export default function DashboardPage() {
     stats.pinsByStatus.visited + stats.pinsByStatus.planned + stats.pinsByStatus.wishlist;
 
   return (
-    <div className="px-6 space-y-8">
+    <div className="px-4 sm:px-6 space-y-6 sm:space-y-8 pb-24">
       {/* 페이지 헤더 */}
       <div>
         <div className="flex items-center gap-2 mb-1">
@@ -40,7 +40,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── 1. 히어로 통계 카드 ── */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <section className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <StatCard value={stats.completedCount} label="다녀온 여행" emoji="✈️" />
         <StatCard value={stats.plannedCount} label="계획 중" emoji="📋" />
         <StatCard value={stats.countriesVisited.length} label="방문 국가" emoji="🌍" />
@@ -105,7 +105,7 @@ export default function DashboardPage() {
         <h2 className="text-lg font-bold text-[#2D3436] mb-4">핀 통계</h2>
 
         {/* 핀 상태 요약 */}
-        <div className="flex items-center gap-6 mb-6">
+        <div className="flex flex-wrap items-center gap-4 sm:gap-6 mb-6">
           <PinStatusDot
             color="bg-emerald-500"
             label="방문"
@@ -275,9 +275,9 @@ function StatCard({
   emoji: string;
 }) {
   return (
-    <div className="bg-white rounded-3xl p-5 shadow-md shadow-gray-200/50 text-center">
-      <span className="block text-2xl mb-1">{emoji}</span>
-      <p className="text-2xl font-bold text-[#2D3436]">{value}</p>
+    <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-md shadow-gray-200/50 text-center">
+      <span className="block text-xl sm:text-2xl mb-1">{emoji}</span>
+      <p className="text-xl sm:text-2xl font-bold text-[#2D3436]">{value}</p>
       <p className="text-xs font-medium text-gray-400 mt-1">{label}</p>
     </div>
   );

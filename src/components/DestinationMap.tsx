@@ -61,7 +61,7 @@ export default function DestinationMap({ selectedLat, selectedLng, flyTo, onSele
       minZoom={2}
       maxZoom={18}
       className="w-full h-full z-0"
-      style={{ minHeight: '280px' }}
+      style={{ minHeight: '200px' }}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'

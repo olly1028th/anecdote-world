@@ -361,7 +361,7 @@ export default function TripDetailPage() {
         </div>
 
         <div className="space-y-1">
-          <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 uppercase italic">{trip.title}</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 uppercase italic">{trip.title}</h2>
           {trip.destination && (
             <div className="flex items-center justify-center gap-1.5 text-slate-600 dark:text-slate-400 font-medium">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

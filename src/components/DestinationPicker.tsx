@@ -243,7 +243,7 @@ export default function DestinationPicker({ value, onChange }: Props) {
           )}
 
           {/* 지도 */}
-          <div className="h-[280px]">
+          <div className="h-[200px] sm:h-[280px]">
             <Suspense
               fallback={
                 <div className="w-full h-full flex items-center justify-center bg-[#F9F4E8]">

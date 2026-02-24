@@ -56,7 +56,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="px-6 space-y-8">
+    <div className="px-4 sm:px-6 space-y-6 sm:space-y-8 pb-24">
       {/* 뒤로가기 */}
       <button
         type="button"

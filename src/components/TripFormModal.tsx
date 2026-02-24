@@ -166,7 +166,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
       onClick={handleBackdropClick}
     >
       <div
-        className={`bg-[#F9F4E8] w-full sm:max-w-lg sm:rounded-xl rounded-t-xl max-h-[85vh] overflow-y-auto border-[3px] border-slate-900 sm:retro-shadow transition-all duration-300 ${
+        className={`bg-[#F9F4E8] w-full sm:max-w-lg sm:rounded-xl rounded-t-xl max-h-[90vh] sm:max-h-[85vh] overflow-y-auto border-[3px] border-slate-900 sm:retro-shadow transition-all duration-300 ${
           visible ? 'translate-y-0 opacity-100' : 'translate-y-full sm:translate-y-8 opacity-0'
         }`}
       >

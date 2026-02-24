@@ -195,7 +195,7 @@ export default function PinFormPage() {
             위치 선택 <span className="text-red-400">*</span>
             <span className="text-xs text-gray-400 ml-2">지도를 클릭하세요</span>
           </label>
-          <div className="h-[300px] rounded-xl overflow-hidden border border-gray-200">
+          <div className="h-[220px] sm:h-[300px] rounded-xl overflow-hidden border border-gray-200">
             <MapContainer
               center={mapCenter}
               zoom={lat !== null ? 13 : 5}
