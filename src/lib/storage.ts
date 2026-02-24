@@ -23,6 +23,10 @@ export async function uploadTripPhoto(
   tripId: string,
   photo: string | File,
 ): Promise<string> {
+  // 로그인 유저 확인 (Storage 경로에 user_id 포함)
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('로그인이 필요합니다.');
+
   let blob: Blob;
   let ext = 'jpg';
 
@@ -37,7 +41,7 @@ export async function uploadTripPhoto(
   }
 
   const fileName = `${crypto.randomUUID()}.${ext}`;
-  const path = `${tripId}/${fileName}`;
+  const path = `${user.id}/${tripId}/${fileName}`;
 
   const { error } = await supabase.storage
     .from(BUCKET)
@@ -53,9 +57,13 @@ export async function uploadTripPhoto(
  * 여행에 연결된 모든 사진 URL을 Storage에서 조회.
  */
 export async function listTripPhotos(tripId: string): Promise<string[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const folderPath = `${user.id}/${tripId}`;
   const { data, error } = await supabase.storage
     .from(BUCKET)
-    .list(tripId, { sortBy: { column: 'created_at', order: 'asc' } });
+    .list(folderPath, { sortBy: { column: 'created_at', order: 'asc' } });
 
   if (error || !data) return [];
 
@@ -64,7 +72,7 @@ export async function listTripPhotos(tripId: string): Promise<string[]> {
     .map((f) => {
       const { data: urlData } = supabase.storage
         .from(BUCKET)
-        .getPublicUrl(`${tripId}/${f.name}`);
+        .getPublicUrl(`${folderPath}/${f.name}`);
       return urlData.publicUrl;
     });
 }
@@ -76,8 +84,11 @@ export async function deleteTripPhoto(
   tripId: string,
   url: string,
 ): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('로그인이 필요합니다.');
+
   const parts = url.split('/');
   const fileName = parts[parts.length - 1];
-  const path = `${tripId}/${fileName}`;
+  const path = `${user.id}/${tripId}/${fileName}`;
   await supabase.storage.from(BUCKET).remove([path]);
 }
