@@ -14,7 +14,7 @@
 - **여행지 검색 & 선택** — 도시/나라 검색 후 지도에서 바로 선택하는 DestinationPicker
 - **핀 관리** — 지도 클릭으로 장소 등록, 카테고리·별점·메모 관리, 여행 연결
 - **인라인 편집** — 상세 페이지에서 항목별(사진, 경비, 체크리스트, 장소, 메모) 카드를 클릭하여 바로 편집
-- **사진 갤러리** — URL/파일 업로드, 라이트박스 뷰어 (이전/다음 네비게이션), 대표 이미지 설정, 인라인 사진 편집
+- **사진 갤러리** — URL/파일 업로드 (Supabase Storage), 라이트박스 뷰어 (이전/다음 네비게이션), 대표 이미지 설정, 인라인 사진 편집
 - **경비 추적** — 항공, 숙박, 식비, 교통 등 7개 카테고리별 비용 기록 (인라인 추가/삭제)
 - **여행 타임라인** — 일자별 일정 표시
 - **준비 체크리스트** — 여행 준비 사항 관리 및 진행률 표시 (인라인 추가/삭제/토글)
@@ -37,6 +37,7 @@
 | Maps | Leaflet + react-leaflet |
 | Auth | Supabase Auth (Google, Kakao OAuth) |
 | Routing | React Router 7 |
+| Storage | Supabase Storage (trip-photos bucket) |
 | Deploy | Vercel |
 
 ## Project Structure
@@ -89,14 +90,15 @@ src/
 │   └── sampleData.ts        # 데모 모드 샘플 데이터
 ├── lib/
 │   ├── supabase.ts          # Supabase 클라이언트
-│   └── storage.ts           # Supabase Storage (사진 업로드)
+│   └── storage.ts           # Supabase Storage (사진 업로드/삭제, user_id 기반 경로)
 ├── App.tsx                  # 라우팅 (Layout Route 패턴)
 ├── main.tsx
 └── index.css
 
 docs/
 ├── DATABASE.md              # DB 스키마 문서
-├── schema.sql               # PostgreSQL DDL
+├── schema.sql               # PostgreSQL DDL (테이블 + RLS 정책)
+├── storage-policy.sql       # Supabase Storage RLS 정책
 └── references/              # 디자인 레퍼런스 & 기획 문서
     ├── PLANNING.md
     ├── UI_LAYOUT.md
@@ -164,6 +166,7 @@ npm run preview
 | Phase 8 | 여행 공유 기능 (초대/수락/거절, read/edit 권한) | Done |
 | Phase 9 | UI/UX 개선 (정복 완료/예정 라벨, 행성 마커, Favorite Moments) | Done |
 | Phase 10 | 위시리스트 상태 추가, 데모 모드 저장 버그 수정, 이미지 압축 | Done |
+| Phase 11 | Supabase Storage 사진 업로드, Storage RLS 정책, 권한 분리 강화 | Done |
 
 ## Database Schema
 
@@ -181,7 +184,21 @@ Supabase (PostgreSQL) 테이블 구성:
 
 자세한 스키마는 [docs/DATABASE.md](docs/DATABASE.md) 및 [docs/schema.sql](docs/schema.sql)을 참고하세요.
 
+## Security
+
+- **DB RLS (Row Level Security)**: 모든 테이블에 `auth.uid() = user_id` 정책 적용 — 다른 유저의 데이터 접근 차단
+- **공유 권한**: `trip_shares` 테이블을 통한 read/edit 권한 분리 (초대 수락 후에만 접근 가능)
+- **Storage 격리**: 사진 경로가 `{user_id}/{trip_id}/{filename}` 구조 — 본인 폴더에만 업로드/삭제 가능
+- **OAuth 인증**: Google/Kakao 소셜 로그인으로 비밀번호 저장 없음
+
 ## Recent Changes
+
+### Phase 11 — Supabase Storage & 권한 분리 강화
+- Supabase Storage `trip-photos` 버킷으로 실제 사진 업로드 구현
+- Storage 파일 경로를 `{user_id}/{trip_id}/{filename}` 구조로 변경하여 유저별 격리
+- Storage RLS 정책 추가 (업로드/수정/삭제 시 본인 폴더만 접근 가능)
+- 사진 업로드/조회/삭제 시 `auth.getUser()` 검증 추가
+- `docs/storage-policy.sql` 추가 (SQL Editor 실행용)
 
 ### Phase 10 — 위시리스트 & 버그 수정
 - 여행 상태에 '위시' (wishlist) 옵션 추가
