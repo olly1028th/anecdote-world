@@ -1,22 +1,8 @@
 import { useState, useCallback, useRef, lazy, Suspense } from 'react';
+import type { DestinationInfo } from '../types/destination';
+import { EMPTY_DESTINATION } from '../types/destination';
 
 const DestinationMap = lazy(() => import('./DestinationMap'));
-
-export interface DestinationInfo {
-  name: string;
-  lat: number | null;
-  lng: number | null;
-  country: string;
-  city: string;
-}
-
-export const EMPTY_DESTINATION: DestinationInfo = {
-  name: '',
-  lat: null,
-  lng: null,
-  country: '',
-  city: '',
-};
 
 interface SearchResult {
   display_name: string;

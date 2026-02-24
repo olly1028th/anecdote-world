@@ -7,7 +7,9 @@ import { isSupabaseConfigured } from '../lib/supabase';
 import { uploadTripPhoto } from '../lib/storage';
 import { expenseCategoryLabel } from '../utils/format';
 import PhotoUpload from '../components/PhotoUpload';
-import DestinationPicker, { EMPTY_DESTINATION, type DestinationInfo } from '../components/DestinationPicker';
+import DestinationPicker from '../components/DestinationPicker';
+import { EMPTY_DESTINATION } from '../types/destination';
+import type { DestinationInfo } from '../types/destination';
 
 const EXPENSE_CATEGORIES: ExpenseCategory[] = [
   'flight', 'hotel', 'food', 'transport', 'activity', 'shopping', 'other',

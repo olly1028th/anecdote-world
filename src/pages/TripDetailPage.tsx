@@ -336,15 +336,16 @@ export default function TripDetailPage() {
   return (
     <div className="max-w-md mx-auto px-4 pt-4 space-y-6 pb-24">
       {/* 뒤로가기 */}
-      <Link
-        to="/"
-        className="inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wider text-slate-400 hover:text-[#f48c25] transition-colors no-underline"
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        className="inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wider text-slate-400 hover:text-[#f48c25] transition-colors bg-transparent border-0 p-0 cursor-pointer"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
         Back
-      </Link>
+      </button>
 
       {/* 프로필 스타일 헤더 */}
       <section className="flex flex-col items-center text-center space-y-4">

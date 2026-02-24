@@ -35,7 +35,7 @@ function loadDeletedIds(): Set<string> {
 }
 
 let demoExtraTrips: Trip[] = loadDemoTrips();
-let demoDeletedIds: Set<string> = loadDeletedIds();
+const demoDeletedIds: Set<string> = loadDeletedIds();
 
 export function addDemoTrip(trip: Trip) {
   demoExtraTrips = [trip, ...demoExtraTrips];
