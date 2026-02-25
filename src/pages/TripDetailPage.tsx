@@ -353,6 +353,13 @@ export default function TripDetailPage() {
     }
   };
 
+  // 에러가 있지만 폴백 데이터가 있으면 토스트로 알림만 표시
+  useEffect(() => {
+    if (error && trip) {
+      toast(error, 'error');
+    }
+  }, [error, trip, toast]);
+
   if (loading) {
     return (
       <div className="px-6 py-20 text-center">
@@ -360,13 +367,6 @@ export default function TripDetailPage() {
       </div>
     );
   }
-
-  // 에러가 있지만 폴백 데이터가 있으면 토스트로 알림만 표시
-  useEffect(() => {
-    if (error && trip) {
-      toast(error, 'error');
-    }
-  }, [error, trip, toast]);
 
   if (error && !trip) {
     return (
