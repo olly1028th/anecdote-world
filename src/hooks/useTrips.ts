@@ -194,8 +194,7 @@ export function useTrips() {
 
       if (tripsErr) throw tripsErr;
       if (!dbTrips || dbTrips.length === 0) {
-        // DB에 여행 없으면 데모 데이터 + 로컬 추가분 표시
-        setTrips(getDemoTrips());
+        setTrips([]);
         return;
       }
 
@@ -242,12 +241,11 @@ export function useTrips() {
         ),
       );
 
-      setTrips([...demoExtraTrips, ...mapped]);
+      setTrips(mapped);
     } catch (err) {
-      // Supabase 실패 시 에러를 표시하고 데모 데이터로 폴백
-      setTrips(getDemoTrips());
+      setTrips([]);
       const msg = err instanceof Error ? err.message : '데이터를 불러올 수 없습니다';
-      setError(`서버 연결 실패 (데모 모드로 전환): ${msg}`);
+      setError(`서버 연결 실패: ${msg}`);
       console.error('[useTrips] Supabase fetch failed:', err);
     } finally {
       setLoading(false);
@@ -411,9 +409,8 @@ export function useTrip(id: string | undefined) {
 
       if (tripErr) throw tripErr;
       if (!dbTrip) {
-        // DB에 없으면 데모 데이터에서 검색 (useTrips와 동일한 폴백 로직)
-        setTrip(getDemoTrips().find((t) => t.id === id) ?? null);
-        setIsDemo(true);
+        setTrip(null);
+        setIsDemo(false);
         return;
       }
 
@@ -465,9 +462,8 @@ export function useTrip(id: string | undefined) {
       );
       setIsDemo(false);
     } catch (err) {
-      // Supabase 실패 시 에러를 표시하고 데모 데이터로 폴백
-      setTrip(getDemoTrips().find((t) => t.id === id) ?? null);
-      setIsDemo(true);
+      setTrip(null);
+      setIsDemo(false);
       const msg = err instanceof Error ? err.message : '데이터를 불러올 수 없습니다';
       setError(`서버 연결 실패: ${msg}`);
       console.error('[useTrip] Supabase fetch failed:', err);
