@@ -206,57 +206,61 @@ export function useTrips() {
         .order('created_at', { ascending: false });
 
       if (tripsErr) throw tripsErr;
-      if (!dbTrips || dbTrips.length === 0) {
-        setTrips([]);
-        return;
+
+      let mapped: Trip[] = [];
+      if (dbTrips && dbTrips.length > 0) {
+        const tripIds = dbTrips.map((t: DbTrip) => t.id);
+
+        // 관련 데이터 병렬 조회 (핀 + 핀사진 포함)
+        const [expensesRes, checklistRes, pinsRes] = await Promise.all([
+          supabase.from('expenses').select('*').in('trip_id', tripIds),
+          supabase
+            .from('checklist_items')
+            .select('*')
+            .in('trip_id', tripIds)
+            .order('sort_order'),
+          supabase
+            .from('pins')
+            .select('*')
+            .in('trip_id', tripIds)
+            .order('sort_order'),
+        ]);
+
+        const allExpenses: DbExpense[] = expensesRes.data ?? [];
+        const allChecklist: DbChecklistItem[] = checklistRes.data ?? [];
+        const allPins: Pin[] = (pinsRes.data as Pin[]) ?? [];
+
+        // 핀 사진 조회 (핀이 있을 때만)
+        let allPinPhotos: PinPhoto[] = [];
+        const pinIds = allPins.map((p) => p.id);
+        if (pinIds.length > 0) {
+          const ppRes = await supabase
+            .from('pin_photos')
+            .select('*')
+            .in('pin_id', pinIds)
+            .order('sort_order');
+          allPinPhotos = (ppRes.data as PinPhoto[]) ?? [];
+        }
+
+        mapped = dbTrips.map((t: DbTrip) =>
+          mapDbTripToUi(
+            t,
+            allExpenses.filter((e) => e.trip_id === t.id),
+            allChecklist.filter((c) => c.trip_id === t.id),
+            allPins.filter((p) => p.trip_id === t.id),
+            allPinPhotos,
+          ),
+        );
       }
 
-      const tripIds = dbTrips.map((t: DbTrip) => t.id);
-
-      // 관련 데이터 병렬 조회 (핀 + 핀사진 포함)
-      const [expensesRes, checklistRes, pinsRes] = await Promise.all([
-        supabase.from('expenses').select('*').in('trip_id', tripIds),
-        supabase
-          .from('checklist_items')
-          .select('*')
-          .in('trip_id', tripIds)
-          .order('sort_order'),
-        supabase
-          .from('pins')
-          .select('*')
-          .in('trip_id', tripIds)
-          .order('sort_order'),
-      ]);
-
-      const allExpenses: DbExpense[] = expensesRes.data ?? [];
-      const allChecklist: DbChecklistItem[] = checklistRes.data ?? [];
-      const allPins: Pin[] = (pinsRes.data as Pin[]) ?? [];
-
-      // 핀 사진 조회 (핀이 있을 때만)
-      let allPinPhotos: PinPhoto[] = [];
-      const pinIds = allPins.map((p) => p.id);
-      if (pinIds.length > 0) {
-        const ppRes = await supabase
-          .from('pin_photos')
-          .select('*')
-          .in('pin_id', pinIds)
-          .order('sort_order');
-        allPinPhotos = (ppRes.data as PinPhoto[]) ?? [];
-      }
-
-      const mapped = dbTrips.map((t: DbTrip) =>
-        mapDbTripToUi(
-          t,
-          allExpenses.filter((e) => e.trip_id === t.id),
-          allChecklist.filter((c) => c.trip_id === t.id),
-          allPins.filter((p) => p.trip_id === t.id),
-          allPinPhotos,
-        ),
-      );
-
-      setTrips(mapped);
+      // Supabase 성공 시에도 로컬 데모 데이터 병합 (fallback으로 저장된 여행 포함)
+      const demoTrips = getDemoTrips();
+      const supabaseIds = new Set(mapped.map((t) => t.id));
+      const extraDemoTrips = demoTrips.filter((t) => !supabaseIds.has(t.id));
+      setTrips([...mapped, ...extraDemoTrips]);
     } catch (err) {
-      setTrips([]);
+      // Supabase 실패 시 데모 데이터로 fallback
+      setTrips(getDemoTrips());
       const msg = err instanceof Error ? err.message : '데이터를 불러올 수 없습니다';
       setError(`서버 연결 실패: ${msg}`);
       console.error('[useTrips] Supabase fetch failed:', err);

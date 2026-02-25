@@ -113,8 +113,8 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<TripStatus | 'all'>('all');
 
-  // 세부 일정 장소(day_number가 있는 핀)는 메인 지도에서 제외
-  const mapPins = pins.filter((p) => p.day_number == null);
+  // 세부 일정 장소(day_number가 있는 핀)와 좌표 없는 핀(lat=0,lng=0)은 메인 지도에서 제외
+  const mapPins = pins.filter((p) => p.day_number == null && !(p.lat === 0 && p.lng === 0));
   const filteredPins =
     pinFilter === 'all' ? mapPins : mapPins.filter((p) => p.visit_status === pinFilter);
 
