@@ -113,8 +113,10 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<TripStatus | 'all'>('all');
 
+  // 세부 일정 장소(day_number가 있는 핀)는 메인 지도에서 제외
+  const mapPins = pins.filter((p) => p.day_number == null);
   const filteredPins =
-    pinFilter === 'all' ? pins : pins.filter((p) => p.visit_status === pinFilter);
+    pinFilter === 'all' ? mapPins : mapPins.filter((p) => p.visit_status === pinFilter);
 
   const completedTrips = trips.filter((t) => t.status === 'completed');
   const plannedTrips = trips.filter((t) => t.status === 'planned');
@@ -139,10 +141,10 @@ export default function HomePage() {
   }, [trips, statusFilter, searchQuery]);
 
   const pinFilters: { key: PinFilter; label: string }[] = [
-    { key: 'all', label: `전체 (${pins.length})` },
-    { key: 'visited', label: `방문 (${pins.filter((p) => p.visit_status === 'visited').length})` },
-    { key: 'planned', label: `계획 (${pins.filter((p) => p.visit_status === 'planned').length})` },
-    { key: 'wishlist', label: `위시 (${pins.filter((p) => p.visit_status === 'wishlist').length})` },
+    { key: 'all', label: `전체 (${mapPins.length})` },
+    { key: 'visited', label: `방문 (${mapPins.filter((p) => p.visit_status === 'visited').length})` },
+    { key: 'planned', label: `계획 (${mapPins.filter((p) => p.visit_status === 'planned').length})` },
+    { key: 'wishlist', label: `위시 (${mapPins.filter((p) => p.visit_status === 'wishlist').length})` },
   ];
 
   if (loading) {
@@ -258,7 +260,7 @@ export default function HomePage() {
             activeStatsTab === 'pins' ? 'bg-[#f43f5e]/30 -translate-y-1' : 'bg-[#f43f5e]/10'
           }`}
         >
-          <span className="text-2xl font-bold text-[#f43f5e]">{pins.length}</span>
+          <span className="text-2xl font-bold text-[#f43f5e]">{mapPins.length}</span>
           <span className="text-[10px] uppercase font-bold text-slate-500 mt-1 leading-none">Stars</span>
         </button>
       </section>
@@ -376,10 +378,10 @@ export default function HomePage() {
           {activeStatsTab === 'pins' && (
             <div className="space-y-2">
               <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">All Pins</h3>
-              {pins.length === 0 ? (
+              {mapPins.length === 0 ? (
                 <p className="text-sm text-slate-400 text-center py-4 font-medium">등록된 핀이 없습니다.</p>
               ) : (
-                pins.map((pin) => {
+                mapPins.map((pin) => {
                   const pinTrip = pin.trip_id ? trips.find((t) => t.id === pin.trip_id) : null;
                   const statusLabels: Record<string, string> = { visited: 'Visited', planned: 'Planned', wishlist: 'Wish' };
                   const statusBg: Record<string, string> = { visited: 'bg-[#0d9488] text-white', planned: 'bg-[#eab308]', wishlist: 'bg-[#f43f5e] text-white' };
