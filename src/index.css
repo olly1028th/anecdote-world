@@ -152,3 +152,40 @@ body {
 .dark .leaflet-tile {
   filter: brightness(0.7) contrast(1.1) saturate(0.8);
 }
+
+/* Marker Cluster 스타일 오버라이드 */
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+  background: rgba(244, 140, 37, 0.3) !important;
+}
+.marker-cluster-small div,
+.marker-cluster-medium div,
+.marker-cluster-large div {
+  background: #f48c25 !important;
+  color: white !important;
+  font-weight: bold;
+  border: 3px solid #1c140d;
+}
+
+/* ============================
+   PDF / 인쇄 스타일
+   ============================ */
+@media print {
+  body {
+    background: white !important;
+    color: #1c140d !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  nav, header, .fixed {
+    display: none !important;
+  }
+
+  .max-w-md { max-width: 100% !important; }
+  .pb-24 { padding-bottom: 1rem !important; }
+  .retro-shadow { box-shadow: none !important; }
+  section, .rounded-xl { break-inside: avoid; }
+  a[href]::after { content: none !important; }
+}
