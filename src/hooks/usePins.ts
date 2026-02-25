@@ -147,9 +147,15 @@ export function usePins() {
 
       if (err) throw err;
       const dbPins = (data as Pin[]) ?? [];
-      setPins(dbPins);
+
+      // Supabase 성공 시에도 로컬 데모 핀 병합 (fallback으로 저장된 핀 포함)
+      const demoPins = [...demoExtraPins, ...samplePins];
+      const dbIds = new Set(dbPins.map((p) => p.id));
+      const extraDemoPins = demoPins.filter((p) => !dbIds.has(p.id));
+      setPins([...dbPins, ...extraDemoPins]);
     } catch (err) {
-      setPins([]);
+      // Supabase 실패 시 데모 데이터로 fallback
+      setPins([...demoExtraPins, ...samplePins]);
       const msg = err instanceof Error ? err.message : '핀 데이터를 불러올 수 없습니다';
       setError(`서버 연결 실패: ${msg}`);
       console.error('[usePins] Supabase fetch failed:', err);
