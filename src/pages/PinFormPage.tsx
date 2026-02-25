@@ -179,7 +179,7 @@ export default function PinFormPage() {
       <button
         type="button"
         onClick={() => navigate(-1)}
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6 bg-transparent border-0 p-0 cursor-pointer"
+        className="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 mb-6 bg-transparent border-0 p-0 cursor-pointer"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -187,18 +187,18 @@ export default function PinFormPage() {
         뒤로
       </button>
 
-      <h1 className="text-2xl font-bold text-gray-900 mb-8">
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-8">
         {isEdit ? '핀 수정' : '새 핀 추가'}
       </h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* 지도 위치 선택 */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
             위치 선택 <span className="text-red-400">*</span>
-            <span className="text-xs text-gray-400 ml-2">지도를 클릭하세요</span>
+            <span className="text-xs text-gray-400 dark:text-slate-500 ml-2">지도를 클릭하세요</span>
           </label>
-          <div className="h-[220px] sm:h-[300px] rounded-xl overflow-hidden border border-gray-200">
+          <div className="h-[220px] sm:h-[300px] rounded-xl overflow-hidden border border-gray-200 dark:border-[#4a3f35]">
             <MapContainer
               center={mapCenter}
               zoom={lat !== null ? 13 : 5}
@@ -216,7 +216,7 @@ export default function PinFormPage() {
             </MapContainer>
           </div>
           {lat !== null && lng !== null && (
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
               위도: {lat.toFixed(4)}, 경도: {lng.toFixed(4)}
             </p>
           )}
@@ -224,7 +224,7 @@ export default function PinFormPage() {
 
         {/* 방문 상태 */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">상태</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">상태</label>
           <div className="flex gap-3">
             {VISIT_OPTIONS.map((opt) => (
               <button
@@ -234,7 +234,7 @@ export default function PinFormPage() {
                 className={`flex-1 py-3 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
                   visitStatus === opt.value
                     ? `${opt.color} text-white`
-                    : 'bg-white text-gray-600 border border-gray-200'
+                    : 'bg-white dark:bg-[#2a1f15] text-gray-600 dark:text-slate-400 border border-gray-200 dark:border-[#4a3f35]'
                 }`}
               >
                 {opt.label}
@@ -245,7 +245,7 @@ export default function PinFormPage() {
 
         {/* 핀 이름 */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
             장소 이름 <span className="text-red-400">*</span>
           </label>
           <input
@@ -254,47 +254,47 @@ export default function PinFormPage() {
             onChange={(e) => setName(e.target.value)}
             placeholder="예: 센소지, 에펠탑"
             required
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-[#4a3f35] text-sm dark:bg-[#2a1f15] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
 
         {/* 주소 / 국가 / 도시 */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">주소</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">주소</label>
           <input
             type="text"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             placeholder="상세 주소"
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-[#4a3f35] text-sm dark:bg-[#2a1f15] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">국가</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">국가</label>
             <input
               type="text"
               value={country}
               onChange={(e) => setCountry(e.target.value)}
               placeholder="예: 일본"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-[#4a3f35] text-sm dark:bg-[#2a1f15] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">도시</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">도시</label>
             <input
               type="text"
               value={city}
               onChange={(e) => setCity(e.target.value)}
               placeholder="예: 도쿄"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-[#4a3f35] text-sm dark:bg-[#2a1f15] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
         </div>
 
         {/* 카테고리 */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">카테고리</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">카테고리</label>
           <div className="flex flex-wrap gap-2">
             {CATEGORY_OPTIONS.map((opt) => (
               <button
@@ -304,7 +304,7 @@ export default function PinFormPage() {
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors cursor-pointer ${
                   category === opt.value
                     ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-600 border border-gray-200'
+                    : 'bg-white dark:bg-[#2a1f15] text-gray-600 dark:text-slate-400 border border-gray-200 dark:border-[#4a3f35]'
                 }`}
               >
                 {opt.label}
@@ -316,11 +316,11 @@ export default function PinFormPage() {
         {/* 여행 연결 */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">연결된 여행</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">연결된 여행</label>
             <select
               value={tripId ?? ''}
               onChange={(e) => setTripId(e.target.value || null)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-[#4a3f35] text-sm dark:bg-[#2a1f15] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             >
               <option value="">없음</option>
               {trips.map((t) => (
@@ -331,14 +331,14 @@ export default function PinFormPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Day</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Day</label>
             <input
               type="number"
               min={1}
               value={dayNumber ?? ''}
               onChange={(e) => setDayNumber(e.target.value ? Number(e.target.value) : null)}
               placeholder="예: 1"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-[#4a3f35] text-sm dark:bg-[#2a1f15] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
         </div>
@@ -346,12 +346,12 @@ export default function PinFormPage() {
         {/* 방문 날짜 (방문 상태일 때만) */}
         {visitStatus === 'visited' && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">방문 날짜</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">방문 날짜</label>
             <input
               type="date"
               value={visitedAt}
               onChange={(e) => setVisitedAt(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-[#4a3f35] text-sm dark:bg-[#2a1f15] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
         )}
@@ -359,7 +359,7 @@ export default function PinFormPage() {
         {/* 별점 (방문 상태일 때만) */}
         {visitStatus === 'visited' && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">별점</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">별점</label>
             <div className="flex gap-1">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
@@ -373,7 +373,7 @@ export default function PinFormPage() {
                 </button>
               ))}
               {rating !== null && (
-                <span className="text-sm text-gray-400 ml-2 self-center">{rating}/5</span>
+                <span className="text-sm text-gray-400 dark:text-slate-500 ml-2 self-center">{rating}/5</span>
               )}
             </div>
           </div>
@@ -381,13 +381,13 @@ export default function PinFormPage() {
 
         {/* 메모 */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">메모</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">메모</label>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="이 장소에 대한 메모..."
             rows={3}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-[#4a3f35] text-sm dark:bg-[#2a1f15] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
           />
         </div>
 
@@ -396,7 +396,7 @@ export default function PinFormPage() {
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="flex-1 py-3 rounded-xl text-sm font-medium text-gray-600 bg-gray-100 text-center hover:bg-gray-200 transition-colors cursor-pointer border-0"
+            className="flex-1 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-[#2a1f15] text-center hover:bg-gray-200 dark:hover:bg-[#1a1208] transition-colors cursor-pointer border-0"
           >
             취소
           </button>

@@ -10,8 +10,8 @@ export default function LoginPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F9F4E8]">
-        <div className="animate-pulse text-[#1c140d]/40 font-bold uppercase tracking-widest text-sm">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-[#F9F4E8] dark:bg-[#1a1208]">
+        <div className="animate-pulse text-[#1c140d]/40 dark:text-slate-500 font-bold uppercase tracking-widest text-sm">Loading...</div>
       </div>
     );
   }
