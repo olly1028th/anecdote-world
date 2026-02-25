@@ -18,12 +18,12 @@
 - **경비 추적** — 항공, 숙박, 식비, 교통 등 7개 카테고리별 비용 기록 (인라인 추가/삭제)
 - **여행 타임라인** — 일자별 일정 표시
 - **준비 체크리스트** — 여행 준비 사항 관리 및 진행률 표시 (인라인 추가/삭제/토글)
-- **추천 장소** — must / want / maybe 우선순위 태그 (인라인 추가/삭제)
-- **여행 공유** — 이메일로 다른 유저 초대, 수락/거절, read/edit 권한 관리
+- **추천 장소** — must / want / maybe 우선순위 태그 (인라인 추가/삭제), 완료된 여행에서는 비고란으로 전환
+- **여행 공유** — 이메일로 다른 유저 초대, 수락/거절, read/edit 권한 관리, 프로필에서 공유받은 여행 목록 확인 및 바로 이동
 - **Favorite Moments** — 정복 완료된 여행만 카드로 표시
 - **국기 Fallback** — 커버 이미지 없는 여행에 해당 국가 국기를 자동 표시 (flagcdn.com)
 - **OAuth 인증** — Google · Kakao 소셜 로그인 (Supabase Auth)
-- **데모 모드** — Supabase 없이도 샘플 데이터로 전체 기능 체험, 추가한 데이터는 localStorage에 영구 보관
+- **데모 모드** — Supabase 없이도 샘플 데이터로 전체 기능 체험, 추가한 데이터는 localStorage에 영구 보관 (Supabase 연동 시 데모 데이터와 완전 분리)
 - **에러 바운더리** — 런타임 에러 시 흰 화면 대신 에러 메시지 표시
 
 ## Tech Stack
@@ -99,6 +99,9 @@ docs/
 ├── DATABASE.md              # DB 스키마 문서
 ├── schema.sql               # PostgreSQL DDL (테이블 + RLS 정책)
 ├── storage-policy.sql       # Supabase Storage RLS 정책
+├── migrations/              # DB 마이그레이션 SQL
+│   ├── 001_add_favorite_and_share_rpc.sql
+│   └── 002_add_email_based_share_policies.sql
 └── references/              # 디자인 레퍼런스 & 기획 문서
     ├── PLANNING.md
     ├── UI_LAYOUT.md
@@ -167,6 +170,7 @@ npm run preview
 | Phase 9 | UI/UX 개선 (정복 완료/예정 라벨, 행성 마커, Favorite Moments) | Done |
 | Phase 10 | 위시리스트 상태 추가, 데모 모드 저장 버그 수정, 이미지 압축 | Done |
 | Phase 11 | Supabase Storage 사진 업로드, Storage RLS 정책, 권한 분리 강화 | Done |
+| Phase 12 | 버그 수정 (React #310, 사진 업로드, 공유 에러, 데이터 격리), 프로필 공유 섹션, 비고란 | Done |
 
 ## Database Schema
 
@@ -187,11 +191,31 @@ Supabase (PostgreSQL) 테이블 구성:
 ## Security
 
 - **DB RLS (Row Level Security)**: 모든 테이블에 `auth.uid() = user_id` 정책 적용 — 다른 유저의 데이터 접근 차단
-- **공유 권한**: `trip_shares` 테이블을 통한 read/edit 권한 분리 (초대 수락 후에만 접근 가능)
+- **데이터 격리**: Supabase 모드에서 localStorage 데모 데이터와 DB 데이터 완전 분리 — 계정 전환 시 타 유저 데이터 노출 방지
+- **공유 권한**: `trip_shares` 테이블을 통한 read/edit 권한 분리, 이메일 기반 + user_id 기반 이중 RLS 정책 (초대 수락 후에만 접근 가능)
 - **Storage 격리**: 사진 경로가 `{user_id}/{trip_id}/{filename}` 구조 — 본인 폴더에만 업로드/삭제 가능
 - **OAuth 인증**: Google/Kakao 소셜 로그인으로 비밀번호 저장 없음
 
 ## Recent Changes
+
+### Phase 12 — 버그 수정 & 프로필 공유 섹션 & 비고란
+
+**프로필 페이지 공유 섹션 추가**
+- 프로필 페이지 하단에 **"공유받은 여행"** 섹션 추가 — 커버 이미지, 제목, 공유자 정보, 권한(읽기/편집) 뱃지 표시
+- 공유받은 여행 카드 탭 시 해당 여행 상세 페이지로 바로 이동
+- **"내가 공유한 크루"** 섹션 추가 — 공유 대상 이메일, 여행 수, 수락 상태 표시
+- `useReceivedShares` 훅 신규 추가 (수락된 공유 목록 + 여행/소유자 정보 조인)
+
+**완료된 여행 비고란**
+- 완료된 여행(status=completed)의 일정 편집 시 우선순위 드롭다운(필수/가고싶음/여유되면) 대신 **"비고"** 텍스트 입력으로 전환
+- 표시 모드에서도 완료된 여행은 우선순위 뱃지 대신 비고 텍스트 표시
+
+**버그 수정**
+- **React error #310 수정** — `useEffect`가 조건부 `return` 이후에 위치하여 렌더링 간 훅 수 불일치 발생 → 모든 훅을 early return 위로 이동
+- **사진 업로드 "이미지 로드 실패" 수정** — `URL.createObjectURL` 대신 `FileReader.readAsDataURL` 사용으로 크로스 브라우저 호환성 개선
+- **공유 초대 에러 수정** — Supabase `PostgrestError`가 `Error` 인스턴스가 아니어서 실제 에러 메시지가 숨겨지던 문제 → `throw new Error(error.message)` 로 변경
+- **이메일 기반 RLS 정책 추가** — `invited_user_id`가 NULL인 pending 초대도 이메일로 조회/수락 가능하도록 RLS 정책 추가 (`002_add_email_based_share_policies.sql`)
+- **데이터 격리 수정** — Supabase 모드에서 localStorage 데모 데이터가 DB 결과에 혼합되어 다른 계정으로 로그인 시 이전 계정의 여행이 보이던 문제 수정
 
 ### Phase 11 — Supabase Storage & 권한 분리 강화
 - Supabase Storage `trip-photos` 버킷으로 실제 사진 업로드 구현
