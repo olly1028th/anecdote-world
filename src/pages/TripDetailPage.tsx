@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTrip, deleteTrip, toggleChecklistItem, saveExpenses, saveChecklistItems, updateDemoTrip, deleteDemoTrip } from '../hooks/useTrips';
 import { supabase } from '../lib/supabase';
@@ -343,7 +343,14 @@ export default function TripDetailPage() {
     );
   }
 
-  if (error) {
+  // 에러가 있지만 폴백 데이터가 있으면 토스트로 알림만 표시
+  useEffect(() => {
+    if (error && trip) {
+      toast(error, 'error');
+    }
+  }, [error, trip, toast]);
+
+  if (error && !trip) {
     return (
       <div className="px-6 py-20 text-center">
         <p className="text-[#f43f5e] font-bold">{error}</p>
