@@ -267,6 +267,194 @@ export async function updateSharePermission(shareId: string, permission: SharePe
   window.dispatchEvent(new CustomEvent('share-updated'));
 }
 
+// ---- 전체 여행 일괄 공유 ----
+
+export async function shareAllTrips(
+  ownerId: string,
+  tripIds: string[],
+  invitedEmail: string,
+  permission: SharePermission,
+  tripTitles?: Map<string, string>,
+): Promise<number> {
+  if (tripIds.length === 0) return 0;
+
+  if (!isSupabaseConfigured) {
+    const all = loadDemoShares();
+    const now = new Date().toISOString();
+    const newShares: DemoShare[] = [];
+    let added = 0;
+
+    for (const tripId of tripIds) {
+      const exists = all.find(
+        (s) => s.trip_id === tripId && s.invited_email === invitedEmail && s.status !== 'declined',
+      );
+      if (!exists) {
+        newShares.push({
+          id: `share-${Date.now()}-${added}`,
+          trip_id: tripId,
+          owner_id: ownerId,
+          invited_email: invitedEmail,
+          invited_user_id: null,
+          permission,
+          status: 'pending',
+          created_at: now,
+          updated_at: now,
+          trip_title: tripTitles?.get(tripId),
+          owner_nickname: '여행자',
+        });
+        added++;
+      }
+    }
+
+    if (added > 0) {
+      saveDemoShares([...newShares, ...all]);
+    }
+    window.dispatchEvent(new CustomEvent('share-updated'));
+    return added;
+  }
+
+  // Supabase: 초대받는 유저 확인
+  let invitedUserId: string | null = null;
+  try {
+    const { data: userId } = await supabase.rpc('get_user_id_by_email', { email: invitedEmail });
+    if (userId) invitedUserId = userId;
+  } catch { /* 미가입 유저 */ }
+
+  // 이미 공유된 여행 확인
+  const { data: existingShares } = await supabase
+    .from('trip_shares')
+    .select('trip_id')
+    .eq('owner_id', ownerId)
+    .eq('invited_email', invitedEmail)
+    .neq('status', 'declined');
+
+  const existingTripIds = new Set((existingShares ?? []).map((s: { trip_id: string }) => s.trip_id));
+  const newTripIds = tripIds.filter((id) => !existingTripIds.has(id));
+
+  if (newTripIds.length > 0) {
+    const { error } = await supabase.from('trip_shares').insert(
+      newTripIds.map((tripId) => ({
+        trip_id: tripId,
+        owner_id: ownerId,
+        invited_email: invitedEmail,
+        invited_user_id: invitedUserId,
+        permission,
+      })),
+    );
+    if (error) throw error;
+  }
+
+  window.dispatchEvent(new CustomEvent('share-updated'));
+  return newTripIds.length;
+}
+
+// ---- 전체 공유 취소 ----
+
+export async function revokeAllShares(ownerId: string, invitedEmail: string): Promise<void> {
+  if (!isSupabaseConfigured) {
+    const all = loadDemoShares();
+    saveDemoShares(all.filter((s) => !(s.owner_id === ownerId && s.invited_email === invitedEmail)));
+    window.dispatchEvent(new CustomEvent('share-updated'));
+    return;
+  }
+
+  const { error } = await supabase
+    .from('trip_shares')
+    .delete()
+    .eq('owner_id', ownerId)
+    .eq('invited_email', invitedEmail);
+  if (error) throw error;
+  window.dispatchEvent(new CustomEvent('share-updated'));
+}
+
+// ---- 공유된 사용자 목록 (소유자용) ----
+
+export interface SharedUser {
+  email: string;
+  permission: SharePermission;
+  status: ShareStatus;
+  tripCount: number;
+}
+
+export function useSharedUsers(ownerId: string | undefined) {
+  const [users, setUsers] = useState<SharedUser[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refetch = useCallback(async () => {
+    if (!ownerId) {
+      setLoading(false);
+      return;
+    }
+
+    if (!isSupabaseConfigured) {
+      const all = loadDemoShares();
+      const ownerShares = all.filter((s) => s.owner_id === ownerId);
+      const emailMap = new Map<string, SharedUser>();
+      for (const s of ownerShares) {
+        const existing = emailMap.get(s.invited_email);
+        if (!existing) {
+          emailMap.set(s.invited_email, {
+            email: s.invited_email,
+            permission: s.permission,
+            status: s.status,
+            tripCount: 1,
+          });
+        } else {
+          existing.tripCount++;
+          if (s.status === 'accepted') existing.status = 'accepted';
+          if (s.permission === 'edit') existing.permission = 'edit';
+        }
+      }
+      setUsers([...emailMap.values()]);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('trip_shares')
+        .select('invited_email, permission, status')
+        .eq('owner_id', ownerId);
+      if (error) throw error;
+
+      const emailMap = new Map<string, SharedUser>();
+      for (const s of (data ?? [])) {
+        const existing = emailMap.get(s.invited_email);
+        if (!existing) {
+          emailMap.set(s.invited_email, {
+            email: s.invited_email,
+            permission: s.permission as SharePermission,
+            status: s.status as ShareStatus,
+            tripCount: 1,
+          });
+        } else {
+          existing.tripCount++;
+          if (s.status === 'accepted') existing.status = 'accepted' as ShareStatus;
+          if (s.permission === 'edit') existing.permission = 'edit' as SharePermission;
+        }
+      }
+      setUsers([...emailMap.values()]);
+    } catch {
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [ownerId]);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  useEffect(() => {
+    const handler = () => refetch();
+    window.addEventListener('share-updated', handler);
+    return () => window.removeEventListener('share-updated', handler);
+  }, [refetch]);
+
+  return { users, loading, refetch };
+}
+
 // ---- 특정 여행에 대한 내 권한 조회 ----
 
 export function useMyPermission(tripId: string | undefined, userEmail: string | undefined) {
