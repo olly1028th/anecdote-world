@@ -243,10 +243,12 @@ export function useTrips() {
       );
 
       setTrips([...demoExtraTrips, ...mapped]);
-    } catch {
-      // Supabase 실패 시 데모 데이터로 폴백
+    } catch (err) {
+      // Supabase 실패 시 에러를 표시하고 데모 데이터로 폴백
       setTrips(getDemoTrips());
-      setError(null);
+      const msg = err instanceof Error ? err.message : '데이터를 불러올 수 없습니다';
+      setError(`서버 연결 실패 (데모 모드로 전환): ${msg}`);
+      console.error('[useTrips] Supabase fetch failed:', err);
     } finally {
       setLoading(false);
     }
@@ -275,12 +277,19 @@ export interface TripInput {
   end_date?: string;
   cover_image?: string;
   memo?: string;
+  user_id?: string;
 }
 
 export async function createTrip(input: TripInput): Promise<string> {
+  // user_id가 없으면 현재 인증된 사용자의 ID를 자동으로 가져옴
+  let userId = input.user_id;
+  if (!userId) {
+    const { data: { user } } = await supabase.auth.getUser();
+    userId = user?.id;
+  }
   const { data, error } = await supabase
     .from('trips')
-    .insert(input)
+    .insert({ ...input, user_id: userId })
     .select('id')
     .single();
   if (error) throw error;
@@ -303,6 +312,9 @@ export async function saveExpenses(
   tripId: string,
   expenses: { category: string; amount: number; label: string }[],
 ): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id;
+
   // 기존 경비 삭제
   const { error: delErr } = await supabase
     .from('expenses')
@@ -315,6 +327,7 @@ export async function saveExpenses(
     const { error: insErr } = await supabase.from('expenses').insert(
       expenses.map((e) => ({
         trip_id: tripId,
+        user_id: userId,
         category: e.category,
         amount: e.amount,
         label: e.label,
@@ -330,6 +343,9 @@ export async function saveChecklistItems(
   tripId: string,
   items: { text: string; checked: boolean }[],
 ): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id;
+
   // 기존 항목 삭제
   const { error: delErr } = await supabase
     .from('checklist_items')
@@ -342,6 +358,7 @@ export async function saveChecklistItems(
     const { error: insErr } = await supabase.from('checklist_items').insert(
       items.map((item, i) => ({
         trip_id: tripId,
+        user_id: userId,
         text: item.text,
         checked: item.checked,
         sort_order: i,
@@ -447,11 +464,13 @@ export function useTrip(id: string | undefined) {
         ),
       );
       setIsDemo(false);
-    } catch {
-      // Supabase 실패 시 데모 데이터로 폴백 (useTrips와 동일한 폴백 로직)
+    } catch (err) {
+      // Supabase 실패 시 에러를 표시하고 데모 데이터로 폴백
       setTrip(getDemoTrips().find((t) => t.id === id) ?? null);
       setIsDemo(true);
-      setError(null);
+      const msg = err instanceof Error ? err.message : '데이터를 불러올 수 없습니다';
+      setError(`서버 연결 실패: ${msg}`);
+      console.error('[useTrip] Supabase fetch failed:', err);
     } finally {
       setLoading(false);
     }

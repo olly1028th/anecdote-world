@@ -188,10 +188,12 @@ export function usePins() {
       if (err) throw err;
       const dbPins = (data as Pin[]) ?? [];
       setPins([...demoExtraPins, ...dbPins]);
-    } catch {
-      // Supabase 실패 시 데모 데이터로 폴백
+    } catch (err) {
+      // Supabase 실패 시 에러를 표시하고 데모 데이터로 폴백
       setPins([...demoExtraPins, ...samplePins]);
-      setError(null);
+      const msg = err instanceof Error ? err.message : '핀 데이터를 불러올 수 없습니다';
+      setError(`서버 연결 실패: ${msg}`);
+      console.error('[usePins] Supabase fetch failed:', err);
     } finally {
       setLoading(false);
     }
@@ -230,9 +232,10 @@ export interface PinInput {
 }
 
 export async function createPin(input: PinInput): Promise<string> {
+  const { data: { user } } = await supabase.auth.getUser();
   const { data, error } = await supabase
     .from('pins')
-    .insert(input)
+    .insert({ ...input, user_id: user?.id })
     .select('id')
     .single();
   if (error) throw error;
