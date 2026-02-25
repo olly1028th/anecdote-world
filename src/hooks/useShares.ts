@@ -504,3 +504,96 @@ export function useMyPermission(tripId: string | undefined, userEmail: string | 
 
   return { permission, loading };
 }
+
+// ---- 공유받은 여행 목록 (프로필 페이지용) ----
+
+export interface ReceivedShare {
+  id: string;
+  trip_id: string;
+  owner_id: string;
+  permission: SharePermission;
+  status: ShareStatus;
+  created_at: string;
+  trip_title: string;
+  trip_destination: string;
+  trip_cover: string;
+  owner_nickname: string;
+}
+
+export function useReceivedShares(userEmail: string | undefined) {
+  const [shares, setShares] = useState<ReceivedShare[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refetch = useCallback(async () => {
+    if (!userEmail) {
+      setLoading(false);
+      return;
+    }
+
+    if (!isSupabaseConfigured) {
+      const all = loadDemoShares();
+      const received = all
+        .filter((s) => s.invited_email === userEmail && s.status === 'accepted')
+        .map((s) => ({
+          id: s.id,
+          trip_id: s.trip_id,
+          owner_id: s.owner_id,
+          permission: s.permission,
+          status: s.status,
+          created_at: s.created_at,
+          trip_title: s.trip_title || '여행',
+          trip_destination: '',
+          trip_cover: '',
+          owner_nickname: s.owner_nickname || '사용자',
+        }));
+      setShares(received);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('trip_shares')
+        .select('id, trip_id, owner_id, permission, status, created_at, trips(title, destination, cover_image), profiles!trip_shares_owner_id_fkey(nickname)')
+        .eq('invited_email', userEmail)
+        .eq('status', 'accepted')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+
+      const mapped: ReceivedShare[] = (data ?? []).map((s: Record<string, unknown>) => {
+        const trip = s.trips as Record<string, string> | null;
+        const profile = s.profiles as Record<string, string> | null;
+        return {
+          id: s.id as string,
+          trip_id: s.trip_id as string,
+          owner_id: s.owner_id as string,
+          permission: s.permission as SharePermission,
+          status: s.status as ShareStatus,
+          created_at: s.created_at as string,
+          trip_title: trip?.title || '여행',
+          trip_destination: trip?.destination || '',
+          trip_cover: trip?.cover_image || '',
+          owner_nickname: profile?.nickname || '사용자',
+        };
+      });
+      setShares(mapped);
+    } catch {
+      setShares([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [userEmail]);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  useEffect(() => {
+    const handler = () => refetch();
+    window.addEventListener('share-updated', handler);
+    return () => window.removeEventListener('share-updated', handler);
+  }, [refetch]);
+
+  return { shares, loading, refetch };
+}
