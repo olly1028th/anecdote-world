@@ -263,84 +263,7 @@ export default function HomePage() {
         </button>
       </section>
 
-      {/* 검색 & 필터 */}
-      {trips.length > 0 && (
-        <SearchFilter
-          onSearch={setSearchQuery}
-          onFilterChange={setStatusFilter}
-          activeFilter={statusFilter}
-          tripCounts={{
-            all: trips.length,
-            completed: completedTrips.length,
-            planned: plannedTrips.length,
-            wishlist: wishlistTrips.length,
-          }}
-        />
-      )}
-
-      {/* 검색 결과 */}
-      {(searchQuery || statusFilter !== 'all') && (
-        <section className="bg-white dark:bg-slate-900 border-[3px] border-slate-900 dark:border-slate-700 rounded-xl p-4 retro-shadow">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">
-            Search Results ({displayTrips.length})
-          </h3>
-          {displayTrips.length === 0 ? (
-            <EmptyState
-              icon="🔍"
-              title="검색 결과가 없습니다"
-              description="다른 키워드로 검색하거나 필터를 변경해보세요"
-            />
-          ) : (
-            <div className="space-y-2">
-              {displayTrips.map((trip) => {
-                const thumbSrc = trip.coverImage || getCountryFlagUrl(trip.destination, 160);
-                const statusBadge = trip.status === 'completed'
-                  ? 'bg-[#0d9488] text-white' : trip.status === 'planned'
-                  ? 'bg-[#eab308] text-slate-900' : 'bg-[#6366f1] text-white';
-                const statusLabel = trip.status === 'completed' ? 'Visited' : trip.status === 'planned' ? 'Planned' : 'Wish';
-                return (
-                  <Link
-                    key={trip.id}
-                    to={`/trip/${trip.id}`}
-                    className="flex items-center gap-3 bg-[#F9F4E8] dark:bg-slate-800 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-[#f48c25] transition-colors no-underline"
-                  >
-                    <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border-[3px] border-slate-900 bg-slate-100 flex items-center justify-center">
-                      {thumbSrc ? (
-                        <img src={thumbSrc} alt={trip.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-lg">🌍</span>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{trip.title}</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5 uppercase tracking-wider font-bold">
-                        {trip.destination && <span>{trip.destination} · </span>}
-                        {formatDate(trip.startDate)}
-                      </p>
-                    </div>
-                    <span className={`text-[9px] font-bold px-2 py-1 rounded-full border-2 border-slate-900 uppercase ${statusBadge}`}>
-                      {statusLabel}
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* 여행이 없을 때 빈 상태 */}
-      {trips.length === 0 && !loading && (
-        <EmptyState
-          icon="🚀"
-          title="아직 등록된 여행이 없어요"
-          description="첫 번째 여행을 추가하고 세계 지도를 채워보세요!"
-          actionLabel="+ 첫 여행 만들기"
-          onAction={() => window.dispatchEvent(new CustomEvent('open-trip-modal'))}
-        />
-      )}
-
-      {/* Expanded list panels */}
+      {/* Expanded list panels — 스탯 카드 바로 아래 */}
       {activeStatsTab && (
         <section className="bg-white dark:bg-slate-900 border-[3px] border-slate-900 dark:border-slate-700 rounded-xl p-4 retro-shadow">
           {activeStatsTab === 'completed' && (
@@ -487,6 +410,83 @@ export default function HomePage() {
             </div>
           )}
         </section>
+      )}
+
+      {/* 검색 & 필터 */}
+      {trips.length > 0 && (
+        <SearchFilter
+          onSearch={setSearchQuery}
+          onFilterChange={setStatusFilter}
+          activeFilter={statusFilter}
+          tripCounts={{
+            all: trips.length,
+            completed: completedTrips.length,
+            planned: plannedTrips.length,
+            wishlist: wishlistTrips.length,
+          }}
+        />
+      )}
+
+      {/* 검색 결과 */}
+      {(searchQuery || statusFilter !== 'all') && (
+        <section className="bg-white dark:bg-slate-900 border-[3px] border-slate-900 dark:border-slate-700 rounded-xl p-4 retro-shadow">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">
+            Search Results ({displayTrips.length})
+          </h3>
+          {displayTrips.length === 0 ? (
+            <EmptyState
+              icon="🔍"
+              title="검색 결과가 없습니다"
+              description="다른 키워드로 검색하거나 필터를 변경해보세요"
+            />
+          ) : (
+            <div className="space-y-2">
+              {displayTrips.map((trip) => {
+                const thumbSrc = trip.coverImage || getCountryFlagUrl(trip.destination, 160);
+                const statusBadge = trip.status === 'completed'
+                  ? 'bg-[#0d9488] text-white' : trip.status === 'planned'
+                  ? 'bg-[#eab308] text-slate-900' : 'bg-[#6366f1] text-white';
+                const statusLabel = trip.status === 'completed' ? 'Visited' : trip.status === 'planned' ? 'Planned' : 'Wish';
+                return (
+                  <Link
+                    key={trip.id}
+                    to={`/trip/${trip.id}`}
+                    className="flex items-center gap-3 bg-[#F9F4E8] dark:bg-slate-800 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-[#f48c25] transition-colors no-underline"
+                  >
+                    <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border-[3px] border-slate-900 bg-slate-100 flex items-center justify-center">
+                      {thumbSrc ? (
+                        <img src={thumbSrc} alt={trip.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-lg">🌍</span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{trip.title}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5 uppercase tracking-wider font-bold">
+                        {trip.destination && <span>{trip.destination} · </span>}
+                        {formatDate(trip.startDate)}
+                      </p>
+                    </div>
+                    <span className={`text-[9px] font-bold px-2 py-1 rounded-full border-2 border-slate-900 uppercase ${statusBadge}`}>
+                      {statusLabel}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* 여행이 없을 때 빈 상태 */}
+      {trips.length === 0 && !loading && (
+        <EmptyState
+          icon="🚀"
+          title="아직 등록된 여행이 없어요"
+          description="첫 번째 여행을 추가하고 세계 지도를 채워보세요!"
+          actionLabel="+ 첫 여행 만들기"
+          onAction={() => window.dispatchEvent(new CustomEvent('open-trip-modal'))}
+        />
       )}
 
       {/* 세계지도 */}
