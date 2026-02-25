@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTrip, deleteTrip, toggleChecklistItem, saveExpenses, saveChecklistItems, updateDemoTrip, deleteDemoTrip } from '../hooks/useTrips';
 import { supabase } from '../lib/supabase';
@@ -283,15 +283,33 @@ export default function TripDetailPage() {
     }
   };
 
-  // --- Places inline edit ---
+  // --- Places inline edit (Day별 일정) ---
+  const getTripDays = (): number => {
+    if (!trip) return 1;
+    const s = new Date(trip.startDate).getTime();
+    const e = new Date(trip.endDate).getTime();
+    return Math.max(1, Math.round((e - s) / (1000 * 60 * 60 * 24)) + 1);
+  };
+  const formatDayDate = (day: number): string => {
+    if (!trip) return '';
+    const d = new Date(trip.startDate);
+    d.setDate(d.getDate() + day - 1);
+    const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+    return `${d.getMonth() + 1}.${d.getDate()} (${weekdays[d.getDay()]})`;
+  };
   const startEditPlaces = () => {
     if (!trip) return;
-    setDraftPlaces(trip.places.length > 0 ? [...trip.places] : []);
+    if (trip.places.length > 0) {
+      setDraftPlaces([...trip.places]);
+    } else {
+      // 첫 편집 시 Day 1에 빈 장소 하나 생성
+      setDraftPlaces([{ name: '', priority: 'want', note: '', day: 1 }]);
+    }
     setEditingPlaces(true);
   };
-  const addDraftPlace = () => setDraftPlaces([...draftPlaces, { name: '', priority: 'want', note: '' }]);
+  const addDraftPlace = (day: number) => setDraftPlaces([...draftPlaces, { name: '', priority: 'want', note: '', day, time: '' }]);
   const removeDraftPlace = (i: number) => setDraftPlaces(draftPlaces.filter((_, idx) => idx !== i));
-  const updateDraftPlace = (i: number, field: keyof Place, value: string) => {
+  const updateDraftPlace = (i: number, field: keyof Place, value: string | number) => {
     setDraftPlaces(draftPlaces.map((p, idx) => (idx === i ? { ...p, [field]: value } : p)));
   };
   const savePlacesInline = async () => {
@@ -302,7 +320,7 @@ export default function TripDetailPage() {
       updateDemoTrip(id, { places: valid });
       setEditingPlaces(false);
       refetch();
-      toast('장소가 저장되었습니다');
+      toast('일정이 저장되었습니다');
     } catch (err) {
       toast(err instanceof Error ? err.message : '저장 실패', 'error');
     } finally {
@@ -343,7 +361,14 @@ export default function TripDetailPage() {
     );
   }
 
-  if (error) {
+  // 에러가 있지만 폴백 데이터가 있으면 토스트로 알림만 표시
+  useEffect(() => {
+    if (error && trip) {
+      toast(error, 'error');
+    }
+  }, [error, trip, toast]);
+
+  if (error && !trip) {
     return (
       <div className="px-6 py-20 text-center">
         <p className="text-[#f43f5e] font-bold">{error}</p>
@@ -585,7 +610,7 @@ export default function TripDetailPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
             </svg>
           </div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Places</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Schedule</p>
           <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{trip.places.length}</p>
         </div>
 
@@ -721,73 +746,97 @@ export default function TripDetailPage() {
 
         {isCompleted && trip.itinerary.length > 0 && <Timeline items={trip.itinerary} />}
 
-        {/* 장소 (계획 여행) — 인라인 편집 */}
-        {!isCompleted && (
-          editingPlaces ? (
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-slate-900 retro-shadow">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">Route & Places</h3>
-                <button
-                  type="button"
-                  onClick={addDraftPlace}
-                  className="text-[10px] font-bold uppercase tracking-widest text-[#f48c25] hover:text-[#d97a1e] cursor-pointer border-2 border-[#f48c25] px-3 py-1 rounded-full hover:bg-[#f48c25]/10 transition-colors bg-transparent"
-                >
-                  + Add
-                </button>
-              </div>
-              {draftPlaces.length === 0 ? (
-                <p className="text-xs text-slate-400 text-center py-4 font-medium">아직 등록된 장소가 없습니다.</p>
-              ) : (
-                <div className="space-y-3">
-                  {draftPlaces.map((place, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <input
-                        type="text"
-                        value={place.name}
-                        onChange={(e) => updateDraftPlace(i, 'name', e.target.value)}
-                        placeholder="장소명"
-                        className="flex-1 min-w-0 px-3 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
-                      />
-                      <select
-                        value={place.priority}
-                        onChange={(e) => updateDraftPlace(i, 'priority', e.target.value)}
-                        className="w-20 shrink-0 px-2 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
-                      >
-                        {PLACE_PRIORITIES.map((p) => (
-                          <option key={p.value} value={p.value}>{p.label}</option>
-                        ))}
-                      </select>
+        {/* 일정 & 장소 — Day별 인라인 편집 */}
+        {editingPlaces ? (
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-slate-900 retro-shadow">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-4">Daily Schedule</h3>
+            <div className="space-y-5">
+              {Array.from({ length: getTripDays() }, (_, di) => di + 1).map((day) => {
+                const dayPlaces = draftPlaces
+                  .map((p, idx) => ({ ...p, _idx: idx }))
+                  .filter((p) => p.day === day);
+                return (
+                  <div key={day}>
+                    <div className="flex items-center justify-between mb-2.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-[#f48c25] border-2 border-slate-900 flex items-center justify-center">
+                          <span className="text-white text-[10px] font-bold">D{day}</span>
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Day {day}</p>
+                          <p className="text-[10px] text-slate-400 font-medium">{formatDayDate(day)}</p>
+                        </div>
+                      </div>
                       <button
                         type="button"
-                        onClick={() => removeDraftPlace(i)}
-                        className="shrink-0 w-8 h-8 flex items-center justify-center text-slate-300 hover:text-[#f43f5e] transition-colors cursor-pointer mt-0.5 bg-transparent border-0"
+                        onClick={() => addDraftPlace(day)}
+                        className="text-[10px] font-bold uppercase tracking-widest text-[#f48c25] hover:text-[#d97a1e] cursor-pointer border-2 border-[#f48c25] px-2.5 py-1 rounded-full hover:bg-[#f48c25]/10 transition-colors bg-transparent"
                       >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                        + Add
                       </button>
                     </div>
-                  ))}
-                </div>
-              )}
-              <SaveCancelButtons onSave={savePlacesInline} onCancel={() => setEditingPlaces(false)} saving={saving} />
+                    {dayPlaces.length === 0 ? (
+                      <p className="text-[10px] text-slate-300 font-medium text-center py-3 ml-10 border-l-2 border-[#f48c25]/20">일정 없음</p>
+                    ) : (
+                      <div className="space-y-2 ml-3 pl-3 border-l-2 border-[#f48c25]/30">
+                        {dayPlaces.map((place) => (
+                          <div key={place._idx} className="flex items-start gap-1.5 bg-[#F9F4E8] dark:bg-slate-700 p-2.5 rounded-xl border-2 border-slate-200 dark:border-slate-600">
+                            <input
+                              type="time"
+                              value={place.time || ''}
+                              onChange={(e) => updateDraftPlace(place._idx, 'time', e.target.value)}
+                              className="w-[5.5rem] shrink-0 px-1.5 py-1.5 rounded-lg border-2 border-slate-300 text-[10px] font-bold bg-white dark:bg-slate-600 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
+                            />
+                            <input
+                              type="text"
+                              value={place.name}
+                              onChange={(e) => updateDraftPlace(place._idx, 'name', e.target.value)}
+                              placeholder="장소명"
+                              className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg border-2 border-slate-300 text-xs font-medium bg-white dark:bg-slate-600 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
+                            />
+                            <select
+                              value={place.priority}
+                              onChange={(e) => updateDraftPlace(place._idx, 'priority', e.target.value)}
+                              className="w-16 shrink-0 px-1 py-1.5 rounded-lg border-2 border-slate-300 text-[10px] font-bold bg-white dark:bg-slate-600 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
+                            >
+                              {PLACE_PRIORITIES.map((p) => (
+                                <option key={p.value} value={p.value}>{p.label}</option>
+                              ))}
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => removeDraftPlace(place._idx)}
+                              className="shrink-0 w-7 h-7 flex items-center justify-center text-slate-300 hover:text-[#f43f5e] transition-colors cursor-pointer bg-transparent border-0"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          ) : trip.places.length > 0 ? (
-            <div className="relative">
-              <div className="absolute top-5 right-5 z-10">
-                <EditButton onClick={startEditPlaces} />
-              </div>
-              <PlaceList places={trip.places} />
+            <SaveCancelButtons onSave={savePlacesInline} onCancel={() => setEditingPlaces(false)} saving={saving} />
+          </div>
+        ) : trip.places.length > 0 ? (
+          <div className="relative">
+            <div className="absolute top-5 right-5 z-10">
+              <EditButton onClick={startEditPlaces} />
             </div>
-          ) : (
-            <div
-              onClick={startEditPlaces}
-              className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-dashed border-slate-300 cursor-pointer hover:border-[#f48c25] transition-colors"
-            >
-              <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">Route & Places</h3>
-              <p className="text-xs text-slate-300 font-medium text-center py-4">탭하여 장소를 추가해보세요</p>
-            </div>
-          )
+            <PlaceList places={trip.places} startDate={trip.startDate} />
+          </div>
+        ) : (
+          <div
+            onClick={startEditPlaces}
+            className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-dashed border-slate-300 cursor-pointer hover:border-[#f48c25] transition-colors"
+          >
+            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">Daily Schedule</h3>
+            <p className="text-xs text-slate-300 font-medium text-center py-4">탭하여 Day별 일정을 추가해보세요</p>
+          </div>
         )}
 
         {/* 경비 — 인라인 편집 */}

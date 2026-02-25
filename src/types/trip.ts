@@ -21,6 +21,8 @@ export interface Place {
   name: string;
   priority: PlacePriority;
   note: string;
+  day?: number;
+  time?: string;
 }
 
 export interface ChecklistItem {
