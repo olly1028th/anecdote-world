@@ -794,15 +794,25 @@ export default function TripDetailPage() {
                               placeholder="장소명"
                               className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg border-2 border-slate-300 text-xs font-medium bg-white dark:bg-slate-600 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
                             />
-                            <select
-                              value={place.priority}
-                              onChange={(e) => updateDraftPlace(place._idx, 'priority', e.target.value)}
-                              className="w-16 shrink-0 px-1 py-1.5 rounded-lg border-2 border-slate-300 text-[10px] font-bold bg-white dark:bg-slate-600 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
-                            >
-                              {PLACE_PRIORITIES.map((p) => (
-                                <option key={p.value} value={p.value}>{p.label}</option>
-                              ))}
-                            </select>
+                            {isCompleted ? (
+                              <input
+                                type="text"
+                                value={place.note || ''}
+                                onChange={(e) => updateDraftPlace(place._idx, 'note', e.target.value)}
+                                placeholder="비고"
+                                className="w-24 shrink-0 px-2 py-1.5 rounded-lg border-2 border-slate-300 text-[10px] font-medium bg-white dark:bg-slate-600 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
+                              />
+                            ) : (
+                              <select
+                                value={place.priority}
+                                onChange={(e) => updateDraftPlace(place._idx, 'priority', e.target.value)}
+                                className="w-16 shrink-0 px-1 py-1.5 rounded-lg border-2 border-slate-300 text-[10px] font-bold bg-white dark:bg-slate-600 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
+                              >
+                                {PLACE_PRIORITIES.map((p) => (
+                                  <option key={p.value} value={p.value}>{p.label}</option>
+                                ))}
+                              </select>
+                            )}
                             <button
                               type="button"
                               onClick={() => removeDraftPlace(place._idx)}
@@ -827,7 +837,7 @@ export default function TripDetailPage() {
             <div className="absolute top-5 right-5 z-10">
               <EditButton onClick={startEditPlaces} />
             </div>
-            <PlaceList places={trip.places} startDate={trip.startDate} />
+            <PlaceList places={trip.places} startDate={trip.startDate} isCompleted={isCompleted} />
           </div>
         ) : (
           <div

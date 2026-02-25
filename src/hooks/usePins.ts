@@ -187,10 +187,9 @@ export function usePins() {
 
       if (err) throw err;
       const dbPins = (data as Pin[]) ?? [];
-      setPins([...demoExtraPins, ...dbPins]);
+      setPins(dbPins);
     } catch (err) {
-      // Supabase 실패 시 에러를 표시하고 데모 데이터로 폴백
-      setPins([...demoExtraPins, ...samplePins]);
+      setPins([]);
       const msg = err instanceof Error ? err.message : '핀 데이터를 불러올 수 없습니다';
       setError(`서버 연결 실패: ${msg}`);
       console.error('[usePins] Supabase fetch failed:', err);

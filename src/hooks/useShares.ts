@@ -57,7 +57,7 @@ export function useSharesForTrip(tripId: string | undefined) {
         .select('*')
         .eq('trip_id', tripId)
         .order('created_at', { ascending: false });
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       setShares((data as TripShare[]) ?? []);
     } catch {
       setShares([]);
@@ -106,7 +106,7 @@ export function usePendingInvitations(userEmail: string | undefined) {
         .eq('invited_email', userEmail)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       setInvitations((data as DemoShare[]) ?? []);
     } catch {
       setInvitations([]);
@@ -172,6 +172,16 @@ export async function createShare(
     // 미가입 유저 — invited_user_id = null로 진행 (이메일 기반 초대)
   }
 
+  // 중복 체크
+  const { data: existing } = await supabase
+    .from('trip_shares')
+    .select('id')
+    .eq('trip_id', tripId)
+    .eq('invited_email', invitedEmail)
+    .neq('status', 'declined')
+    .maybeSingle();
+  if (existing) throw new Error('이미 초대된 이메일입니다.');
+
   const { error } = await supabase.from('trip_shares').insert({
     trip_id: tripId,
     owner_id: ownerId,
@@ -179,7 +189,7 @@ export async function createShare(
     invited_user_id: invitedUserId,
     permission,
   });
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   window.dispatchEvent(new CustomEvent('share-updated'));
 }
 
@@ -203,7 +213,7 @@ export async function acceptShare(shareId: string, userId?: string): Promise<voi
     .from('trip_shares')
     .update({ status: 'accepted', invited_user_id: userId })
     .eq('id', shareId);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   window.dispatchEvent(new CustomEvent('share-updated'));
   window.dispatchEvent(new CustomEvent('trip-added'));
 }
@@ -227,7 +237,7 @@ export async function declineShare(shareId: string): Promise<void> {
     .from('trip_shares')
     .update({ status: 'declined' })
     .eq('id', shareId);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   window.dispatchEvent(new CustomEvent('share-updated'));
 }
 
@@ -242,7 +252,7 @@ export async function removeShare(shareId: string): Promise<void> {
   }
 
   const { error } = await supabase.from('trip_shares').delete().eq('id', shareId);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   window.dispatchEvent(new CustomEvent('share-updated'));
 }
 
@@ -263,7 +273,7 @@ export async function updateSharePermission(shareId: string, permission: SharePe
     .from('trip_shares')
     .update({ permission })
     .eq('id', shareId);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   window.dispatchEvent(new CustomEvent('share-updated'));
 }
 
@@ -341,7 +351,7 @@ export async function shareAllTrips(
         permission,
       })),
     );
-    if (error) throw error;
+    if (error) throw new Error(error.message);
   }
 
   window.dispatchEvent(new CustomEvent('share-updated'));
@@ -363,7 +373,7 @@ export async function revokeAllShares(ownerId: string, invitedEmail: string): Pr
     .delete()
     .eq('owner_id', ownerId)
     .eq('invited_email', invitedEmail);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   window.dispatchEvent(new CustomEvent('share-updated'));
 }
 
@@ -416,7 +426,7 @@ export function useSharedUsers(ownerId: string | undefined) {
         .from('trip_shares')
         .select('invited_email, permission, status')
         .eq('owner_id', ownerId);
-      if (error) throw error;
+      if (error) throw new Error(error.message);
 
       const emailMap = new Map<string, SharedUser>();
       for (const s of (data ?? [])) {
@@ -559,7 +569,7 @@ export function useReceivedShares(userEmail: string | undefined) {
         .eq('invited_email', userEmail)
         .eq('status', 'accepted')
         .order('created_at', { ascending: false });
-      if (error) throw error;
+      if (error) throw new Error(error.message);
 
       const mapped: ReceivedShare[] = (data ?? []).map((s: Record<string, unknown>) => {
         const trip = s.trips as Record<string, string> | null;

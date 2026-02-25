@@ -298,6 +298,16 @@ CREATE POLICY "Invited users can view and respond to shares"
   ON public.trip_shares FOR SELECT USING (auth.uid() = invited_user_id);
 CREATE POLICY "Invited users can accept/decline"
   ON public.trip_shares FOR UPDATE USING (auth.uid() = invited_user_id);
+-- 이메일 기반 초대 조회 (invited_user_id가 NULL인 pending 초대 포함)
+CREATE POLICY "Invited users can view shares by email"
+  ON public.trip_shares FOR SELECT USING (
+    invited_email = (SELECT email FROM auth.users WHERE id = auth.uid())
+  );
+-- 이메일 기반 초대 수락/거절 (invited_user_id가 아직 NULL인 경우)
+CREATE POLICY "Invited users can accept/decline by email"
+  ON public.trip_shares FOR UPDATE USING (
+    invited_email = (SELECT email FROM auth.users WHERE id = auth.uid())
+  );
 
 
 -- ============================================================
