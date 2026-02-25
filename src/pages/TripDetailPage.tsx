@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTrip, deleteTrip, toggleChecklistItem, saveExpenses, saveChecklistItems, savePlaces, updateDemoTrip, deleteDemoTrip } from '../hooks/useTrips';
 import { supabase } from '../lib/supabase';
 import { uploadTripPhoto, deleteTripPhoto } from '../lib/storage';
 import { useSharesForTrip, createShare, removeShare, updateSharePermission } from '../hooks/useShares';
+import { useExchangeRate } from '../hooks/useExchangeRate';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import ExpenseTable from '../components/ExpenseTable';
@@ -13,6 +14,7 @@ import Checklist from '../components/Checklist';
 import PhotoGallery from '../components/PhotoGallery';
 import PhotoUpload from '../components/PhotoUpload';
 import ConfirmModal from '../components/ConfirmModal';
+import { TripDetailSkeleton } from '../components/Skeleton';
 import { formatDate, calcDuration, totalExpenses, formatCurrency, expenseCategoryLabel } from '../utils/format';
 import type { Expense, ExpenseCategory, ChecklistItem, Place, PlacePriority } from '../types/trip';
 import type { SharePermission } from '../types/database';
@@ -69,6 +71,8 @@ export default function TripDetailPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { shares, loading: sharesLoading } = useSharesForTrip(id);
+  const { rate: exchangeRate, loading: rateLoading } = useExchangeRate(trip?.destination);
+  const printRef = useRef<HTMLDivElement>(null);
 
   // Share modal state
   const [shareModalOpen, setShareModalOpen] = useState(false);
@@ -386,11 +390,7 @@ export default function TripDetailPage() {
   }, [error, trip, toast]);
 
   if (loading) {
-    return (
-      <div className="px-6 py-20 text-center">
-        <div className="animate-pulse text-[#1c140d]/40 font-bold uppercase tracking-widest text-sm">Loading...</div>
-      </div>
-    );
+    return <TripDetailSkeleton />;
   }
 
   if (error && !trip) {
@@ -419,8 +419,13 @@ export default function TripDetailPage() {
   const checklistDone = trip.checklist.filter((c) => c.checked).length;
   const checklistTotal = trip.checklist.length;
 
+  // PDF 내보내기 (인쇄 기반)
+  const handleExportPdf = () => {
+    window.print();
+  };
+
   return (
-    <div className="max-w-md mx-auto px-4 pt-4 space-y-6 pb-24">
+    <div ref={printRef} className="max-w-md mx-auto px-4 pt-4 space-y-6 pb-24">
       {/* 뒤로가기 */}
       <button
         type="button"
@@ -462,7 +467,31 @@ export default function TripDetailPage() {
           </p>
         </div>
 
-        {/* 수정/공유/삭제 버튼 */}
+        {/* 실시간 환율 정보 */}
+        {exchangeRate && (
+          <div className="w-full bg-gradient-to-r from-[#0d9488]/10 to-[#eab308]/10 border-2 border-[#0d9488]/30 rounded-xl px-4 py-2.5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-[#0d9488]/20 flex items-center justify-center">
+                <span className="text-xs font-bold text-[#0d9488]">{exchangeRate.symbol}</span>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Exchange Rate</p>
+                <p className="text-xs font-bold text-slate-900 dark:text-slate-100">{exchangeRate.currencyName}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-sm font-bold text-[#0d9488]">
+                {exchangeRate.symbol}{(exchangeRate.rate * 10000).toFixed(2)}
+              </p>
+              <p className="text-[10px] text-slate-400 font-medium">= 10,000원 ({exchangeRate.updatedAt})</p>
+            </div>
+          </div>
+        )}
+        {rateLoading && (
+          <div className="w-full h-14 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />
+        )}
+
+        {/* 수정/공유/삭제/PDF 버튼 */}
         <div className="flex gap-3 w-full">
           <Link
             to={`/trip/edit/${trip.id}`}
@@ -479,9 +508,18 @@ export default function TripDetailPage() {
             </svg>
           </button>
           <button
+            onClick={handleExportPdf}
+            className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-bold py-3 px-4 rounded-xl border-[3px] border-slate-900 retro-shadow transition-transform active:translate-y-0.5 active:translate-x-0.5 cursor-pointer print:hidden"
+            title="PDF 내보내기"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </button>
+          <button
             onClick={handleDelete}
             disabled={deleting}
-            className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-bold py-3 px-4 rounded-xl border-[3px] border-slate-900 retro-shadow transition-transform active:translate-y-0.5 active:translate-x-0.5 cursor-pointer disabled:opacity-50"
+            className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-bold py-3 px-4 rounded-xl border-[3px] border-slate-900 retro-shadow transition-transform active:translate-y-0.5 active:translate-x-0.5 cursor-pointer disabled:opacity-50 print:hidden"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -489,28 +527,50 @@ export default function TripDetailPage() {
           </button>
         </div>
 
-        {/* 공유된 유저 뱃지 */}
+        {/* 공유 크루 패널 */}
         {shares.length > 0 && (
-          <div className="flex flex-wrap gap-2 w-full">
-            {shares.map((s) => (
-              <span
-                key={s.id}
-                className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border-2 ${
-                  s.status === 'accepted'
-                    ? 'bg-[#0d9488]/10 border-[#0d9488] text-[#0d9488]'
-                    : s.status === 'pending'
-                    ? 'bg-[#eab308]/10 border-[#eab308] text-[#eab308]'
-                    : 'bg-slate-100 border-slate-300 text-slate-400'
-                }`}
-              >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                {s.invited_email.split('@')[0]}
-                <span className="opacity-60">({s.permission === 'edit' ? '편집' : '읽기'})</span>
-                {s.status === 'pending' && <span className="opacity-60">대기중</span>}
-              </span>
-            ))}
+          <div className="w-full bg-white dark:bg-slate-800 rounded-xl border-2 border-slate-200 dark:border-slate-600 p-3">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Crew ({shares.length})</p>
+              {/* 수락된 크루 아바타 스택 */}
+              <div className="flex -space-x-2">
+                {shares.filter((s) => s.status === 'accepted').slice(0, 5).map((s) => (
+                  <div
+                    key={s.id}
+                    className="w-6 h-6 rounded-full bg-[#0d9488] text-white flex items-center justify-center text-[9px] font-bold border-2 border-white dark:border-slate-800"
+                    title={s.invited_email}
+                  >
+                    {s.invited_email[0].toUpperCase()}
+                  </div>
+                ))}
+                {shares.filter((s) => s.status === 'accepted').length > 5 && (
+                  <div className="w-6 h-6 rounded-full bg-slate-300 text-slate-600 flex items-center justify-center text-[8px] font-bold border-2 border-white dark:border-slate-800">
+                    +{shares.filter((s) => s.status === 'accepted').length - 5}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {shares.map((s) => (
+                <span
+                  key={s.id}
+                  className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    s.status === 'accepted'
+                      ? 'bg-[#0d9488]/10 text-[#0d9488]'
+                      : s.status === 'pending'
+                      ? 'bg-[#eab308]/10 text-[#eab308]'
+                      : 'bg-slate-100 text-slate-400'
+                  }`}
+                >
+                  {s.status === 'accepted' && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#0d9488] animate-pulse" />
+                  )}
+                  {s.invited_email.split('@')[0]}
+                  <span className="opacity-60">{s.permission === 'edit' ? '편집' : '읽기'}</span>
+                  {s.status === 'pending' && <span className="opacity-50 italic">대기</span>}
+                </span>
+              ))}
+            </div>
           </div>
         )}
       </section>

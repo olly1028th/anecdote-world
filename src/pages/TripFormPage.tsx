@@ -44,6 +44,13 @@ export default function TripFormPage() {
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
   const [initialized, setInitialized] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  // 유효성 검증
+  const errors: Record<string, string> = {};
+  if (touched.title && !title.trim()) errors.title = '여행 제목을 입력해주세요';
+  if (touched.endDate && startDate && endDate && endDate < startDate) errors.endDate = '종료일이 시작일보다 빠릅니다';
+  const hasErrors = Object.keys(errors).length > 0;
 
   const handleDestinationChange = useCallback((info: DestinationInfo) => {
     setDestination(info);
@@ -277,10 +284,21 @@ export default function TripFormPage() {
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            onBlur={() => setTouched((p) => ({ ...p, title: true }))}
             placeholder="예: 도쿄 벚꽃 여행"
             required
-            className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
+            className={`w-full px-4 py-3 rounded-xl border-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 ${
+              errors.title ? 'border-[#f43f5e] focus:border-[#f43f5e] focus:ring-[#f43f5e]/40' : 'border-slate-900 focus:border-[#f48c25]'
+            }`}
           />
+          {errors.title && (
+            <p className="text-[10px] font-bold text-[#f43f5e] mt-1 flex items-center gap-1">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              {errors.title}
+            </p>
+          )}
         </div>
 
         {/* 여행지 선택 */}
@@ -303,8 +321,19 @@ export default function TripFormPage() {
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
+              onBlur={() => setTouched((p) => ({ ...p, endDate: true }))}
+              className={`w-full px-4 py-3 rounded-xl border-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 ${
+                errors.endDate ? 'border-[#f43f5e] focus:border-[#f43f5e] focus:ring-[#f43f5e]/40' : 'border-slate-900 focus:border-[#f48c25]'
+              }`}
             />
+            {errors.endDate && (
+              <p className="text-[10px] font-bold text-[#f43f5e] mt-1 flex items-center gap-1">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                {errors.endDate}
+              </p>
+            )}
           </div>
         </div>
 
@@ -438,7 +467,7 @@ export default function TripFormPage() {
           </Link>
           <button
             type="submit"
-            disabled={saving || !title.trim()}
+            disabled={saving || !title.trim() || hasErrors}
             className="flex-1 py-3.5 rounded-xl text-sm font-bold uppercase tracking-tight text-white bg-[#f48c25] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-[#d97a1e] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? saveStatus || 'Saving...' : isEdit ? 'Update' : 'Launch Mission'}
