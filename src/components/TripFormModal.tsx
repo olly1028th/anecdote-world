@@ -61,13 +61,34 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
     try {
       setSaving(true);
 
+      // 여행지 이름만 입력하고 좌표가 없으면 자동 지오코딩
+      let finalDest = destination;
+      if (finalDest.name.trim() && finalDest.lat == null) {
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(finalDest.name.trim())}&format=json&accept-language=ko&limit=1&addressdetails=1`,
+          );
+          const results = await res.json();
+          if (results.length > 0) {
+            const r = results[0];
+            const addr = r.address ?? {};
+            const city = addr.city || addr.town || addr.village || addr.county || addr.state || '';
+            const country = addr.country || '';
+            const name = [city, country].filter(Boolean).join(', ') || finalDest.name;
+            finalDest = { name, lat: parseFloat(r.lat), lng: parseFloat(r.lon), country, city };
+          }
+        } catch {
+          // 지오코딩 실패해도 여행 저장은 계속 진행
+        }
+      }
+
       const saveDemoTrip = () => {
         const now = new Date().toISOString();
         const tripId = `demo-${Date.now()}`;
         addDemoTrip({
           id: tripId,
           title: title.trim(),
-          destination: destination.name,
+          destination: finalDest.name,
           status,
           startDate: startDate || '',
           endDate: endDate || '',
@@ -81,17 +102,17 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
           createdAt: now,
           updatedAt: now,
         });
-        if (destination.lat != null && destination.lng != null) {
+        if (finalDest.lat != null && finalDest.lng != null) {
           addDemoPin({
             id: `pin-demo-${Date.now()}`,
             user_id: 'demo-user-001',
             trip_id: tripId,
-            name: destination.name || destination.city || '여행지',
+            name: finalDest.name || finalDest.city || '여행지',
             address: '',
-            lat: destination.lat,
-            lng: destination.lng,
-            country: destination.country,
-            city: destination.city,
+            lat: finalDest.lat,
+            lng: finalDest.lng,
+            country: finalDest.country,
+            city: finalDest.city,
             visit_status: status === 'completed' ? 'visited' : status === 'wishlist' ? 'wishlist' : 'planned',
             visited_at: status === 'completed' ? (startDate || null) : null,
             category: 'landmark',
@@ -115,14 +136,14 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
             end_date: endDate || undefined,
             memo: memo.trim() || undefined,
           });
-          if (destination.lat != null && destination.lng != null) {
+          if (finalDest.lat != null && finalDest.lng != null) {
             try {
               await createPin({
-                name: destination.name || destination.city || '여행지',
-                lat: destination.lat,
-                lng: destination.lng,
-                country: destination.country,
-                city: destination.city,
+                name: finalDest.name || finalDest.city || '여행지',
+                lat: finalDest.lat,
+                lng: finalDest.lng,
+                country: finalDest.country,
+                city: finalDest.city,
                 visit_status: status === 'completed' ? 'visited' : status === 'wishlist' ? 'wishlist' : 'planned',
                 visited_at: status === 'completed' ? (startDate || undefined) : undefined,
                 category: 'landmark',
