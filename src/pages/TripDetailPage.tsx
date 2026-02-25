@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useTrip, deleteTrip, toggleChecklistItem, saveExpenses, saveChecklistItems, updateDemoTrip, deleteDemoTrip } from '../hooks/useTrips';
+import { useTrip, deleteTrip, toggleChecklistItem, saveExpenses, saveChecklistItems, savePlaces, updateDemoTrip, deleteDemoTrip } from '../hooks/useTrips';
 import { supabase } from '../lib/supabase';
+import { uploadTripPhoto, deleteTripPhoto } from '../lib/storage';
 import { useSharesForTrip, createShare, removeShare, updateSharePermission } from '../hooks/useShares';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -157,7 +158,27 @@ export default function TripDetailPage() {
       if (isDemo) {
         updateDemoTrip(id, { photos: draftPhotos, coverImage: draftCover });
       } else {
-        await supabase.from('trips').update({ cover_image: draftCover }).eq('id', id);
+        // 기존 Storage 사진 vs 새 사진 구분
+        const existingPhotos = new Set(trip.photos);
+        const urlMap = new Map<string, string>(); // 원본 URL → Storage URL 매핑
+
+        // 새 사진을 Supabase Storage에 업로드
+        for (const photo of draftPhotos) {
+          if (!existingPhotos.has(photo)) {
+            const storageUrl = await uploadTripPhoto(id, photo);
+            urlMap.set(photo, storageUrl);
+          }
+        }
+
+        // 삭제된 사진을 Storage에서 제거
+        const removedPhotos = trip.photos.filter((p) => !draftPhotos.includes(p));
+        for (const url of removedPhotos) {
+          try { await deleteTripPhoto(id, url); } catch { /* ignore */ }
+        }
+
+        // 대표 이미지 업데이트 (새로 업로드된 경우 Storage URL 사용)
+        const finalCover = urlMap.get(draftCover) || draftCover;
+        await supabase.from('trips').update({ cover_image: finalCover }).eq('id', id);
       }
       setEditingPhotos(false);
       refetch();
@@ -317,7 +338,11 @@ export default function TripDetailPage() {
     const valid = draftPlaces.filter((p) => p.name.trim());
     try {
       setSaving(true);
-      updateDemoTrip(id, { places: valid });
+      if (isDemo) {
+        updateDemoTrip(id, { places: valid });
+      } else {
+        await savePlaces(id, valid);
+      }
       setEditingPlaces(false);
       refetch();
       toast('일정이 저장되었습니다');

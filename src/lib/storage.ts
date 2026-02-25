@@ -31,10 +31,19 @@ export async function uploadTripPhoto(
   let ext = 'jpg';
 
   if (typeof photo === 'string') {
-    // base64 data URL → Blob
-    blob = base64ToBlob(photo);
-    const mime = blob.type.split('/')[1] || 'jpg';
-    ext = mime === 'jpeg' ? 'jpg' : mime;
+    if (photo.startsWith('data:')) {
+      // base64 data URL → Blob
+      blob = base64ToBlob(photo);
+      const mime = blob.type.split('/')[1] || 'jpg';
+      ext = mime === 'jpeg' ? 'jpg' : mime;
+    } else {
+      // HTTP(S) URL → fetch → Blob (Cloudinary 등 외부 이미지)
+      const response = await fetch(photo);
+      if (!response.ok) throw new Error(`이미지 다운로드 실패 (${response.status})`);
+      blob = await response.blob();
+      const mime = blob.type.split('/')[1] || 'jpg';
+      ext = mime === 'jpeg' ? 'jpg' : mime;
+    }
   } else {
     blob = photo;
     ext = photo.name.split('.').pop() || 'jpg';

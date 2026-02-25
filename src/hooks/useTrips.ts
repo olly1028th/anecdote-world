@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { listTripPhotos } from '../lib/storage';
 import { sampleTrips } from '../utils/sampleData';
-import type { Trip, PlacePriority } from '../types/trip';
+import type { Trip, Place, PlacePriority } from '../types/trip';
 import type {
   Trip as DbTrip,
   Expense as DbExpense,
@@ -125,14 +125,27 @@ function mapDbTripToUi(
     }));
 
   // places: 계획/위시리스트 핀 → 추천 장소
-  const placePins = pins.filter(
-    (p) => p.visit_status === 'planned' || p.visit_status === 'wishlist',
-  );
-  const places = placePins.map((p) => ({
-    name: p.name,
-    priority: (p.visit_status === 'planned' ? 'want' : 'maybe') as PlacePriority,
-    note: p.note,
-  }));
+  const placePins = pins
+    .filter(
+      (p) => p.visit_status === 'planned' || p.visit_status === 'wishlist',
+    )
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  const places: Place[] = placePins.map((p) => {
+    // Parse time from note if stored as [HH:MM] prefix
+    const timeMatch = p.note?.match(/^\[(\d{2}:\d{2})\]\s?(.*)/);
+    // Priority: use address field if it contains a valid priority, otherwise derive from visit_status
+    const storedPriority = p.address;
+    const priority = (['must', 'want', 'maybe'].includes(storedPriority)
+      ? storedPriority
+      : p.visit_status === 'planned' ? 'want' : 'maybe') as PlacePriority;
+    return {
+      name: p.name,
+      priority,
+      note: timeMatch ? timeMatch[2] : (p.note || ''),
+      day: p.day_number ?? undefined,
+      time: timeMatch ? timeMatch[1] : undefined,
+    };
+  });
 
   // photos: Storage 사진 + 핀 사진 합치기 (중복 제거)
   const pinIdSet = new Set(pins.map((p) => p.id));
@@ -363,6 +376,43 @@ export async function saveChecklistItems(
       })),
     );
     if (insErr) throw insErr;
+  }
+}
+
+// ---- 일정(장소) 저장 ----
+
+export async function savePlaces(
+  tripId: string,
+  places: Place[],
+): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id;
+
+  // 기존 planned/wishlist 핀 삭제 (visited 핀은 유지)
+  const { error: delErr } = await supabase
+    .from('pins')
+    .delete()
+    .eq('trip_id', tripId)
+    .in('visit_status', ['planned', 'wishlist']);
+  if (delErr) throw new Error(delErr.message);
+
+  // 새 핀 삽입
+  if (places.length > 0) {
+    const pins = places.map((p, i) => ({
+      trip_id: tripId,
+      user_id: userId,
+      name: p.name,
+      lat: 0,
+      lng: 0,
+      address: p.priority, // 우선순위를 address 필드에 저장 (round-trip 보존)
+      visit_status: p.priority === 'maybe' ? 'wishlist' as const : 'planned' as const,
+      day_number: p.day ?? null,
+      note: p.time ? `[${p.time}] ${p.note || ''}` : (p.note || ''),
+      sort_order: i,
+      category: 'other' as const,
+    }));
+    const { error: insErr } = await supabase.from('pins').insert(pins);
+    if (insErr) throw new Error(insErr.message);
   }
 }
 
