@@ -23,58 +23,66 @@ function compressImage(file: File): Promise<Blob> {
       return;
     }
 
-    const img = new Image();
-    const url = URL.createObjectURL(file);
+    // FileReader로 data URL을 생성 (blob URL보다 호환성이 높음)
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('파일 읽기 실패'));
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      const img = new Image();
 
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d')!;
-
-      // 점진적 압축: (maxWidth, quality) 조합을 시도
-      const attempts: [number, number][] = [
-        [1920, 0.8], [1280, 0.7], [1024, 0.6],
-        [800, 0.5], [640, 0.4], [480, 0.3],
-      ];
-
-      for (const [maxW, q] of attempts) {
-        let { width, height } = img;
-        if (width > maxW) {
-          height = Math.round((height * maxW) / width);
-          width = maxW;
-        }
-        canvas.width = width;
-        canvas.height = height;
-        ctx.drawImage(img, 0, 0, width, height);
-
-        // toBlob은 비동기이므로 toDataURL로 크기 확인 후 최적 단계에서 toBlob
-        const dataUrl = canvas.toDataURL('image/jpeg', q);
-        // base64 문자열 길이 × 0.75 ≈ 실제 바이트 크기
-        const estimatedSize = (dataUrl.length - dataUrl.indexOf(',') - 1) * 0.75;
-
-        if (estimatedSize <= MAX_BYTES) {
-          canvas.toBlob(
-            (blob) => (blob ? resolve(blob) : reject(new Error('압축 실패'))),
-            'image/jpeg',
-            q,
-          );
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Canvas를 생성할 수 없습니다'));
           return;
         }
-      }
 
-      // 모든 시도 후에도 초과 시 최저 설정으로 반환
-      canvas.toBlob(
-        (blob) => (blob ? resolve(blob) : reject(new Error('압축 실패'))),
-        'image/jpeg',
-        0.2,
-      );
-    };
+        // 점진적 압축: (maxWidth, quality) 조합을 시도
+        const attempts: [number, number][] = [
+          [1920, 0.8], [1280, 0.7], [1024, 0.6],
+          [800, 0.5], [640, 0.4], [480, 0.3],
+        ];
 
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error('이미지 로드 실패'));
+        for (const [maxW, q] of attempts) {
+          let { width, height } = img;
+          if (width > maxW) {
+            height = Math.round((height * maxW) / width);
+            width = maxW;
+          }
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // toBlob은 비동기이므로 toDataURL로 크기 확인 후 최적 단계에서 toBlob
+          const jpegDataUrl = canvas.toDataURL('image/jpeg', q);
+          // base64 문자열 길이 × 0.75 ≈ 실제 바이트 크기
+          const estimatedSize = (jpegDataUrl.length - jpegDataUrl.indexOf(',') - 1) * 0.75;
+
+          if (estimatedSize <= MAX_BYTES) {
+            canvas.toBlob(
+              (blob) => (blob ? resolve(blob) : reject(new Error('압축 실패'))),
+              'image/jpeg',
+              q,
+            );
+            return;
+          }
+        }
+
+        // 모든 시도 후에도 초과 시 최저 설정으로 반환
+        canvas.toBlob(
+          (blob) => (blob ? resolve(blob) : reject(new Error('압축 실패'))),
+          'image/jpeg',
+          0.2,
+        );
+      };
+
+      img.onerror = () => {
+        reject(new Error('지원하지 않는 이미지 형식입니다. JPEG, PNG, WebP 파일을 사용해주세요.'));
+      };
+      img.src = dataUrl;
     };
-    img.src = url;
+    reader.readAsDataURL(file);
   });
 }
 
