@@ -866,12 +866,7 @@ export default function TripDetailPage() {
                       <div className="space-y-2 ml-3 pl-3 border-l-2 border-[#f48c25]/30">
                         {dayPlaces.map((place) => (
                           <div key={place._idx} className="flex items-start gap-1.5 bg-[#F9F4E8] dark:bg-slate-700 p-2.5 rounded-xl border-2 border-slate-200 dark:border-slate-600">
-                            <input
-                              type="time"
-                              value={place.time || ''}
-                              onChange={(e) => updateDraftPlace(place._idx, 'time', e.target.value)}
-                              className="w-[5.5rem] shrink-0 px-1.5 py-1.5 rounded-lg border-2 border-slate-300 text-[10px] font-bold bg-white dark:bg-slate-600 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
-                            />
+                            <span className="w-2 h-2 rounded-full bg-[#f48c25] mt-2.5 shrink-0" />
                             <input
                               type="text"
                               value={place.name}

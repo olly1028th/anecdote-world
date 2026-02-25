@@ -19,21 +19,14 @@ function formatDayDate(startDate: string, day: number): string {
   return `${d.getMonth() + 1}.${d.getDate()} (${weekdays[d.getDay()]})`;
 }
 
-function PlaceCard({ place, index, isCompleted }: { place: Place; index: number; isCompleted?: boolean }) {
+function PlaceCard({ place, isCompleted }: { place: Place; isCompleted?: boolean }) {
   const config = priorityConfig[place.priority];
   return (
-    <div className="flex items-start gap-3 p-3 bg-[#F9F4E8] dark:bg-slate-700 rounded-xl border-2 border-slate-200 dark:border-slate-600">
-      <div className="w-7 h-7 rounded-lg bg-slate-900 text-white flex items-center justify-center shrink-0 text-xs font-bold">
-        {index + 1}
-      </div>
+    <div className="flex items-start gap-2.5 p-3 bg-[#F9F4E8] dark:bg-slate-700 rounded-xl border-2 border-slate-200 dark:border-slate-600">
+      <span className="w-2 h-2 rounded-full bg-[#f48c25] mt-1.5 shrink-0" />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-bold text-sm text-slate-900 dark:text-slate-100">{place.name}</span>
-          {place.time && (
-            <span className="text-[10px] font-bold text-[#0d9488] bg-[#0d9488]/10 px-2 py-0.5 rounded-full border border-[#0d9488]">
-              {place.time}
-            </span>
-          )}
           {!isCompleted && (
             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border-2 ${config.border} ${config.bg}`}>
               {config.label}
@@ -60,7 +53,7 @@ export default function PlaceList({ places, startDate, isCompleted }: Props) {
         <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-4">Route & Places</h3>
         <div className="space-y-2.5">
           {places.map((place, i) => (
-            <PlaceCard key={i} place={place} index={i} isCompleted={isCompleted} />
+            <PlaceCard key={i} place={place} isCompleted={isCompleted} />
           ))}
         </div>
       </div>
@@ -80,8 +73,6 @@ export default function PlaceList({ places, startDate, isCompleted }: Props) {
     }
   }
   const sortedDays = [...dayMap.keys()].sort((a, b) => a - b);
-
-  let globalIndex = 0;
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-slate-900 retro-shadow">
@@ -105,10 +96,9 @@ export default function PlaceList({ places, startDate, isCompleted }: Props) {
                 </div>
               </div>
               <div className="space-y-2 ml-3 pl-3 border-l-2 border-[#f48c25]/30">
-                {dayPlaces.map((place) => {
-                  const idx = globalIndex++;
-                  return <PlaceCard key={idx} place={place} index={idx} isCompleted={isCompleted} />;
-                })}
+                {dayPlaces.map((place, i) => (
+                  <PlaceCard key={i} place={place} isCompleted={isCompleted} />
+                ))}
               </div>
             </div>
           );
@@ -123,10 +113,9 @@ export default function PlaceList({ places, startDate, isCompleted }: Props) {
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">미배정</p>
             </div>
             <div className="space-y-2 ml-3 pl-3 border-l-2 border-slate-200">
-              {unassigned.map((place) => {
-                const idx = globalIndex++;
-                return <PlaceCard key={idx} place={place} index={idx} isCompleted={isCompleted} />;
-              })}
+              {unassigned.map((place, i) => (
+                <PlaceCard key={i} place={place} isCompleted={isCompleted} />
+              ))}
             </div>
           </div>
         )}
