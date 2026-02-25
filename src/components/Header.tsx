@@ -10,14 +10,14 @@ export default function Header() {
     profile?.avatar_url || user?.user_metadata?.avatar_url;
 
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between bg-[#F9F4E8]/80 dark:bg-[#221910]/80 backdrop-blur-md px-6 py-4 border-b border-[#f48c25]/10">
+    <header className="sticky top-0 z-40 flex items-center justify-between bg-[#F9F4E8]/80 dark:bg-[#221910]/80 backdrop-blur-md px-4 sm:px-6 py-3 sm:py-4 border-b border-[#f48c25]/10">
       <Link to="/" className="flex items-center gap-3 no-underline">
         <div className="bg-[#f48c25] text-white p-1.5 rounded-lg flex items-center justify-center rotate-12 border-[3px] border-[#1c140d]">
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
         </div>
-        <h1 className="text-2xl font-bold tracking-tighter uppercase italic text-[#1c140d] dark:text-slate-100">Anecdote</h1>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tighter uppercase italic text-[#1c140d] dark:text-slate-100">Anecdote</h1>
       </Link>
 
       <div className="flex items-center gap-3">

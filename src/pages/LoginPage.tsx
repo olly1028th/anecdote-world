@@ -27,7 +27,7 @@ export default function LoginPage() {
           <div className="inline-block px-3 py-1 bg-[#f48c25]/20 rounded-full text-[#f48c25] font-bold text-xs uppercase tracking-widest mb-2">
             Mission Control
           </div>
-          <h1 className="text-5xl font-bold tracking-tighter text-[#1c140d] dark:text-slate-100 uppercase italic">
+          <h1 className="text-4xl sm:text-5xl font-bold tracking-tighter text-[#1c140d] dark:text-slate-100 uppercase italic">
             Anecdote<br />World
           </h1>
           <p className="text-lg font-medium text-[#1c140d]/70 dark:text-slate-400 max-w-[280px] mx-auto leading-tight">
@@ -54,7 +54,7 @@ export default function LoginPage() {
         <div className="space-y-4 mb-8">
           <button
             onClick={signInWithGoogle}
-            className="w-full h-16 bg-white dark:bg-slate-100 text-[#1c140d] font-bold text-lg rounded-lg retro-border flex items-center justify-center gap-3 transition-all cursor-pointer"
+            className="w-full h-14 sm:h-16 bg-white dark:bg-slate-100 text-[#1c140d] font-bold text-base sm:text-lg rounded-lg retro-border flex items-center justify-center gap-3 transition-all cursor-pointer"
           >
             <svg className="w-6 h-6" viewBox="0 0 24 24">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
@@ -67,7 +67,7 @@ export default function LoginPage() {
 
           <button
             onClick={signInWithKakao}
-            className="w-full h-16 bg-[#FEE500] text-[#1c140d] font-bold text-lg rounded-lg retro-border flex items-center justify-center gap-3 transition-all cursor-pointer"
+            className="w-full h-14 sm:h-16 bg-[#FEE500] text-[#1c140d] font-bold text-base sm:text-lg rounded-lg retro-border flex items-center justify-center gap-3 transition-all cursor-pointer"
           >
             <svg className="w-6 h-6" viewBox="0 0 24 24" fill="#1c140d">
               <path d="M12 3C6.48 3 2 6.36 2 10.44c0 2.63 1.76 4.94 4.4 6.26-.14.53-.92 3.41-.95 3.63 0 0-.02.17.09.24.11.06.24.01.24.01.32-.04 3.7-2.44 4.28-2.86.62.09 1.27.14 1.94.14 5.52 0 10-3.36 10-7.42C22 6.36 17.52 3 12 3z" />

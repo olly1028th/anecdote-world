@@ -16,11 +16,11 @@ export default function PhotoGallery({ photos, onSetCover }: Props) {
 
   return (
     <section>
-      <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-slate-900 retro-shadow">
+      <div className="bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-5 border-[3px] border-slate-900 retro-shadow">
         <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-4">
           Photos ({photos.length})
         </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-2.5">
           {photos.map((url, i) => (
             <button
               key={i}
@@ -38,30 +38,30 @@ export default function PhotoGallery({ photos, onSetCover }: Props) {
       {/* 라이트박스 */}
       {selectedIndex !== null && (
         <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center" onClick={close}>
-          <button onClick={close} className="absolute top-4 right-4 text-white/80 hover:text-white cursor-pointer bg-transparent border-0 p-2">
-            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+          <button onClick={close} className="absolute top-3 right-3 sm:top-4 sm:right-4 text-white/80 hover:text-white cursor-pointer bg-transparent border-0 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center">
+            <svg className="w-7 h-7 sm:w-8 sm:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
           {photos.length > 1 && (
-            <button onClick={(e) => { e.stopPropagation(); prev(); }} className="absolute left-4 text-white/80 hover:text-white cursor-pointer bg-white/10 hover:bg-white/20 rounded-xl p-2.5 border-2 border-white/20 transition-colors">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <button onClick={(e) => { e.stopPropagation(); prev(); }} className="absolute left-2 sm:left-4 text-white/80 hover:text-white cursor-pointer bg-white/10 hover:bg-white/20 rounded-xl p-2 sm:p-2.5 border-2 border-white/20 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
               </svg>
             </button>
           )}
-          <img src={photos[selectedIndex]} alt={`사진 ${selectedIndex + 1}`} className="max-w-[90vw] max-h-[80vh] object-contain rounded-2xl border-4 border-white/20" onClick={(e) => e.stopPropagation()} />
+          <img src={photos[selectedIndex]} alt={`사진 ${selectedIndex + 1}`} className="max-w-[85vw] sm:max-w-[90vw] max-h-[75vh] sm:max-h-[80vh] object-contain rounded-xl sm:rounded-2xl border-4 border-white/20" onClick={(e) => e.stopPropagation()} />
           {photos.length > 1 && (
-            <button onClick={(e) => { e.stopPropagation(); next(); }} className="absolute right-4 text-white/80 hover:text-white cursor-pointer bg-white/10 hover:bg-white/20 rounded-xl p-2.5 border-2 border-white/20 transition-colors">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <button onClick={(e) => { e.stopPropagation(); next(); }} className="absolute right-2 sm:right-4 text-white/80 hover:text-white cursor-pointer bg-white/10 hover:bg-white/20 rounded-xl p-2 sm:p-2.5 border-2 border-white/20 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </button>
           )}
-          <div className="absolute bottom-6 left-0 right-0 flex items-center justify-center gap-4" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute bottom-4 sm:bottom-6 left-0 right-0 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 px-4" onClick={(e) => e.stopPropagation()}>
             <span className="text-white/60 text-sm font-bold">{selectedIndex + 1} / {photos.length}</span>
             {onSetCover && (
-              <button onClick={() => { onSetCover(photos[selectedIndex]); close(); }} className="text-sm font-bold text-white bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl border-2 border-white/20 cursor-pointer transition-colors">
+              <button onClick={() => { onSetCover(photos[selectedIndex]); close(); }} className="text-sm font-bold text-white bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl border-2 border-white/20 cursor-pointer transition-colors min-h-[44px]">
                 대표 이미지로 설정
               </button>
             )}

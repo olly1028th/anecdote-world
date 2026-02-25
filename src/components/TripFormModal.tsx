@@ -4,6 +4,7 @@ import { isSupabaseConfigured } from '../lib/supabase';
 import { createTrip } from '../hooks/useTrips';
 import { addDemoTrip } from '../hooks/useTrips';
 import { createPin, addDemoPin } from '../hooks/usePins';
+import { useToast } from '../contexts/ToastContext';
 import DestinationPicker from './DestinationPicker';
 import { EMPTY_DESTINATION } from '../types/destination';
 import type { DestinationInfo } from '../types/destination';
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export default function TripFormModal({ open, onClose, onSaved }: Props) {
+  const { toast } = useToast();
   const [title, setTitle] = useState('');
   const [status, setStatus] = useState<TripStatus>('planned');
   const [destination, setDestination] = useState<DestinationInfo>(EMPTY_DESTINATION);
@@ -145,8 +147,9 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
       window.dispatchEvent(new CustomEvent('trip-added'));
       onSaved();
       onClose();
+      toast('여행이 생성되었습니다');
     } catch (err) {
-      alert(err instanceof Error ? err.message : '저장에 실패했습니다');
+      toast(err instanceof Error ? err.message : '저장에 실패했습니다', 'error');
     } finally {
       setSaving(false);
     }
@@ -166,7 +169,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
       onClick={handleBackdropClick}
     >
       <div
-        className={`bg-[#F9F4E8] w-full sm:max-w-lg sm:rounded-xl rounded-t-xl max-h-[85vh] overflow-y-auto border-[3px] border-slate-900 sm:retro-shadow transition-all duration-300 ${
+        className={`bg-[#F9F4E8] w-full sm:max-w-lg sm:rounded-xl rounded-t-xl max-h-[90vh] sm:max-h-[85vh] overflow-y-auto border-[3px] border-slate-900 sm:retro-shadow transition-all duration-300 ${
           visible ? 'translate-y-0 opacity-100' : 'translate-y-full sm:translate-y-8 opacity-0'
         }`}
       >

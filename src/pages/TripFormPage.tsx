@@ -5,6 +5,7 @@ import { createTrip, updateTrip, saveExpenses, saveChecklistItems, useTrip, addD
 import { createPin } from '../hooks/usePins';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { uploadTripPhoto } from '../lib/storage';
+import { useToast } from '../contexts/ToastContext';
 import { expenseCategoryLabel } from '../utils/format';
 import PhotoUpload from '../components/PhotoUpload';
 import DestinationPicker from '../components/DestinationPicker';
@@ -27,6 +28,7 @@ export default function TripFormPage() {
   const { id } = useParams<{ id: string }>();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { trip: existing } = useTrip(isEdit ? id : undefined);
 
   const [title, setTitle] = useState('');
@@ -197,8 +199,9 @@ export default function TripFormPage() {
       await saveChecklistItems(tripId, validChecklist);
 
       navigate(`/trip/${tripId}`);
+      toast(isEdit ? '여행이 수정되었습니다' : '여행이 저장되었습니다');
     } catch (err) {
-      alert(err instanceof Error ? err.message : '저장에 실패했습니다');
+      toast(err instanceof Error ? err.message : '저장에 실패했습니다', 'error');
     } finally {
       setSaving(false);
     }

@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { uploadToCloudinary, isCloudinaryConfigured } from '../lib/cloudinary';
+import { useToast } from '../contexts/ToastContext';
 
 interface Props {
   photos: string[];
@@ -102,6 +103,7 @@ function estimateLocalStorageRemaining(): number {
 }
 
 export default function PhotoUpload({ photos, onChange, coverImage, onCoverChange }: Props) {
+  const { toast } = useToast();
   const [urlInput, setUrlInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -126,7 +128,7 @@ export default function PhotoUpload({ photos, onChange, coverImage, onCoverChang
     if (!useCloud) {
       const remaining = estimateLocalStorageRemaining();
       if (remaining < 50_000) {
-        alert('저장 공간이 부족합니다. 기존 사진을 삭제한 후 다시 시도해주세요.\n\nCloudinary를 설정하면 용량 제한 없이 업로드할 수 있습니다.');
+        toast('저장 공간이 부족합니다. 기존 사진을 삭제 후 다시 시도해주세요.', 'error');
         e.target.value = '';
         return;
       }
@@ -141,7 +143,7 @@ export default function PhotoUpload({ photos, onChange, coverImage, onCoverChang
         const file = fileList[i];
         // 원본 파일 10MB 초과 시 건너뛰기
         if (file.size > 10 * 1024 * 1024) {
-          alert(`"${file.name}" 파일이 너무 큽니다 (10MB 이하만 가능).`);
+          toast(`"${file.name}" 파일이 너무 큽니다 (10MB 이하만 가능).`, 'error');
           continue;
         }
 
@@ -170,7 +172,7 @@ export default function PhotoUpload({ photos, onChange, coverImage, onCoverChang
         }
       }
     } catch (err) {
-      alert(err instanceof Error ? err.message : '사진 업로드에 실패했습니다.');
+      toast(err instanceof Error ? err.message : '사진 업로드에 실패했습니다.', 'error');
     } finally {
       setUploading(false);
       setUploadProgress('');
@@ -193,7 +195,7 @@ export default function PhotoUpload({ photos, onChange, coverImage, onCoverChang
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
+      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
         사진 ({photos.length})
       </label>
 
@@ -205,12 +207,12 @@ export default function PhotoUpload({ photos, onChange, coverImage, onCoverChang
           onChange={(e) => setUrlInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addUrl(); } }}
           placeholder="이미지 URL 붙여넣기"
-          className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-[#4a3f35] text-sm focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-transparent bg-white dark:bg-[#1a1208] dark:text-slate-100"
         />
         <button
           type="button"
           onClick={addUrl}
-          className="px-3 py-2 bg-blue-600 text-white text-sm rounded-lg cursor-pointer border-0 hover:bg-blue-700 transition-colors"
+          className="px-3 py-2 bg-[#f48c25] text-white text-sm rounded-lg cursor-pointer border-0 hover:bg-[#d97a1e] transition-colors"
         >
           추가
         </button>
@@ -218,7 +220,7 @@ export default function PhotoUpload({ photos, onChange, coverImage, onCoverChang
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg cursor-pointer border-0 hover:bg-gray-200 transition-colors disabled:opacity-50"
+          className="px-3 py-2 bg-gray-100 dark:bg-[#1a1208] text-gray-700 dark:text-slate-300 text-sm rounded-lg cursor-pointer border-0 hover:bg-gray-200 dark:hover:bg-[#2a1f15] transition-colors disabled:opacity-50"
         >
           {uploading ? (uploadProgress || '처리중...') : '파일'}
         </button>
@@ -236,7 +238,7 @@ export default function PhotoUpload({ photos, onChange, coverImage, onCoverChang
       {photos.length > 0 && (
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
           {photos.map((url, i) => (
-            <div key={i} className="relative aspect-square rounded-lg overflow-hidden group bg-gray-100">
+            <div key={i} className="relative aspect-square rounded-lg overflow-hidden group bg-gray-100 dark:bg-[#1a1208]">
               <img
                 src={url}
                 alt={`사진 ${i + 1}`}
@@ -245,7 +247,7 @@ export default function PhotoUpload({ photos, onChange, coverImage, onCoverChang
 
               {/* 대표 이미지 뱃지 */}
               {url === coverImage && (
-                <div className="absolute top-1 left-1 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded">
+                <div className="absolute top-1 left-1 bg-[#f48c25] text-white text-[10px] px-1.5 py-0.5 rounded font-bold">
                   대표
                 </div>
               )}
@@ -278,13 +280,13 @@ export default function PhotoUpload({ photos, onChange, coverImage, onCoverChang
       {photos.length === 0 && (
         <div
           onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center cursor-pointer hover:border-blue-300 hover:bg-blue-50/50 transition-colors"
+          className="border-2 border-dashed border-gray-200 dark:border-[#4a3f35] rounded-xl p-8 text-center cursor-pointer hover:border-[#f48c25] hover:bg-[#f48c25]/5 transition-colors"
         >
-          <svg className="w-8 h-8 mx-auto text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <svg className="w-8 h-8 mx-auto text-gray-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
           </svg>
-          <p className="text-sm text-gray-400 mt-2">클릭하여 사진을 추가하거나</p>
-          <p className="text-xs text-gray-300">위에서 URL을 붙여넣기 하세요</p>
+          <p className="text-sm text-gray-400 dark:text-slate-500 mt-2">클릭하여 사진을 추가하거나</p>
+          <p className="text-xs text-gray-300 dark:text-slate-600">위에서 URL을 붙여넣기 하세요</p>
         </div>
       )}
     </div>
