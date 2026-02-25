@@ -81,7 +81,6 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
           createdAt: now,
           updatedAt: now,
         });
-        // 여행지 좌표가 있으면 데모 핀도 생성
         if (destination.lat != null && destination.lng != null) {
           addDemoPin({
             id: `pin-demo-${Date.now()}`,
@@ -116,7 +115,6 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
             end_date: endDate || undefined,
             memo: memo.trim() || undefined,
           });
-          // 여행지 좌표가 있으면 핀 생성
           if (destination.lat != null && destination.lng != null) {
             try {
               await createPin({
@@ -136,14 +134,12 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
             }
           }
         } catch {
-          // Supabase 실패 시 데모 모드로 폴백
           saveDemoTrip();
         }
       } else {
         saveDemoTrip();
       }
 
-      // useTrips refetch 트리거
       window.dispatchEvent(new CustomEvent('trip-added'));
       onSaved();
       onClose();
@@ -169,30 +165,29 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
       onClick={handleBackdropClick}
     >
       <div
-        className={`bg-[#F9F4E8] w-full sm:max-w-lg sm:rounded-xl rounded-t-xl max-h-[90vh] sm:max-h-[85vh] overflow-y-auto border-[3px] border-slate-900 sm:retro-shadow transition-all duration-300 ${
+        className={`bg-[#F9F4E8] dark:bg-[#1a1208] w-full sm:max-w-lg sm:rounded-xl rounded-t-xl max-h-[90vh] sm:max-h-[85vh] overflow-y-auto border-[3px] border-slate-900 dark:border-[#4a3f35] sm:retro-shadow transition-all duration-300 ${
           visible ? 'translate-y-0 opacity-100' : 'translate-y-full sm:translate-y-8 opacity-0'
         }`}
       >
         {/* 헤더 */}
-        <div className="sticky top-0 bg-[#F9F4E8] px-6 pt-5 pb-3 border-b-[3px] border-slate-900 z-10">
+        <div className="sticky top-0 bg-[#F9F4E8] dark:bg-[#1a1208] px-6 pt-5 pb-3 border-b-[3px] border-slate-900 dark:border-[#4a3f35] z-10">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold italic uppercase tracking-tighter text-[#1c140d]">
+            <h2 className="text-xl font-bold italic uppercase tracking-tighter text-[#1c140d] dark:text-slate-100">
               New Planet
             </h2>
             <button
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="w-9 h-9 flex items-center justify-center rounded-xl border-2 border-slate-900 bg-white shadow-[2px_2px_0px_0px_#1c140d] hover:bg-[#f48c25]/10 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
+              className="w-9 h-9 flex items-center justify-center rounded-xl border-2 border-slate-900 dark:border-[#4a3f35] bg-white dark:bg-[#2a1f15] shadow-[2px_2px_0px_0px_#1c140d] dark:shadow-[2px_2px_0px_0px_rgba(74,63,53,0.5)] hover:bg-[#f48c25]/10 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
             >
-              <svg className="w-5 h-5 text-[#1c140d]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <svg className="w-5 h-5 text-[#1c140d] dark:text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
-          {/* 드래그 핸들 (모바일) */}
           <div className="sm:hidden flex justify-center mt-2">
-            <div className="w-12 h-1.5 rounded-full bg-[#1c140d]/20" />
+            <div className="w-12 h-1.5 rounded-full bg-[#1c140d]/20 dark:bg-slate-600" />
           </div>
         </div>
 
@@ -200,15 +195,15 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
           {/* 상태 선택 */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-[#1c140d]/60 mb-2">Status</label>
+            <label className="block text-xs font-bold uppercase tracking-widest text-[#1c140d]/60 dark:text-slate-400 mb-2">Status</label>
             <div className="flex gap-3">
               <button
                 type="button"
                 onClick={() => setStatus('planned')}
-                className={`flex-1 py-3 rounded-2xl text-sm font-bold uppercase tracking-tight transition-all cursor-pointer border-2 border-slate-900 ${
+                className={`flex-1 py-3 rounded-2xl text-sm font-bold uppercase tracking-tight transition-all cursor-pointer border-2 border-slate-900 dark:border-[#4a3f35] ${
                   status === 'planned'
-                    ? 'bg-[#eab308] text-[#1c140d] shadow-[3px_3px_0px_0px_#1c140d]'
-                    : 'bg-white text-[#1c140d]/40 shadow-none'
+                    ? 'bg-[#eab308] text-[#1c140d] shadow-[3px_3px_0px_0px_#1c140d] dark:shadow-[3px_3px_0px_0px_rgba(74,63,53,0.5)]'
+                    : 'bg-white dark:bg-[#2a1f15] text-[#1c140d]/40 dark:text-slate-400 shadow-none'
                 }`}
               >
                 계획 중
@@ -216,10 +211,10 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
               <button
                 type="button"
                 onClick={() => setStatus('completed')}
-                className={`flex-1 py-3 rounded-2xl text-sm font-bold uppercase tracking-tight transition-all cursor-pointer border-2 border-slate-900 ${
+                className={`flex-1 py-3 rounded-2xl text-sm font-bold uppercase tracking-tight transition-all cursor-pointer border-2 border-slate-900 dark:border-[#4a3f35] ${
                   status === 'completed'
-                    ? 'bg-[#0d9488] text-[#1c140d] shadow-[3px_3px_0px_0px_#1c140d]'
-                    : 'bg-white text-[#1c140d]/40 shadow-none'
+                    ? 'bg-[#0d9488] text-white shadow-[3px_3px_0px_0px_#1c140d] dark:shadow-[3px_3px_0px_0px_rgba(74,63,53,0.5)]'
+                    : 'bg-white dark:bg-[#2a1f15] text-[#1c140d]/40 dark:text-slate-400 shadow-none'
                 }`}
               >
                 완료
@@ -227,10 +222,10 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
               <button
                 type="button"
                 onClick={() => setStatus('wishlist')}
-                className={`flex-1 py-3 rounded-2xl text-sm font-bold uppercase tracking-tight transition-all cursor-pointer border-2 border-slate-900 ${
+                className={`flex-1 py-3 rounded-2xl text-sm font-bold uppercase tracking-tight transition-all cursor-pointer border-2 border-slate-900 dark:border-[#4a3f35] ${
                   status === 'wishlist'
-                    ? 'bg-[#6366f1] text-white shadow-[3px_3px_0px_0px_#1c140d]'
-                    : 'bg-white text-[#1c140d]/40 shadow-none'
+                    ? 'bg-[#6366f1] text-white shadow-[3px_3px_0px_0px_#1c140d] dark:shadow-[3px_3px_0px_0px_rgba(74,63,53,0.5)]'
+                    : 'bg-white dark:bg-[#2a1f15] text-[#1c140d]/40 dark:text-slate-400 shadow-none'
                 }`}
               >
                 위시
@@ -240,7 +235,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
 
           {/* 여행 제목 */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-[#1c140d]/60 mb-2">
+            <label className="block text-xs font-bold uppercase tracking-widest text-[#1c140d]/60 dark:text-slate-400 mb-2">
               Title <span className="text-[#f48c25]">*</span>
             </label>
             <input
@@ -250,7 +245,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
               placeholder="예: 도쿄 벚꽃 여행"
               required
               autoFocus
-              className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
+              className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 dark:border-[#4a3f35] text-sm font-medium bg-white dark:bg-[#2a1f15] text-[#1c140d] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
             />
           </div>
 
@@ -260,28 +255,28 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
           {/* 날짜 */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest text-[#1c140d]/60 mb-2">Start</label>
+              <label className="block text-xs font-bold uppercase tracking-widest text-[#1c140d]/60 dark:text-slate-400 mb-2">Start</label>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
+                className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 dark:border-[#4a3f35] text-sm font-medium bg-white dark:bg-[#2a1f15] text-[#1c140d] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25] dark:[color-scheme:dark]"
               />
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest text-[#1c140d]/60 mb-2">End</label>
+              <label className="block text-xs font-bold uppercase tracking-widest text-[#1c140d]/60 dark:text-slate-400 mb-2">End</label>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
+                className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 dark:border-[#4a3f35] text-sm font-medium bg-white dark:bg-[#2a1f15] text-[#1c140d] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25] dark:[color-scheme:dark]"
               />
             </div>
           </div>
 
           {/* 메모 */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-[#1c140d]/60 mb-2">
+            <label className="block text-xs font-bold uppercase tracking-widest text-[#1c140d]/60 dark:text-slate-400 mb-2">
               {status === 'completed' ? 'Review' : 'Memo'}
             </label>
             <textarea
@@ -289,7 +284,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
               onChange={(e) => setMemo(e.target.value)}
               placeholder={status === 'completed' ? '이 여행 어땠어요?' : '여행에 대한 메모...'}
               rows={3}
-              className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25] resize-none"
+              className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 dark:border-[#4a3f35] text-sm font-medium bg-white dark:bg-[#2a1f15] text-[#1c140d] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25] resize-none"
             />
           </div>
 
@@ -299,14 +294,14 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="flex-1 py-3.5 rounded-2xl text-sm font-bold uppercase tracking-tight text-[#1c140d]/60 bg-white border-2 border-slate-900 hover:bg-gray-50 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+              className="flex-1 py-3.5 rounded-2xl text-sm font-bold uppercase tracking-tight text-[#1c140d]/60 dark:text-slate-400 bg-white dark:bg-[#2a1f15] border-2 border-slate-900 dark:border-[#4a3f35] hover:bg-gray-50 dark:hover:bg-[#1a1208] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving || !title.trim()}
-              className="flex-1 py-3.5 rounded-2xl text-sm font-bold uppercase tracking-tight text-white bg-[#f48c25] border-2 border-slate-900 retro-shadow hover:bg-[#e85d5d] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 py-3.5 rounded-2xl text-sm font-bold uppercase tracking-tight text-white bg-[#f48c25] border-2 border-slate-900 dark:border-[#4a3f35] retro-shadow hover:bg-[#e85d5d] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? 'Saving...' : 'Launch Planet'}
             </button>

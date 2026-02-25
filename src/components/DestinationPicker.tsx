@@ -124,7 +124,7 @@ export default function DestinationPicker({ value, onChange }: Props) {
 
   return (
     <div>
-      <label className="block text-xs font-bold uppercase tracking-widest text-[#1c140d]/60 mb-2">
+      <label className="block text-xs font-bold uppercase tracking-widest text-[#1c140d]/60 dark:text-slate-400 mb-2">
         Destination
       </label>
 
@@ -135,15 +135,15 @@ export default function DestinationPicker({ value, onChange }: Props) {
           value={value.name}
           onChange={(e) => onChange({ ...value, name: e.target.value })}
           placeholder="예: 도쿄, 일본"
-          className="flex-1 px-4 py-3 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
+          className="flex-1 px-4 py-3 rounded-xl border-2 border-slate-900 dark:border-[#4a3f35] text-sm font-medium bg-white dark:bg-[#2a1f15] text-[#1c140d] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
         />
         <button
           type="button"
           onClick={toggleMap}
-          className={`shrink-0 px-4 py-3 rounded-xl text-sm font-bold uppercase tracking-tight transition-all cursor-pointer border-2 border-slate-900 ${
+          className={`shrink-0 px-4 py-3 rounded-xl text-sm font-bold uppercase tracking-tight transition-all cursor-pointer border-2 border-slate-900 dark:border-[#4a3f35] ${
             mapOpen
-              ? 'bg-[#f48c25] text-white shadow-[3px_3px_0px_0px_#1c140d] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#1c140d]'
-              : 'bg-white text-[#1c140d]/60 hover:bg-[#f48c25]/10'
+              ? 'bg-[#f48c25] text-white shadow-[3px_3px_0px_0px_#1c140d] dark:shadow-[3px_3px_0px_0px_rgba(74,63,53,0.5)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_#1c140d]'
+              : 'bg-white dark:bg-[#2a1f15] text-[#1c140d]/60 dark:text-slate-400 hover:bg-[#f48c25]/10'
           }`}
         >
           {mapOpen ? 'Close' : 'Map'}
@@ -153,7 +153,7 @@ export default function DestinationPicker({ value, onChange }: Props) {
       {/* 선택된 여행지 뱃지 */}
       {value.lat != null && value.lng != null && (
         <div className="mt-2 flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest bg-[#f48c25] text-white px-3 py-1.5 rounded-full border-2 border-slate-900 shadow-[2px_2px_0px_0px_#1c140d]">
+          <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest bg-[#f48c25] text-white px-3 py-1.5 rounded-full border-2 border-slate-900 dark:border-[#4a3f35] shadow-[2px_2px_0px_0px_#1c140d] dark:shadow-[2px_2px_0px_0px_rgba(74,63,53,0.5)]">
             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
             </svg>
@@ -165,7 +165,7 @@ export default function DestinationPicker({ value, onChange }: Props) {
               onChange(EMPTY_DESTINATION);
               setFlyTarget(null);
             }}
-            className="text-[10px] font-bold text-[#1c140d]/40 hover:text-[#f48c25] transition-colors cursor-pointer uppercase tracking-wider"
+            className="text-[10px] font-bold text-[#1c140d]/40 dark:text-slate-500 hover:text-[#f48c25] transition-colors cursor-pointer uppercase tracking-wider"
           >
             Reset
           </button>
@@ -174,12 +174,12 @@ export default function DestinationPicker({ value, onChange }: Props) {
 
       {/* 펼침 가능 지도 영역 */}
       {mapOpen && (
-        <div className="mt-3 rounded-xl overflow-hidden border-[3px] border-slate-900 retro-shadow relative">
+        <div className="mt-3 rounded-xl overflow-hidden border-[3px] border-slate-900 dark:border-[#4a3f35] retro-shadow relative">
           {/* 검색바 */}
-          <div className="relative bg-[#F9F4E8] p-3 border-b-2 border-slate-900">
+          <div className="relative bg-[#F9F4E8] dark:bg-[#1a1208] p-3 border-b-2 border-slate-900 dark:border-[#4a3f35]">
             <div className="relative">
               <svg
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1c140d]/40"
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1c140d]/40 dark:text-slate-500"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -193,18 +193,18 @@ export default function DestinationPicker({ value, onChange }: Props) {
                 onChange={(e) => handleSearchChange(e.target.value)}
                 onFocus={() => searchResults.length > 0 && setShowResults(true)}
                 placeholder="Search destination..."
-                className="w-full pl-9 pr-4 py-2.5 rounded-lg border-2 border-slate-900 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
+                className="w-full pl-9 pr-4 py-2.5 rounded-lg border-2 border-slate-900 dark:border-[#4a3f35] text-sm font-medium bg-white dark:bg-[#2a1f15] text-[#1c140d] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
               />
               {searching && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <div className="w-4 h-4 border-2 border-slate-900/30 border-t-slate-900 rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-slate-900/30 dark:border-slate-500/30 border-t-slate-900 dark:border-t-slate-400 rounded-full animate-spin" />
                 </div>
               )}
             </div>
 
             {/* 검색 결과 드롭다운 */}
             {showResults && searchResults.length > 0 && (
-              <div className="absolute left-3 right-3 top-full mt-1 bg-white rounded-xl border-2 border-slate-900 retro-shadow z-[1100] max-h-[200px] overflow-y-auto">
+              <div className="absolute left-3 right-3 top-full mt-1 bg-white dark:bg-[#2a1f15] rounded-xl border-2 border-slate-900 dark:border-[#4a3f35] retro-shadow z-[1100] max-h-[200px] overflow-y-auto">
                 {searchResults.map((result, i) => {
                   const addr = result.address ?? {};
                   const city = addr.city || addr.town || addr.village || addr.county || '';
@@ -215,12 +215,12 @@ export default function DestinationPicker({ value, onChange }: Props) {
                       key={i}
                       type="button"
                       onClick={() => handleResultSelect(result)}
-                      className="w-full text-left px-4 py-3 hover:bg-[#eab308]/20 transition-colors cursor-pointer first:rounded-t-xl last:rounded-b-xl border-b-2 border-slate-900/10 last:border-b-0"
+                      className="w-full text-left px-4 py-3 hover:bg-[#eab308]/20 dark:hover:bg-[#f48c25]/10 transition-colors cursor-pointer first:rounded-t-xl last:rounded-b-xl border-b-2 border-slate-900/10 dark:border-[#4a3f35]/50 last:border-b-0"
                     >
-                      <p className="text-sm font-bold text-[#1c140d] truncate">
+                      <p className="text-sm font-bold text-[#1c140d] dark:text-slate-100 truncate">
                         {shortName}
                       </p>
-                      <p className="text-[10px] text-[#1c140d]/40 truncate mt-0.5 uppercase tracking-wider">
+                      <p className="text-[10px] text-[#1c140d]/40 dark:text-slate-500 truncate mt-0.5 uppercase tracking-wider">
                         {result.display_name}
                       </p>
                     </button>
@@ -232,10 +232,10 @@ export default function DestinationPicker({ value, onChange }: Props) {
 
           {/* 지오코딩 로딩 오버레이 */}
           {geocoding && (
-            <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-[#F9F4E8]/70 backdrop-blur-sm">
-              <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border-2 border-slate-900 shadow-[3px_3px_0px_0px_#1c140d]">
-                <div className="w-4 h-4 border-2 border-slate-900/30 border-t-slate-900 rounded-full animate-spin" />
-                <span className="text-sm font-bold text-[#1c140d]">
+            <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-[#F9F4E8]/70 dark:bg-[#1a1208]/70 backdrop-blur-sm">
+              <div className="flex items-center gap-2 bg-white dark:bg-[#2a1f15] px-4 py-2 rounded-xl border-2 border-slate-900 dark:border-[#4a3f35] shadow-[3px_3px_0px_0px_#1c140d]">
+                <div className="w-4 h-4 border-2 border-slate-900/30 border-t-slate-900 dark:border-slate-500/30 dark:border-t-slate-400 rounded-full animate-spin" />
+                <span className="text-sm font-bold text-[#1c140d] dark:text-slate-100">
                   Loading...
                 </span>
               </div>
@@ -246,10 +246,10 @@ export default function DestinationPicker({ value, onChange }: Props) {
           <div className="h-[200px] sm:h-[280px]">
             <Suspense
               fallback={
-                <div className="w-full h-full flex items-center justify-center bg-[#F9F4E8]">
+                <div className="w-full h-full flex items-center justify-center bg-[#F9F4E8] dark:bg-[#1a1208]">
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-slate-900/30 border-t-slate-900 rounded-full animate-spin" />
-                    <span className="text-sm font-bold text-[#1c140d]/60">
+                    <div className="w-4 h-4 border-2 border-slate-900/30 border-t-slate-900 dark:border-slate-500/30 dark:border-t-slate-400 rounded-full animate-spin" />
+                    <span className="text-sm font-bold text-[#1c140d]/60 dark:text-slate-400">
                       Loading map...
                     </span>
                   </div>
