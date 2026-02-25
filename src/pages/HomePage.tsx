@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import type { VisitStatus } from '../types/database';
 import { useTrips } from '../hooks/useTrips';
@@ -27,6 +27,13 @@ export default function HomePage() {
   const { photos: favoritePhotos, loading: favLoading } = useFavoritePhotos();
   const { toast } = useToast();
   const { invitations } = usePendingInvitations(user?.email ?? undefined);
+
+  // Supabase 연결 실패 시 사용자에게 알림
+  useEffect(() => {
+    if (error) {
+      toast(error, 'error');
+    }
+  }, [error, toast]);
 
   const handleAcceptInvitation = async (shareId: string) => {
     try {
@@ -63,15 +70,6 @@ export default function HomePage() {
     return (
       <div className="px-6 py-20 text-center">
         <div className="animate-pulse text-[#1c140d]/40 font-bold uppercase tracking-widest text-sm">Loading...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="px-6 py-20 text-center">
-        <p className="text-[#f43f5e] font-bold">{error}</p>
-        <p className="text-sm text-[#1c140d]/40 mt-2 font-medium">새로고침해주세요.</p>
       </div>
     );
   }
