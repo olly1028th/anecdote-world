@@ -185,11 +185,7 @@ export function usePins() {
       const extraShared = sharedPins.filter((p) => !myPinIds.has(p.id));
       const dbPins = [...myPins, ...extraShared];
 
-      // Supabase 성공 시에도 로컬 데모 핀 병합 (fallback으로 저장된 핀 포함)
-      const demoPins = [...demoExtraPins, ...samplePins];
-      const dbIds = new Set(dbPins.map((p) => p.id));
-      const extraDemoPins = demoPins.filter((p) => !dbIds.has(p.id));
-      setPins([...dbPins, ...extraDemoPins]);
+      setPins(dbPins);
     } catch (err) {
       // Supabase 실패 시 데모 데이터로 fallback
       setPins([...demoExtraPins, ...samplePins]);
