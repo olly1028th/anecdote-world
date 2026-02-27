@@ -361,6 +361,7 @@ export default function TripDetailPage() {
       }
       setEditingPlaces(false);
       refetch();
+      window.dispatchEvent(new CustomEvent('pin-added'));
       toast('일정이 저장되었습니다');
     } catch (err) {
       toast(err instanceof Error ? err.message : '저장 실패', 'error');

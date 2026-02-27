@@ -436,6 +436,20 @@ export async function savePlaces(
   const { data: { user } } = await supabase.auth.getUser();
   const userId = user?.id;
 
+  // 기존 planned/wishlist 핀 좌표 보존 (삭제 전에 조회)
+  const { data: existingPins } = await supabase
+    .from('pins')
+    .select('name, lat, lng, country, city, category')
+    .eq('trip_id', tripId)
+    .eq('user_id', userId)
+    .in('visit_status', ['planned', 'wishlist']);
+  const coordMap = new Map<string, { lat: number; lng: number; country: string; city: string; category: string }>();
+  for (const pin of existingPins ?? []) {
+    if (pin.lat !== 0 || pin.lng !== 0) {
+      coordMap.set(pin.name, { lat: pin.lat, lng: pin.lng, country: pin.country, city: pin.city, category: pin.category });
+    }
+  }
+
   // 기존 planned/wishlist 핀 삭제 (visited 핀은 유지, 소유자 데이터만)
   const { error: delErr } = await supabase
     .from('pins')
@@ -445,21 +459,26 @@ export async function savePlaces(
     .in('visit_status', ['planned', 'wishlist']);
   if (delErr) throw new Error(delErr.message);
 
-  // 새 핀 삽입
+  // 새 핀 삽입 (기존 좌표가 있으면 재사용)
   if (places.length > 0) {
-    const pins = places.map((p, i) => ({
-      trip_id: tripId,
-      user_id: userId,
-      name: p.name,
-      lat: 0,
-      lng: 0,
-      address: p.priority, // 우선순위를 address 필드에 저장 (round-trip 보존)
-      visit_status: p.priority === 'maybe' ? 'wishlist' as const : 'planned' as const,
-      day_number: p.day ?? null,
-      note: p.time ? `[${p.time}] ${p.note || ''}` : (p.note || ''),
-      sort_order: i,
-      category: 'other' as const,
-    }));
+    const pins = places.map((p, i) => {
+      const existing = coordMap.get(p.name);
+      return {
+        trip_id: tripId,
+        user_id: userId,
+        name: p.name,
+        lat: existing?.lat ?? 0,
+        lng: existing?.lng ?? 0,
+        country: existing?.country ?? '',
+        city: existing?.city ?? '',
+        address: p.priority, // 우선순위를 address 필드에 저장 (round-trip 보존)
+        visit_status: p.priority === 'maybe' ? 'wishlist' as const : 'planned' as const,
+        day_number: p.day ?? null,
+        note: p.time ? `[${p.time}] ${p.note || ''}` : (p.note || ''),
+        sort_order: i,
+        category: existing?.category ?? 'other' as const,
+      };
+    });
     const { error: insErr } = await supabase.from('pins').insert(pins);
     if (insErr) throw new Error(insErr.message);
   }
