@@ -149,12 +149,14 @@ export default function PinFormPage() {
       } else if (isEdit && id) {
         try {
           await updatePin(id, input);
+          window.dispatchEvent(new CustomEvent('pin-added'));
         } catch {
           saveDemoPin();
         }
       } else {
         try {
           await createPin(input);
+          window.dispatchEvent(new CustomEvent('pin-added'));
         } catch {
           // Supabase 실패 시 데모 모드로 폴백
           saveDemoPin();
