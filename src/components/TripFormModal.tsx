@@ -61,21 +61,35 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
     try {
       setSaving(true);
 
-      // 여행지 이름만 입력하고 좌표가 없으면 자동 지오코딩
+      // 여행지 이름만 입력하고 좌표가 없으면 자동 지오코딩 (Photon 우선, Nominatim fallback)
       let finalDest = destination;
       if (finalDest.name.trim() && finalDest.lat == null) {
         try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(finalDest.name.trim())}&format=json&accept-language=ko&limit=1&addressdetails=1`,
+          const photonRes = await fetch(
+            `https://photon.komoot.io/api/?q=${encodeURIComponent(finalDest.name.trim())}&lang=ko&limit=1`,
           );
-          const results = await res.json();
-          if (results.length > 0) {
-            const r = results[0];
-            const addr = r.address ?? {};
-            const city = addr.city || addr.town || addr.village || addr.county || addr.state || '';
-            const country = addr.country || '';
-            const name = [city, country].filter(Boolean).join(', ') || finalDest.name;
-            finalDest = { name, lat: parseFloat(r.lat), lng: parseFloat(r.lon), country, city };
+          const photonData = await photonRes.json();
+          if (photonData.features?.length > 0) {
+            const f = photonData.features[0];
+            const p = f.properties;
+            const city = p.city || p.town || p.village || p.county || p.state || '';
+            const country = p.country || '';
+            const name = [p.name || city, country].filter(Boolean).join(', ') || finalDest.name;
+            finalDest = { name, lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0], country, city };
+          } else {
+            // Photon 결과 없으면 Nominatim fallback
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(finalDest.name.trim())}&format=json&accept-language=ko&limit=1&addressdetails=1`,
+            );
+            const results = await res.json();
+            if (results.length > 0) {
+              const r = results[0];
+              const addr = r.address ?? {};
+              const city = addr.city || addr.town || addr.village || addr.county || addr.state || '';
+              const country = addr.country || '';
+              const name = [city, country].filter(Boolean).join(', ') || finalDest.name;
+              finalDest = { name, lat: parseFloat(r.lat), lng: parseFloat(r.lon), country, city };
+            }
           }
         } catch {
           // 지오코딩 실패해도 여행 저장은 계속 진행

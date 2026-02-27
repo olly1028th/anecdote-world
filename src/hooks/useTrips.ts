@@ -290,11 +290,7 @@ export function useTrips() {
         );
       }
 
-      // Supabase 성공 시에도 로컬 데모 데이터 병합 (fallback으로 저장된 여행 포함)
-      const demoTrips = getDemoTrips();
-      const supabaseIds = new Set(mapped.map((t) => t.id));
-      const extraDemoTrips = demoTrips.filter((t) => !supabaseIds.has(t.id));
-      setTrips([...mapped, ...extraDemoTrips]);
+      setTrips(mapped);
     } catch (err) {
       // Supabase 실패 시 데모 데이터로 fallback
       setTrips(getDemoTrips());
@@ -593,10 +589,17 @@ export function useTrip(id: string | undefined) {
       );
       setIsDemo(false);
     } catch (err) {
-      setTrip(null);
-      setIsDemo(false);
-      const msg = err instanceof Error ? err.message : '데이터를 불러올 수 없습니다';
-      setError(`서버 연결 실패: ${msg}`);
+      // Supabase 조회 실패 시 데모 데이터에서 fallback 시도
+      const demoFallback = getDemoTrips().find((t) => t.id === id) ?? null;
+      if (demoFallback) {
+        setTrip(demoFallback);
+        setIsDemo(true);
+      } else {
+        setTrip(null);
+        setIsDemo(false);
+        const msg = err instanceof Error ? err.message : '데이터를 불러올 수 없습니다';
+        setError(`서버 연결 실패: ${msg}`);
+      }
       console.error('[useTrip] Supabase fetch failed:', err);
     } finally {
       setLoading(false);

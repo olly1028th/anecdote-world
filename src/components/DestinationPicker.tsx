@@ -18,6 +18,36 @@ interface SearchResult {
   };
 }
 
+/** Photon API 결과를 Nominatim 형식으로 변환 */
+function photonToSearchResults(features: PhotonFeature[]): SearchResult[] {
+  return features.map((f) => {
+    const p = f.properties;
+    const city = p.city || p.town || p.village || p.county || p.state || '';
+    const country = p.country || '';
+    const name = p.name || '';
+    const parts = [name, city, country].filter(Boolean);
+    return {
+      display_name: parts.join(', '),
+      lat: String(f.geometry.coordinates[1]),
+      lon: String(f.geometry.coordinates[0]),
+      address: { city, country, state: p.state, county: p.county, town: p.town, village: p.village },
+    };
+  });
+}
+
+interface PhotonFeature {
+  geometry: { coordinates: [number, number] };
+  properties: {
+    name?: string;
+    city?: string;
+    town?: string;
+    village?: string;
+    county?: string;
+    state?: string;
+    country?: string;
+  };
+}
+
 interface Props {
   value: DestinationInfo;
   onChange: (info: DestinationInfo) => void;
@@ -80,12 +110,24 @@ export default function DestinationPicker({ value, onChange }: Props) {
     searchTimeoutRef.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query.trim())}&format=json&accept-language=ko&limit=5&addressdetails=1`,
+        // Photon API: 한국어 등 다국어 검색 지원이 우수
+        const photonRes = await fetch(
+          `https://photon.komoot.io/api/?q=${encodeURIComponent(query.trim())}&lang=ko&limit=5`,
         );
-        const data: SearchResult[] = await res.json();
-        setSearchResults(data);
-        setShowResults(data.length > 0);
+        const photonData = await photonRes.json();
+        if (photonData.features && photonData.features.length > 0) {
+          const data = photonToSearchResults(photonData.features);
+          setSearchResults(data);
+          setShowResults(data.length > 0);
+        } else {
+          // Photon 결과 없으면 Nominatim fallback
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query.trim())}&format=json&accept-language=ko&limit=5&addressdetails=1`,
+          );
+          const data: SearchResult[] = await res.json();
+          setSearchResults(data);
+          setShowResults(data.length > 0);
+        }
       } catch {
         setSearchResults([]);
       } finally {
