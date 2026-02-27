@@ -140,13 +140,50 @@ export function usePins() {
       setLoading(true);
       setError(null);
 
-      const { data, error: err } = await supabase
+      // 현재 로그인한 사용자 확인
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      const userEmail = session?.user?.email;
+      if (!userId) {
+        // 미로그인 → 데모 데이터로 fallback
+        setPins([...demoExtraPins, ...samplePins]);
+        setLoading(false);
+        return;
+      }
+
+      // 1) 내 핀 조회 (user_id 필터)
+      const { data: myPinsData, error: err } = await supabase
         .from('pins')
         .select('*')
+        .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
       if (err) throw err;
-      const dbPins = (data as Pin[]) ?? [];
+      const myPins = (myPinsData as Pin[]) ?? [];
+
+      // 2) 공유받은 여행의 핀 조회
+      let sharedPins: Pin[] = [];
+      if (userEmail) {
+        const { data: shares } = await supabase
+          .from('trip_shares')
+          .select('trip_id')
+          .eq('status', 'accepted')
+          .or(`invited_user_id.eq.${userId},invited_email.eq.${userEmail}`);
+        const sharedTripIds = (shares ?? []).map((s: { trip_id: string }) => s.trip_id);
+        if (sharedTripIds.length > 0) {
+          const { data } = await supabase
+            .from('pins')
+            .select('*')
+            .in('trip_id', sharedTripIds)
+            .order('created_at', { ascending: false });
+          sharedPins = (data as Pin[]) ?? [];
+        }
+      }
+
+      // 3) 병합 (중복 제거)
+      const myPinIds = new Set(myPins.map((p) => p.id));
+      const extraShared = sharedPins.filter((p) => !myPinIds.has(p.id));
+      const dbPins = [...myPins, ...extraShared];
 
       // Supabase 성공 시에도 로컬 데모 핀 병합 (fallback으로 저장된 핀 포함)
       const demoPins = [...demoExtraPins, ...samplePins];
@@ -208,11 +245,15 @@ export async function createPin(input: PinInput): Promise<string> {
 }
 
 export async function updatePin(id: string, input: Partial<PinInput>): Promise<void> {
-  const { error } = await supabase.from('pins').update(input).eq('id', id);
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('인증이 필요합니다');
+  const { error } = await supabase.from('pins').update(input).eq('id', id).eq('user_id', user.id);
   if (error) throw error;
 }
 
 export async function deletePin(id: string): Promise<void> {
-  const { error } = await supabase.from('pins').delete().eq('id', id);
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('인증이 필요합니다');
+  const { error } = await supabase.from('pins').delete().eq('id', id).eq('user_id', user.id);
   if (error) throw error;
 }

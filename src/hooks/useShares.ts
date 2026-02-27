@@ -209,10 +209,14 @@ export async function acceptShare(shareId: string, userId?: string): Promise<voi
     return;
   }
 
+  // 초대받은 본인만 수락 가능
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('인증이 필요합니다');
   const { error } = await supabase
     .from('trip_shares')
-    .update({ status: 'accepted', invited_user_id: userId })
-    .eq('id', shareId);
+    .update({ status: 'accepted', invited_user_id: userId ?? user.id })
+    .eq('id', shareId)
+    .eq('invited_email', user.email ?? '');
   if (error) throw new Error(error.message);
   window.dispatchEvent(new CustomEvent('share-updated'));
   window.dispatchEvent(new CustomEvent('trip-added'));
@@ -233,10 +237,14 @@ export async function declineShare(shareId: string): Promise<void> {
     return;
   }
 
+  // 초대받은 본인만 거절 가능
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('인증이 필요합니다');
   const { error } = await supabase
     .from('trip_shares')
     .update({ status: 'declined' })
-    .eq('id', shareId);
+    .eq('id', shareId)
+    .eq('invited_email', user.email ?? '');
   if (error) throw new Error(error.message);
   window.dispatchEvent(new CustomEvent('share-updated'));
 }
@@ -251,7 +259,10 @@ export async function removeShare(shareId: string): Promise<void> {
     return;
   }
 
-  const { error } = await supabase.from('trip_shares').delete().eq('id', shareId);
+  // 소유자만 삭제 가능
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('인증이 필요합니다');
+  const { error } = await supabase.from('trip_shares').delete().eq('id', shareId).eq('owner_id', user.id);
   if (error) throw new Error(error.message);
   window.dispatchEvent(new CustomEvent('share-updated'));
 }
@@ -269,10 +280,14 @@ export async function updateSharePermission(shareId: string, permission: SharePe
     return;
   }
 
+  // 소유자만 권한 변경 가능
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('인증이 필요합니다');
   const { error } = await supabase
     .from('trip_shares')
     .update({ permission })
-    .eq('id', shareId);
+    .eq('id', shareId)
+    .eq('owner_id', user.id);
   if (error) throw new Error(error.message);
   window.dispatchEvent(new CustomEvent('share-updated'));
 }

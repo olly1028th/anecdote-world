@@ -182,7 +182,7 @@ export default function TripDetailPage() {
 
         // 대표 이미지 업데이트 (새로 업로드된 경우 Storage URL 사용)
         const finalCover = urlMap.get(draftCover) || draftCover;
-        await supabase.from('trips').update({ cover_image: finalCover }).eq('id', id);
+        await supabase.from('trips').update({ cover_image: finalCover }).eq('id', id).eq('user_id', user?.id ?? '');
       }
       setEditingPhotos(false);
       refetch();
@@ -370,7 +370,7 @@ export default function TripDetailPage() {
       if (isDemo) {
         updateDemoTrip(id, { memo: draftMemo.trim() });
       } else {
-        await supabase.from('trips').update({ memo: draftMemo.trim() }).eq('id', id);
+        await supabase.from('trips').update({ memo: draftMemo.trim() }).eq('id', id).eq('user_id', user?.id ?? '');
       }
       setEditingMemo(false);
       refetch();
