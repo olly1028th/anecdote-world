@@ -97,7 +97,9 @@ export function useStats(): Stats {
     }
 
     // ---- Pin 기반 통계 ----
-    const visitedPins = pins.filter((p) => p.visit_status === 'visited');
+    // 세부 일정 핀(day_number != null)과 좌표 없는 핀(lat=0, lng=0)은 지도/홈과 동일하게 제외
+    const mapPins = pins.filter((p) => p.day_number == null && !(p.lat === 0 && p.lng === 0));
+    const visitedPins = mapPins.filter((p) => p.visit_status === 'visited');
 
     // 방문한 국가 (unique)
     const countriesVisited = Array.from(
@@ -111,7 +113,7 @@ export function useStats(): Stats {
 
     // 카테고리별 핀 수
     const pinCategoryMap = new Map<string, number>();
-    for (const pin of pins) {
+    for (const pin of mapPins) {
       pinCategoryMap.set(pin.category, (pinCategoryMap.get(pin.category) ?? 0) + 1);
     }
     const pinsByCategory: PinByCategoryItem[] = Array.from(pinCategoryMap.entries()).map(
@@ -120,7 +122,7 @@ export function useStats(): Stats {
 
     // 상태별 핀 수
     const pinsByStatus: PinsByStatus = { visited: 0, planned: 0, wishlist: 0 };
-    for (const pin of pins) {
+    for (const pin of mapPins) {
       pinsByStatus[pin.visit_status] += 1;
     }
 
