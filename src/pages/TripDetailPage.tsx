@@ -71,7 +71,9 @@ export default function TripDetailPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { shares, loading: sharesLoading } = useSharesForTrip(id);
-  const { rate: exchangeRate, loading: rateLoading } = useExchangeRate(trip?.destination);
+  const { rate: exchangeRate, loading: rateLoading } = useExchangeRate(
+    trip?.status === 'planned' ? trip?.destination : undefined,
+  );
   const printRef = useRef<HTMLDivElement>(null);
 
   // Share modal state
@@ -91,10 +93,20 @@ export default function TripDetailPage() {
   }>({ open: false, title: '', message: '', onConfirm: () => {} });
 
   const handleInvite = async () => {
-    if (!id || !inviteEmail.trim() || !user) return;
+    if (!id || !inviteEmail.trim()) return;
+    if (!user) {
+      toast('로그인이 필요합니다', 'error');
+      return;
+    }
     try {
       setInviting(true);
-      await createShare(id, user.id, inviteEmail.trim(), invitePermission, trip?.title);
+      if (isDemo) {
+        // 데모 여행은 데모 공유 함수 사용
+        const { createDemoShareDirect } = await import('../hooks/useShares');
+        createDemoShareDirect(id, user.id, inviteEmail.trim(), invitePermission, trip?.title);
+      } else {
+        await createShare(id, user.id, inviteEmail.trim(), invitePermission, trip?.title);
+      }
       setInviteEmail('');
       toast('초대를 보냈습니다');
     } catch (err) {
@@ -467,8 +479,8 @@ export default function TripDetailPage() {
           </p>
         </div>
 
-        {/* 실시간 환율 정보 */}
-        {exchangeRate && (
+        {/* 실시간 환율 정보 (계획 중인 여행에만 표시) */}
+        {trip.status === 'planned' && exchangeRate && (
           <div className="w-full bg-gradient-to-r from-[#0d9488]/10 to-[#eab308]/10 border-2 border-[#0d9488]/30 rounded-xl px-4 py-2.5 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full bg-[#0d9488]/20 flex items-center justify-center">
@@ -487,7 +499,7 @@ export default function TripDetailPage() {
             </div>
           </div>
         )}
-        {rateLoading && (
+        {trip.status === 'planned' && rateLoading && (
           <div className="w-full h-14 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />
         )}
 

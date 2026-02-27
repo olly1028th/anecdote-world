@@ -43,9 +43,11 @@ export function useSharesForTrip(tripId: string | undefined) {
   const refetch = useCallback(async () => {
     if (!tripId) return;
 
-    if (!isSupabaseConfigured) {
+    // 데모 여행(demo- prefix / 숫자 ID) 또는 Supabase 미설정 시 로컬 데모 저장소 사용
+    const isDemoTrip = tripId.startsWith('demo-') || /^\d+$/.test(tripId);
+    if (!isSupabaseConfigured || isDemoTrip) {
       const all = loadDemoShares();
-      setShares(all.filter((s) => s.trip_id === tripId));
+      setShares(all.filter((s) => s.trip_id === tripId) as unknown as TripShare[]);
       setLoading(false);
       return;
     }
@@ -126,6 +128,38 @@ export function usePendingInvitations(userEmail: string | undefined) {
   }, [refetch]);
 
   return { invitations, loading, refetch };
+}
+
+// ---- 데모 여행 전용 초대 (isSupabaseConfigured 무관) ----
+
+export function createDemoShareDirect(
+  tripId: string,
+  ownerId: string,
+  invitedEmail: string,
+  permission: SharePermission,
+  tripTitle?: string,
+): void {
+  const all = loadDemoShares();
+  const exists = all.find(
+    (s) => s.trip_id === tripId && s.invited_email === invitedEmail && s.status !== 'declined',
+  );
+  if (exists) throw new Error('이미 초대된 이메일입니다.');
+
+  const share: DemoShare = {
+    id: `share-${Date.now()}`,
+    trip_id: tripId,
+    owner_id: ownerId,
+    invited_email: invitedEmail,
+    invited_user_id: null,
+    permission,
+    status: 'pending',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    trip_title: tripTitle,
+    owner_nickname: '여행자',
+  };
+  saveDemoShares([share, ...all]);
+  window.dispatchEvent(new CustomEvent('share-updated'));
 }
 
 // ---- 초대 보내기 ----
@@ -252,7 +286,8 @@ export async function declineShare(shareId: string): Promise<void> {
 // ---- 공유 삭제 (소유자가 취소) ----
 
 export async function removeShare(shareId: string): Promise<void> {
-  if (!isSupabaseConfigured) {
+  // 데모 share ID 또는 Supabase 미설정 시 로컬 처리
+  if (!isSupabaseConfigured || shareId.startsWith('share-')) {
     const all = loadDemoShares();
     saveDemoShares(all.filter((s) => s.id !== shareId));
     window.dispatchEvent(new CustomEvent('share-updated'));
@@ -270,7 +305,8 @@ export async function removeShare(shareId: string): Promise<void> {
 // ---- 권한 변경 ----
 
 export async function updateSharePermission(shareId: string, permission: SharePermission): Promise<void> {
-  if (!isSupabaseConfigured) {
+  // 데모 share ID 또는 Supabase 미설정 시 로컬 처리
+  if (!isSupabaseConfigured || shareId.startsWith('share-')) {
     const all = loadDemoShares();
     const updated = all.map((s) =>
       s.id === shareId ? { ...s, permission, updated_at: new Date().toISOString() } : s,
