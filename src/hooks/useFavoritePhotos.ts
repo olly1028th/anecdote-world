@@ -69,11 +69,21 @@ export function useFavoritePhotos() {
     try {
       setLoading(true);
 
-      // favorite 사진 + 핀/여행 정보 조인
+      // 현재 로그인한 사용자 확인
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      if (!userId) {
+        setPhotos(sampleFavorites);
+        setLoading(false);
+        return;
+      }
+
+      // favorite 사진 + 핀/여행 정보 조인 (내 핀만 조회)
       const { data, error } = await supabase
         .from('pin_photos')
-        .select('id, url, caption, created_at, pin:pins!inner(name, visited_at, trip:trips(title, start_date))')
+        .select('id, url, caption, created_at, pin:pins!inner(name, visited_at, user_id, trip:trips(title, start_date))')
         .eq('is_favorite', true)
+        .eq('pins.user_id', userId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -116,9 +126,12 @@ export function useFavoritePhotos() {
 export async function toggleFavoritePhoto(photoId: string, isFavorite: boolean): Promise<void> {
   if (!isSupabaseConfigured) return;
 
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('인증이 필요합니다');
   const { error } = await supabase
     .from('pin_photos')
     .update({ is_favorite: isFavorite })
-    .eq('id', photoId);
+    .eq('id', photoId)
+    .eq('user_id', user.id);
   if (error) throw error;
 }

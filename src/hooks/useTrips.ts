@@ -200,16 +200,53 @@ export function useTrips() {
       setLoading(true);
       setError(null);
 
-      const { data: dbTrips, error: tripsErr } = await supabase
+      // 현재 로그인한 사용자 확인
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      const userEmail = session?.user?.email;
+      if (!userId) {
+        // 미로그인 → 데모 데이터로 fallback
+        setTrips(getDemoTrips());
+        setLoading(false);
+        return;
+      }
+
+      // 1) 내 여행 조회 (user_id 필터)
+      const { data: myTrips, error: tripsErr } = await supabase
         .from('trips')
         .select('*')
+        .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
       if (tripsErr) throw tripsErr;
 
+      // 2) 공유받은 여행 ID 조회
+      let sharedTrips: DbTrip[] = [];
+      if (userEmail) {
+        const { data: shares } = await supabase
+          .from('trip_shares')
+          .select('trip_id')
+          .eq('status', 'accepted')
+          .or(`invited_user_id.eq.${userId},invited_email.eq.${userEmail}`);
+        const sharedTripIds = (shares ?? []).map((s: { trip_id: string }) => s.trip_id);
+        const myTripIds = new Set((myTrips ?? []).map((t: DbTrip) => t.id));
+        const uniqueSharedIds = sharedTripIds.filter((id) => !myTripIds.has(id));
+        if (uniqueSharedIds.length > 0) {
+          const { data } = await supabase
+            .from('trips')
+            .select('*')
+            .in('id', uniqueSharedIds)
+            .order('created_at', { ascending: false });
+          sharedTrips = (data as DbTrip[]) ?? [];
+        }
+      }
+
+      // 3) 전체 여행 병합
+      const allDbTrips = [...(myTrips ?? []), ...sharedTrips] as DbTrip[];
+
       let mapped: Trip[] = [];
-      if (dbTrips && dbTrips.length > 0) {
-        const tripIds = dbTrips.map((t: DbTrip) => t.id);
+      if (allDbTrips.length > 0) {
+        const tripIds = allDbTrips.map((t: DbTrip) => t.id);
 
         // 관련 데이터 병렬 조회 (핀 + 핀사진 포함)
         const [expensesRes, checklistRes, pinsRes] = await Promise.all([
@@ -242,7 +279,7 @@ export function useTrips() {
           allPinPhotos = (ppRes.data as PinPhoto[]) ?? [];
         }
 
-        mapped = dbTrips.map((t: DbTrip) =>
+        mapped = allDbTrips.map((t: DbTrip) =>
           mapDbTripToUi(
             t,
             allExpenses.filter((e) => e.trip_id === t.id),
@@ -312,12 +349,17 @@ export async function createTrip(input: TripInput): Promise<string> {
 }
 
 export async function updateTrip(id: string, input: Partial<TripInput>): Promise<void> {
-  const { error } = await supabase.from('trips').update(input).eq('id', id);
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('인증이 필요합니다');
+  const { error } = await supabase.from('trips').update(input).eq('id', id).eq('user_id', user.id);
   if (error) throw error;
 }
 
 export async function deleteTrip(id: string): Promise<void> {
-  const { error } = await supabase.from('trips').delete().eq('id', id);
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('인증이 필요합니다');
+  // 소유자만 삭제 가능
+  const { error } = await supabase.from('trips').delete().eq('id', id).eq('user_id', user.id);
   if (error) throw error;
 }
 
@@ -330,11 +372,12 @@ export async function saveExpenses(
   const { data: { user } } = await supabase.auth.getUser();
   const userId = user?.id;
 
-  // 기존 경비 삭제
+  // 기존 경비 삭제 (소유자 여행만)
   const { error: delErr } = await supabase
     .from('expenses')
     .delete()
-    .eq('trip_id', tripId);
+    .eq('trip_id', tripId)
+    .eq('user_id', userId);
   if (delErr) throw delErr;
 
   // 새 경비 삽입
@@ -361,11 +404,12 @@ export async function saveChecklistItems(
   const { data: { user } } = await supabase.auth.getUser();
   const userId = user?.id;
 
-  // 기존 항목 삭제
+  // 기존 항목 삭제 (소유자 데이터만)
   const { error: delErr } = await supabase
     .from('checklist_items')
     .delete()
-    .eq('trip_id', tripId);
+    .eq('trip_id', tripId)
+    .eq('user_id', userId);
   if (delErr) throw delErr;
 
   // 새 항목 삽입
@@ -392,11 +436,12 @@ export async function savePlaces(
   const { data: { user } } = await supabase.auth.getUser();
   const userId = user?.id;
 
-  // 기존 planned/wishlist 핀 삭제 (visited 핀은 유지)
+  // 기존 planned/wishlist 핀 삭제 (visited 핀은 유지, 소유자 데이터만)
   const { error: delErr } = await supabase
     .from('pins')
     .delete()
     .eq('trip_id', tripId)
+    .eq('user_id', userId)
     .in('visit_status', ['planned', 'wishlist']);
   if (delErr) throw new Error(delErr.message);
 
@@ -426,10 +471,13 @@ export async function toggleChecklistItem(
   itemId: string,
   checked: boolean,
 ): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('인증이 필요합니다');
   const { error } = await supabase
     .from('checklist_items')
     .update({ checked })
-    .eq('id', itemId);
+    .eq('id', itemId)
+    .eq('user_id', user.id);
   if (error) throw error;
 }
 
@@ -455,6 +503,18 @@ export function useTrip(id: string | undefined) {
       setLoading(true);
       setError(null);
 
+      // 현재 로그인한 사용자 확인
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      const userEmail = session?.user?.email;
+      if (!userId) {
+        // 미로그인 → 데모 데이터에서 찾기
+        setTrip(getDemoTrips().find((t) => t.id === id) ?? null);
+        setIsDemo(true);
+        setLoading(false);
+        return;
+      }
+
       const { data: dbTrip, error: tripErr } = await supabase
         .from('trips')
         .select('*')
@@ -466,6 +526,23 @@ export function useTrip(id: string | undefined) {
         setTrip(null);
         setIsDemo(false);
         return;
+      }
+
+      // 접근 권한 검증: 내 여행이거나 공유받은 여행인지 확인
+      if ((dbTrip as DbTrip).user_id !== userId) {
+        const { data: share } = await supabase
+          .from('trip_shares')
+          .select('id')
+          .eq('trip_id', id)
+          .eq('status', 'accepted')
+          .or(`invited_user_id.eq.${userId},invited_email.eq.${userEmail ?? ''}`)
+          .maybeSingle();
+        if (!share) {
+          setTrip(null);
+          setIsDemo(false);
+          setError('접근 권한이 없습니다');
+          return;
+        }
       }
 
       const [expensesRes, checklistRes, pinsRes] = await Promise.all([
