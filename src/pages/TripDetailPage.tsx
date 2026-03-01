@@ -344,23 +344,40 @@ export default function TripDetailPage() {
     }
     setEditingPlaces(true);
   };
-  const addDraftPlace = (day: number) => setDraftPlaces((prev) => [...prev, { name: '', priority: 'want', note: '', day, time: '' }]);
   const removeDraftPlace = (i: number) => setDraftPlaces((prev) => prev.filter((_, idx) => idx !== i));
   const updateDraftPlace = (i: number, field: keyof Place, value: string | number) => {
     setDraftPlaces((prev) => prev.map((p, idx) => (idx === i ? { ...p, [field]: value } : p)));
   };
-  const [searchingPlaceIdx, setSearchingPlaceIdx] = useState<number | null>(null);
+  // 장소검색 모달: 'new' = 새 장소 추가, number = 기존 장소 재검색
+  const [searchingPlaceIdx, setSearchingPlaceIdx] = useState<number | 'new' | null>(null);
+  const [newPlaceDay, setNewPlaceDay] = useState<number>(1);
+  const addDraftPlace = (day: number) => {
+    setNewPlaceDay(day);
+    setSearchingPlaceIdx('new');
+  };
   const openPlaceSearch = (idx: number) => {
     setSearchingPlaceIdx(idx);
   };
-  const handlePlaceSearchSelect = (lat: number, lng: number) => {
-    if (searchingPlaceIdx == null) return;
-    setDraftPlaces((prev) => prev.map((p, i) => i === searchingPlaceIdx ? { ...p, lat, lng } : p));
-    setSearchingPlaceIdx(null);
-    toast('장소 정보가 등록되었습니다');
-  };
-  const clearPlaceLocation = (idx: number) => {
-    setDraftPlaces((prev) => prev.map((p, i) => i === idx ? { ...p, lat: undefined, lng: undefined } : p));
+  const handlePlaceSearchSelect = (lat: number, lng: number, name?: string) => {
+    if (searchingPlaceIdx === 'new') {
+      // 새 장소 추가 (지도에서 선택한 이름 + 좌표)
+      setDraftPlaces((prev) => [...prev, {
+        name: name || '선택한 위치',
+        priority: 'want' as const,
+        note: '',
+        day: newPlaceDay,
+        time: '',
+        lat,
+        lng,
+      }]);
+      setSearchingPlaceIdx(null);
+      toast('장소가 추가되었습니다');
+    } else if (searchingPlaceIdx != null) {
+      // 기존 장소 재검색
+      setDraftPlaces((prev) => prev.map((p, i) => i === searchingPlaceIdx ? { ...p, lat, lng, name: name || p.name } : p));
+      setSearchingPlaceIdx(null);
+      toast('장소 정보가 업데이트되었습니다');
+    }
   };
   const savePlacesInline = async () => {
     if (!trip || !id) return;
@@ -882,9 +899,12 @@ export default function TripDetailPage() {
                       <button
                         type="button"
                         onClick={() => addDraftPlace(day)}
-                        className="text-[10px] font-bold uppercase tracking-widest text-[#f48c25] hover:text-[#d97a1e] cursor-pointer border-2 border-[#f48c25] px-2.5 py-1 rounded-full hover:bg-[#f48c25]/10 transition-colors bg-transparent"
+                        className="text-[10px] font-bold uppercase tracking-widest text-[#f48c25] hover:text-[#d97a1e] cursor-pointer border-2 border-[#f48c25] px-2.5 py-1 rounded-full hover:bg-[#f48c25]/10 transition-colors bg-transparent flex items-center gap-1"
                       >
-                        + Add
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        장소 추가
                       </button>
                     </div>
                     {dayPlaces.length === 0 ? (
@@ -893,16 +913,22 @@ export default function TripDetailPage() {
                       <div className="space-y-2 ml-3 pl-3 border-l-2 border-[#f48c25]/30">
                         {dayPlaces.map((place) => (
                           <div key={place._idx} className="bg-[#F9F4E8] dark:bg-slate-700 p-2.5 rounded-xl border-2 border-slate-200 dark:border-slate-600 space-y-1.5">
-                            {/* 1행: 내용 + 삭제 */}
+                            {/* 1행: 장소명 + 위치 뱃지 + 삭제 */}
                             <div className="flex items-center gap-1.5">
-                              <span className="w-2 h-2 rounded-full bg-[#f48c25] shrink-0" />
-                              <input
-                                type="text"
-                                value={place.name}
-                                onChange={(e) => updateDraftPlace(place._idx, 'name', e.target.value)}
-                                placeholder="장소명"
-                                className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg border-2 border-slate-300 text-xs font-medium bg-white dark:bg-slate-600 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
-                              />
+                              <svg className="w-3.5 h-3.5 shrink-0 text-[#f48c25]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                              <span className="flex-1 min-w-0 text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                                {place.name}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => openPlaceSearch(place._idx)}
+                                className="shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-bold text-[#0d9488] border border-[#0d9488]/40 bg-[#0d9488]/10 hover:bg-[#0d9488]/20 transition-colors cursor-pointer"
+                              >
+                                재검색
+                              </button>
                               <button
                                 type="button"
                                 onClick={() => removeDraftPlace(place._idx)}
@@ -913,43 +939,15 @@ export default function TripDetailPage() {
                                 </svg>
                               </button>
                             </div>
-                            {/* 2행: 비고 + 장소 정보 */}
-                            <div className="flex items-center gap-1.5 ml-3.5">
+                            {/* 2행: 비고 */}
+                            <div className="ml-5">
                               <input
                                 type="text"
                                 value={place.note || ''}
                                 onChange={(e) => updateDraftPlace(place._idx, 'note', e.target.value)}
                                 placeholder="비고 (선택)"
-                                className="flex-1 min-w-0 px-2.5 py-1 rounded-lg border-2 border-slate-200 text-[10px] font-medium bg-white dark:bg-slate-600 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
+                                className="w-full px-2.5 py-1 rounded-lg border-2 border-slate-200 text-[10px] font-medium bg-white dark:bg-slate-600 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
                               />
-                              {place.lat != null && place.lng != null ? (
-                                <button
-                                  type="button"
-                                  onClick={() => clearPlaceLocation(place._idx)}
-                                  className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg border-2 border-[#0d9488] bg-[#0d9488]/10 text-[10px] font-bold text-[#0d9488] hover:bg-[#0d9488]/20 transition-colors cursor-pointer"
-                                >
-                                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                  </svg>
-                                  등록됨
-                                  <svg className="w-2.5 h-2.5 text-[#0d9488]/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                  </svg>
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => openPlaceSearch(place._idx)}
-                                  className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg border-2 border-slate-300 text-[10px] font-bold text-slate-400 hover:border-[#f48c25] hover:text-[#f48c25] transition-colors cursor-pointer bg-transparent"
-                                >
-                                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                  </svg>
-                                  장소검색
-                                </button>
-                              )}
                             </div>
                           </div>
                         ))}
@@ -1154,7 +1152,7 @@ export default function TripDetailPage() {
 
       {searchingPlaceIdx != null && (
         <PlaceSearchModal
-          initialQuery={draftPlaces[searchingPlaceIdx]?.name?.trim() || ''}
+          initialQuery={searchingPlaceIdx === 'new' ? '' : (draftPlaces[searchingPlaceIdx]?.name?.trim() || '')}
           onSelect={handlePlaceSearchSelect}
           onClose={() => setSearchingPlaceIdx(null)}
         />

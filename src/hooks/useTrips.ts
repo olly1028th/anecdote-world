@@ -394,12 +394,12 @@ export async function savePlaces(
     .in('visit_status', ['planned', 'wishlist']);
   if (delErr) throw new Error(delErr.message);
 
-  // 새 핀 삽입 (Place에 좌표가 있으면 우선 사용, 없으면 기존 핀에서 재사용)
+  // 새 핀 삽입 (Place의 좌표를 그대로 사용, 없으면 0)
   if (places.length > 0) {
     const pins = places.map((p, i) => {
       const existing = coordMap.get(p.name);
-      const lat = p.lat ?? existing?.lat ?? 0;
-      const lng = p.lng ?? existing?.lng ?? 0;
+      const lat = p.lat ?? 0;
+      const lng = p.lng ?? 0;
       return {
         trip_id: tripId,
         user_id: userId,

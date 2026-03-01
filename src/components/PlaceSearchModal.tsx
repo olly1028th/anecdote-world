@@ -68,7 +68,7 @@ export default function PlaceSearchModal({ initialQuery, onSelect, onClose }: Pr
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
-  const [selected, setSelected] = useState<{ lat: number; lng: number } | null>(null);
+  const [selected, setSelected] = useState<{ lat: number; lng: number; name?: string } | null>(null);
   const [flyTarget, setFlyTarget] = useState<{ lat: number; lng: number; zoom: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -128,7 +128,7 @@ export default function PlaceSearchModal({ initialQuery, onSelect, onClose }: Pr
   };
 
   const handleResultClick = (result: SearchResult) => {
-    setSelected({ lat: result.lat, lng: result.lng });
+    setSelected({ lat: result.lat, lng: result.lng, name: result.name });
     setFlyTarget({ lat: result.lat, lng: result.lng, zoom: 16 });
   };
 
@@ -138,7 +138,7 @@ export default function PlaceSearchModal({ initialQuery, onSelect, onClose }: Pr
 
   const handleConfirm = () => {
     if (selected) {
-      onSelect(selected.lat, selected.lng);
+      onSelect(selected.lat, selected.lng, selected.name);
     }
   };
 
