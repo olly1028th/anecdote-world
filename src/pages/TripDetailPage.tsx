@@ -16,17 +16,11 @@ import PhotoUpload from '../components/PhotoUpload';
 import ConfirmModal from '../components/ConfirmModal';
 import { TripDetailSkeleton } from '../components/Skeleton';
 import { formatDate, calcDuration, totalExpenses, formatCurrency, expenseCategoryLabel } from '../utils/format';
-import type { Expense, ExpenseCategory, ChecklistItem, Place, PlacePriority } from '../types/trip';
+import type { Expense, ExpenseCategory, ChecklistItem, Place } from '../types/trip';
 import type { SharePermission } from '../types/database';
 
 const EXPENSE_CATEGORIES: ExpenseCategory[] = [
   'flight', 'hotel', 'food', 'transport', 'activity', 'shopping', 'other',
-];
-
-const PLACE_PRIORITIES: { value: PlacePriority; label: string }[] = [
-  { value: 'must', label: '필수' },
-  { value: 'want', label: '가고싶음' },
-  { value: 'maybe', label: '여유되면' },
 ];
 
 function EditButton({ onClick }: { onClick: () => void }) {
@@ -348,6 +342,31 @@ export default function TripDetailPage() {
   const removeDraftPlace = (i: number) => setDraftPlaces(draftPlaces.filter((_, idx) => idx !== i));
   const updateDraftPlace = (i: number, field: keyof Place, value: string | number) => {
     setDraftPlaces(draftPlaces.map((p, idx) => (idx === i ? { ...p, [field]: value } : p)));
+  };
+  const [geocodingIdx, setGeocodingIdx] = useState<number | null>(null);
+  const geocodePlace = async (idx: number) => {
+    const place = draftPlaces[idx];
+    if (!place?.name.trim()) { toast('장소명을 먼저 입력하세요', 'error'); return; }
+    setGeocodingIdx(idx);
+    try {
+      const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(place.name.trim())}&lang=ko&limit=1`);
+      const data = await res.json();
+      if (data.features?.length > 0) {
+        const f = data.features[0];
+        const [lng, lat] = f.geometry.coordinates;
+        setDraftPlaces(draftPlaces.map((p, i) => i === idx ? { ...p, lat, lng } : p));
+        toast('장소 정보가 등록되었습니다');
+      } else {
+        toast('검색 결과가 없습니다', 'error');
+      }
+    } catch {
+      toast('장소 검색에 실패했습니다', 'error');
+    } finally {
+      setGeocodingIdx(null);
+    }
+  };
+  const clearPlaceLocation = (idx: number) => {
+    setDraftPlaces(draftPlaces.map((p, i) => i === idx ? { ...p, lat: undefined, lng: undefined } : p));
   };
   const savePlacesInline = async () => {
     if (!trip || !id) return;
@@ -878,43 +897,66 @@ export default function TripDetailPage() {
                     ) : (
                       <div className="space-y-2 ml-3 pl-3 border-l-2 border-[#f48c25]/30">
                         {dayPlaces.map((place) => (
-                          <div key={place._idx} className="flex items-start gap-1.5 bg-[#F9F4E8] dark:bg-slate-700 p-2.5 rounded-xl border-2 border-slate-200 dark:border-slate-600">
-                            <span className="w-2 h-2 rounded-full bg-[#f48c25] mt-2.5 shrink-0" />
-                            <input
-                              type="text"
-                              value={place.name}
-                              onChange={(e) => updateDraftPlace(place._idx, 'name', e.target.value)}
-                              placeholder="장소명"
-                              className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg border-2 border-slate-300 text-xs font-medium bg-white dark:bg-slate-600 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
-                            />
-                            {isCompleted ? (
+                          <div key={place._idx} className="bg-[#F9F4E8] dark:bg-slate-700 p-2.5 rounded-xl border-2 border-slate-200 dark:border-slate-600 space-y-1.5">
+                            {/* 1행: 내용 + 삭제 */}
+                            <div className="flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-[#f48c25] shrink-0" />
+                              <input
+                                type="text"
+                                value={place.name}
+                                onChange={(e) => updateDraftPlace(place._idx, 'name', e.target.value)}
+                                placeholder="장소명"
+                                className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg border-2 border-slate-300 text-xs font-medium bg-white dark:bg-slate-600 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeDraftPlace(place._idx)}
+                                className="shrink-0 w-7 h-7 flex items-center justify-center text-slate-300 hover:text-[#f43f5e] transition-colors cursor-pointer bg-transparent border-0"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                            {/* 2행: 비고 + 장소 정보 */}
+                            <div className="flex items-center gap-1.5 ml-3.5">
                               <input
                                 type="text"
                                 value={place.note || ''}
                                 onChange={(e) => updateDraftPlace(place._idx, 'note', e.target.value)}
-                                placeholder="비고"
-                                className="w-24 shrink-0 px-2 py-1.5 rounded-lg border-2 border-slate-300 text-[10px] font-medium bg-white dark:bg-slate-600 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
+                                placeholder="비고 (선택)"
+                                className="flex-1 min-w-0 px-2.5 py-1 rounded-lg border-2 border-slate-200 text-[10px] font-medium bg-white dark:bg-slate-600 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
                               />
-                            ) : (
-                              <select
-                                value={place.priority}
-                                onChange={(e) => updateDraftPlace(place._idx, 'priority', e.target.value)}
-                                className="w-16 shrink-0 px-1 py-1.5 rounded-lg border-2 border-slate-300 text-[10px] font-bold bg-white dark:bg-slate-600 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
-                              >
-                                {PLACE_PRIORITIES.map((p) => (
-                                  <option key={p.value} value={p.value}>{p.label}</option>
-                                ))}
-                              </select>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => removeDraftPlace(place._idx)}
-                              className="shrink-0 w-7 h-7 flex items-center justify-center text-slate-300 hover:text-[#f43f5e] transition-colors cursor-pointer bg-transparent border-0"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
+                              {place.lat != null && place.lng != null ? (
+                                <button
+                                  type="button"
+                                  onClick={() => clearPlaceLocation(place._idx)}
+                                  className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg border-2 border-[#0d9488] bg-[#0d9488]/10 text-[10px] font-bold text-[#0d9488] hover:bg-[#0d9488]/20 transition-colors cursor-pointer"
+                                >
+                                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  </svg>
+                                  등록됨
+                                  <svg className="w-2.5 h-2.5 text-[#0d9488]/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => geocodePlace(place._idx)}
+                                  disabled={geocodingIdx === place._idx}
+                                  className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg border-2 border-slate-300 text-[10px] font-bold text-slate-400 hover:border-[#f48c25] hover:text-[#f48c25] transition-colors cursor-pointer disabled:opacity-50 bg-transparent"
+                                >
+                                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  </svg>
+                                  {geocodingIdx === place._idx ? '검색중...' : '장소검색'}
+                                </button>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -1063,12 +1105,7 @@ export default function TripDetailPage() {
             <SaveCancelButtons onSave={saveChecklistInline} onCancel={() => setEditingChecklist(false)} saving={saving} />
           </div>
         ) : trip.checklist.length > 0 ? (
-          <div className="relative">
-            <div className="absolute top-5 right-5 z-10">
-              <EditButton onClick={startEditChecklist} />
-            </div>
-            <Checklist items={trip.checklist} onToggle={handleChecklistToggle} />
-          </div>
+          <Checklist items={trip.checklist} onToggle={handleChecklistToggle} action={<EditButton onClick={startEditChecklist} />} />
         ) : (
           <div
             onClick={startEditChecklist}
