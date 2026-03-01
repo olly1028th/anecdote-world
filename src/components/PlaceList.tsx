@@ -8,14 +8,7 @@ const DayRouteMap = lazy(() =>
 interface Props {
   places: Place[];
   startDate?: string;
-  isCompleted?: boolean;
 }
-
-const priorityConfig = {
-  must: { label: '필수', bg: 'bg-[#f43f5e] text-white', border: 'border-[#f43f5e]' },
-  want: { label: '가고싶음', bg: 'bg-[#eab308]', border: 'border-[#eab308]' },
-  maybe: { label: '여유되면', bg: 'bg-slate-100', border: 'border-slate-300' },
-} as const;
 
 function formatDayDate(startDate: string, day: number): string {
   const d = new Date(startDate);
@@ -24,8 +17,7 @@ function formatDayDate(startDate: string, day: number): string {
   return `${d.getMonth() + 1}.${d.getDate()} (${weekdays[d.getDay()]})`;
 }
 
-function PlaceCard({ place, index, isCompleted }: { place: Place; index?: number; isCompleted?: boolean }) {
-  const config = priorityConfig[place.priority];
+function PlaceCard({ place, index }: { place: Place; index?: number }) {
   const hasLocation = place.lat != null && place.lng != null;
   return (
     <div className="flex items-start gap-2.5 p-3 bg-[#F9F4E8] dark:bg-slate-700 rounded-xl border-2 border-slate-200 dark:border-slate-600">
@@ -45,17 +37,9 @@ function PlaceCard({ place, index, isCompleted }: { place: Place; index?: number
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           )}
-          {!isCompleted && (
-            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border-2 ${config.border} ${config.bg}`}>
-              {config.label}
-            </span>
-          )}
         </div>
         {place.note && (
-          <p className="text-xs text-slate-500 font-medium mt-1">
-            {isCompleted && <span className="text-[#f48c25] font-bold mr-1">비고:</span>}
-            {place.note}
-          </p>
+          <p className="text-xs text-slate-500 font-medium mt-1">{place.note}</p>
         )}
       </div>
     </div>
@@ -67,7 +51,7 @@ function hasGeoPlaces(places: Place[]) {
   return places.some((p) => p.lat != null && p.lng != null);
 }
 
-export default function PlaceList({ places, startDate, isCompleted }: Props) {
+export default function PlaceList({ places, startDate }: Props) {
   const hasDays = places.some((p) => p.day && p.day > 0);
 
   if (!hasDays) {
@@ -76,7 +60,7 @@ export default function PlaceList({ places, startDate, isCompleted }: Props) {
         <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-4">Route & Places</h3>
         <div className="space-y-2.5">
           {places.map((place, i) => (
-            <PlaceCard key={i} place={place} isCompleted={isCompleted} />
+            <PlaceCard key={i} place={place} />
           ))}
         </div>
       </div>
@@ -121,7 +105,7 @@ export default function PlaceList({ places, startDate, isCompleted }: Props) {
               </div>
               <div className="space-y-2 ml-3 pl-3 border-l-2 border-[#f48c25]/30">
                 {dayPlaces.map((place, i) => (
-                  <PlaceCard key={i} place={place} index={showRoute ? i + 1 : undefined} isCompleted={isCompleted} />
+                  <PlaceCard key={i} place={place} index={showRoute ? i + 1 : undefined} />
                 ))}
                 {/* day별 이동 동선 지도 */}
                 {showRoute && (
@@ -148,7 +132,7 @@ export default function PlaceList({ places, startDate, isCompleted }: Props) {
             </div>
             <div className="space-y-2 ml-3 pl-3 border-l-2 border-slate-200">
               {unassigned.map((place, i) => (
-                <PlaceCard key={i} place={place} isCompleted={isCompleted} />
+                <PlaceCard key={i} place={place} />
               ))}
             </div>
           </div>

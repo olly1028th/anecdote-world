@@ -14,6 +14,7 @@ import Checklist from '../components/Checklist';
 import PhotoGallery from '../components/PhotoGallery';
 import PhotoUpload from '../components/PhotoUpload';
 import ConfirmModal from '../components/ConfirmModal';
+import PlaceSearchModal from '../components/PlaceSearchModal';
 import { TripDetailSkeleton } from '../components/Skeleton';
 import { formatDate, calcDuration, totalExpenses, formatCurrency, expenseCategoryLabel } from '../utils/format';
 import type { Expense, ExpenseCategory, ChecklistItem, Place } from '../types/trip';
@@ -343,27 +344,15 @@ export default function TripDetailPage() {
   const updateDraftPlace = (i: number, field: keyof Place, value: string | number) => {
     setDraftPlaces(draftPlaces.map((p, idx) => (idx === i ? { ...p, [field]: value } : p)));
   };
-  const [geocodingIdx, setGeocodingIdx] = useState<number | null>(null);
-  const geocodePlace = async (idx: number) => {
-    const place = draftPlaces[idx];
-    if (!place?.name.trim()) { toast('장소명을 먼저 입력하세요', 'error'); return; }
-    setGeocodingIdx(idx);
-    try {
-      const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(place.name.trim())}&lang=ko&limit=1`);
-      const data = await res.json();
-      if (data.features?.length > 0) {
-        const f = data.features[0];
-        const [lng, lat] = f.geometry.coordinates;
-        setDraftPlaces(draftPlaces.map((p, i) => i === idx ? { ...p, lat, lng } : p));
-        toast('장소 정보가 등록되었습니다');
-      } else {
-        toast('검색 결과가 없습니다', 'error');
-      }
-    } catch {
-      toast('장소 검색에 실패했습니다', 'error');
-    } finally {
-      setGeocodingIdx(null);
-    }
+  const [searchingPlaceIdx, setSearchingPlaceIdx] = useState<number | null>(null);
+  const openPlaceSearch = (idx: number) => {
+    setSearchingPlaceIdx(idx);
+  };
+  const handlePlaceSearchSelect = (lat: number, lng: number) => {
+    if (searchingPlaceIdx == null) return;
+    setDraftPlaces(draftPlaces.map((p, i) => i === searchingPlaceIdx ? { ...p, lat, lng } : p));
+    setSearchingPlaceIdx(null);
+    toast('장소 정보가 등록되었습니다');
   };
   const clearPlaceLocation = (idx: number) => {
     setDraftPlaces(draftPlaces.map((p, i) => i === idx ? { ...p, lat: undefined, lng: undefined } : p));
@@ -945,15 +934,14 @@ export default function TripDetailPage() {
                               ) : (
                                 <button
                                   type="button"
-                                  onClick={() => geocodePlace(place._idx)}
-                                  disabled={geocodingIdx === place._idx}
-                                  className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg border-2 border-slate-300 text-[10px] font-bold text-slate-400 hover:border-[#f48c25] hover:text-[#f48c25] transition-colors cursor-pointer disabled:opacity-50 bg-transparent"
+                                  onClick={() => openPlaceSearch(place._idx)}
+                                  className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg border-2 border-slate-300 text-[10px] font-bold text-slate-400 hover:border-[#f48c25] hover:text-[#f48c25] transition-colors cursor-pointer bg-transparent"
                                 >
                                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                   </svg>
-                                  {geocodingIdx === place._idx ? '검색중...' : '장소검색'}
+                                  장소검색
                                 </button>
                               )}
                             </div>
@@ -972,7 +960,7 @@ export default function TripDetailPage() {
             <div className="absolute top-5 right-5 z-10">
               <EditButton onClick={startEditPlaces} />
             </div>
-            <PlaceList places={trip.places} startDate={trip.startDate} isCompleted={isCompleted} />
+            <PlaceList places={trip.places} startDate={trip.startDate} />
           </div>
         ) : (
           <div
@@ -1157,6 +1145,14 @@ export default function TripDetailPage() {
         onConfirm={confirmModal.onConfirm}
         onCancel={() => setConfirmModal((p) => ({ ...p, open: false }))}
       />
+
+      {searchingPlaceIdx != null && (
+        <PlaceSearchModal
+          initialQuery={draftPlaces[searchingPlaceIdx]?.name?.trim() || ''}
+          onSelect={handlePlaceSearchSelect}
+          onClose={() => setSearchingPlaceIdx(null)}
+        />
+      )}
     </div>
   );
 }
