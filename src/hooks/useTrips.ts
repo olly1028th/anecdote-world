@@ -1,7 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { listTripPhotos } from '../lib/storage';
-import { sampleTrips } from '../utils/sampleData';
+import {
+  getLocalTrips,
+  getDeletedTripIds,
+  getMergedDemoTrips,
+} from '../lib/localStore';
 import type { Trip, Place, PlacePriority } from '../types/trip';
 import type {
   Trip as DbTrip,
@@ -11,80 +15,8 @@ import type {
   PinPhoto,
 } from '../types/database';
 
-// ---- 데모 모드 로컬 저장소 (localStorage 영구 보관) ----
-
-const DEMO_TRIPS_KEY = 'anecdote-demo-trips';
-const DEMO_DELETED_KEY = 'anecdote-demo-deleted';
-
-function loadDemoTrips(): Trip[] {
-  try {
-    const raw = localStorage.getItem(DEMO_TRIPS_KEY);
-    return raw ? (JSON.parse(raw) as Trip[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function loadDeletedIds(): Set<string> {
-  try {
-    const raw = localStorage.getItem(DEMO_DELETED_KEY);
-    return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
-  } catch {
-    return new Set();
-  }
-}
-
-let demoExtraTrips: Trip[] = loadDemoTrips();
-const demoDeletedIds: Set<string> = loadDeletedIds();
-
-export function addDemoTrip(trip: Trip) {
-  demoExtraTrips = [trip, ...demoExtraTrips];
-  localStorage.setItem(DEMO_TRIPS_KEY, JSON.stringify(demoExtraTrips));
-  // 삭제 기록에서 제거 (같은 ID로 다시 추가하는 경우)
-  if (demoDeletedIds.has(trip.id)) {
-    demoDeletedIds.delete(trip.id);
-    localStorage.setItem(DEMO_DELETED_KEY, JSON.stringify([...demoDeletedIds]));
-  }
-}
-
-/** demoExtraTrips + sampleTrips 병합 (demoExtraTrips가 동일 ID의 샘플을 오버라이드, 삭제된 ID 제외) */
-function getDemoTrips(): Trip[] {
-  const demoIds = new Set(demoExtraTrips.map((t) => t.id));
-  return [
-    ...demoExtraTrips.filter((t) => !demoDeletedIds.has(t.id)),
-    ...sampleTrips.filter((t) => !demoIds.has(t.id) && !demoDeletedIds.has(t.id)),
-  ];
-}
-
-export function deleteDemoTrip(id: string) {
-  demoExtraTrips = demoExtraTrips.filter((t) => t.id !== id);
-  localStorage.setItem(DEMO_TRIPS_KEY, JSON.stringify(demoExtraTrips));
-  // 샘플 여행 삭제도 추적
-  demoDeletedIds.add(id);
-  localStorage.setItem(DEMO_DELETED_KEY, JSON.stringify([...demoDeletedIds]));
-}
-
-export function updateDemoTrip(id: string, updates: Partial<Trip>) {
-  // 데모 추가 여행에서 업데이트
-  const idx = demoExtraTrips.findIndex((t) => t.id === id);
-  if (idx !== -1) {
-    const next = demoExtraTrips.map((t) =>
-      t.id === id ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t,
-    );
-    // localStorage에 먼저 저장 시도 (QuotaExceededError 방지)
-    localStorage.setItem(DEMO_TRIPS_KEY, JSON.stringify(next));
-    demoExtraTrips = next;
-    return;
-  }
-  // 샘플 여행이면 demoExtraTrips에 복사본을 추가하여 오버라이드
-  const sample = sampleTrips.find((t) => t.id === id);
-  if (sample) {
-    const updated = { ...sample, ...updates, updatedAt: new Date().toISOString() };
-    const next = [updated, ...demoExtraTrips];
-    localStorage.setItem(DEMO_TRIPS_KEY, JSON.stringify(next));
-    demoExtraTrips = next;
-  }
-}
+// 기존 API 호환을 위한 re-export (localStore.ts 에서 관리)
+export { addLocalTrip as addDemoTrip, updateLocalTrip as updateDemoTrip, deleteLocalTrip as deleteDemoTrip } from '../lib/localStore';
 
 /**
  * DB 행(snake_case) → UI Trip 타입(camelCase) 매핑.
@@ -191,7 +123,7 @@ export function useTrips() {
   const fetchTrips = useCallback(async () => {
     // Supabase 미설정 → 데모 모드 (로컬 추가 여행 포함)
     if (!isSupabaseConfigured) {
-      setTrips(getDemoTrips());
+      setTrips(getMergedDemoTrips());
       setLoading(false);
       return;
     }
@@ -206,7 +138,7 @@ export function useTrips() {
       const userEmail = session?.user?.email;
       if (!userId) {
         // 미로그인 → 데모 데이터로 fallback
-        setTrips(getDemoTrips());
+        setTrips(getMergedDemoTrips());
         setLoading(false);
         return;
       }
@@ -290,14 +222,14 @@ export function useTrips() {
         );
       }
 
-      // Supabase 성공 시에도 로컬 데모 여행 포함 (Supabase INSERT 실패 시 fallback으로 저장된 여행)
-      // sampleTrips는 제외하고 사용자가 직접 추가한 demoExtraTrips만 병합
+      // Supabase 성공 시에도 로컬 여행 포함 (Supabase INSERT 실패 시 fallback으로 저장된 여행)
+      // sampleTrips는 제외하고 사용자가 직접 추가한 로컬 여행만 병합
       const dbIds = new Set(mapped.map((t) => t.id));
-      const extraLocal = demoExtraTrips.filter((t) => !dbIds.has(t.id) && !demoDeletedIds.has(t.id));
+      const extraLocal = getLocalTrips().filter((t) => !dbIds.has(t.id) && !getDeletedTripIds().has(t.id));
       setTrips([...mapped, ...extraLocal]);
     } catch (err) {
       // Supabase 실패 시 데모 데이터로 fallback
-      setTrips(getDemoTrips());
+      setTrips(getMergedDemoTrips());
       const msg = err instanceof Error ? err.message : '데이터를 불러올 수 없습니다';
       setError(`서버 연결 실패: ${msg}`);
       console.error('[useTrips] Supabase fetch failed:', err);
@@ -512,7 +444,7 @@ export function useTrip(id: string | undefined) {
 
     // 데모 모드 (로컬 추가 여행 포함)
     if (!isSupabaseConfigured) {
-      setTrip(getDemoTrips().find((t) => t.id === id) ?? null);
+      setTrip(getMergedDemoTrips().find((t) => t.id === id) ?? null);
       setIsDemo(true);
       setLoading(false);
       return;
@@ -528,7 +460,7 @@ export function useTrip(id: string | undefined) {
       const userEmail = session?.user?.email;
       if (!userId) {
         // 미로그인 → 데모 데이터에서 찾기
-        setTrip(getDemoTrips().find((t) => t.id === id) ?? null);
+        setTrip(getMergedDemoTrips().find((t) => t.id === id) ?? null);
         setIsDemo(true);
         setLoading(false);
         return;
@@ -613,7 +545,7 @@ export function useTrip(id: string | undefined) {
       setIsDemo(false);
     } catch (err) {
       // Supabase 조회 실패 시 데모 데이터에서 fallback 시도
-      const demoFallback = getDemoTrips().find((t) => t.id === id) ?? null;
+      const demoFallback = getMergedDemoTrips().find((t) => t.id === id) ?? null;
       if (demoFallback) {
         setTrip(demoFallback);
         setIsDemo(true);

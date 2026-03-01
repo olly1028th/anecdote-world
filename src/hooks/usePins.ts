@@ -1,128 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { getLocalPins } from '../lib/localStore';
+import { samplePins } from '../utils/sampleData';
 import type { Pin } from '../types/database';
 
-/** 데모 모드용 사용자 추가 핀 – localStorage 로 영구 보관 */
-const DEMO_PINS_KEY = 'anecdote-demo-pins';
-
-function loadDemoPins(): Pin[] {
-  try {
-    const raw = localStorage.getItem(DEMO_PINS_KEY);
-    return raw ? (JSON.parse(raw) as Pin[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-let demoExtraPins: Pin[] = loadDemoPins();
-
-export function addDemoPin(pin: Pin) {
-  demoExtraPins = [pin, ...demoExtraPins];
-  localStorage.setItem(DEMO_PINS_KEY, JSON.stringify(demoExtraPins));
-}
-
-const samplePins: Pin[] = [
-  {
-    id: 'pin-1',
-    user_id: 'demo-user-001',
-    trip_id: '1',
-    name: '도쿄',
-    address: 'Tokyo, Japan',
-    lat: 35.6762,
-    lng: 139.6503,
-    country: '일본',
-    city: '도쿄',
-    visit_status: 'visited',
-    visited_at: '2025-03-15',
-    category: 'landmark',
-    rating: 5,
-    note: '벚꽃 시즌 도쿄 여행',
-    day_number: null,
-    sort_order: 0,
-    created_at: '2025-03-25T00:00:00Z',
-    updated_at: '2025-03-25T00:00:00Z',
-  },
-  {
-    id: 'pin-2',
-    user_id: 'demo-user-001',
-    trip_id: '2',
-    name: '방콕',
-    address: 'Bangkok, Thailand',
-    lat: 13.7563,
-    lng: 100.5018,
-    country: '태국',
-    city: '방콕',
-    visit_status: 'visited',
-    visited_at: '2025-01-10',
-    category: 'landmark',
-    rating: 5,
-    note: '방콕 먹방 여행',
-    day_number: null,
-    sort_order: 0,
-    created_at: '2025-01-20T00:00:00Z',
-    updated_at: '2025-01-20T00:00:00Z',
-  },
-  {
-    id: 'pin-3',
-    user_id: 'demo-user-001',
-    trip_id: '3',
-    name: '로마',
-    address: 'Roma, Italy',
-    lat: 41.9028,
-    lng: 12.4964,
-    country: '이탈리아',
-    city: '로마',
-    visit_status: 'planned',
-    visited_at: null,
-    category: 'landmark',
-    rating: null,
-    note: '유럽 여행 첫 번째 도시',
-    day_number: null,
-    sort_order: 0,
-    created_at: '2025-12-01T00:00:00Z',
-    updated_at: '2025-12-01T00:00:00Z',
-  },
-  {
-    id: 'pin-4',
-    user_id: 'demo-user-001',
-    trip_id: null,
-    name: '산토리니',
-    address: 'Oia, Santorini, Greece',
-    lat: 36.4618,
-    lng: 25.3753,
-    country: '그리스',
-    city: '산토리니',
-    visit_status: 'wishlist',
-    visited_at: null,
-    category: 'landmark',
-    rating: null,
-    note: '석양이 세계에서 가장 아름다운 곳',
-    day_number: null,
-    sort_order: 0,
-    created_at: '2026-01-01T00:00:00Z',
-    updated_at: '2026-01-01T00:00:00Z',
-  },
-  {
-    id: 'pin-5',
-    user_id: 'demo-user-001',
-    trip_id: '4',
-    name: '제주도',
-    address: '제주특별자치도',
-    lat: 33.4890,
-    lng: 126.4983,
-    country: '한국',
-    city: '제주',
-    visit_status: 'planned',
-    visited_at: null,
-    category: 'nature',
-    rating: null,
-    note: '제주도 힐링 여행',
-    day_number: null,
-    sort_order: 0,
-    created_at: '2026-01-15T00:00:00Z',
-    updated_at: '2026-01-15T00:00:00Z',
-  },
-];
+// 기존 API 호환을 위한 re-export (localStore.ts 에서 관리)
+export { addLocalPin as addDemoPin } from '../lib/localStore';
 
 export function usePins() {
   const [pins, setPins] = useState<Pin[]>([]);
@@ -131,7 +14,7 @@ export function usePins() {
 
   const fetchPins = useCallback(async () => {
     if (!isSupabaseConfigured) {
-      setPins([...demoExtraPins, ...samplePins]);
+      setPins([...getLocalPins(), ...samplePins]);
       setLoading(false);
       return;
     }
@@ -146,7 +29,7 @@ export function usePins() {
       const userEmail = session?.user?.email;
       if (!userId) {
         // 미로그인 → 데모 데이터로 fallback
-        setPins([...demoExtraPins, ...samplePins]);
+        setPins([...getLocalPins(), ...samplePins]);
         setLoading(false);
         return;
       }
@@ -186,13 +69,13 @@ export function usePins() {
       const dbPins = [...myPins, ...extraShared];
 
       // Supabase 성공 시에도 로컬 데모 핀 포함 (Supabase INSERT 실패 시 fallback으로 저장된 핀)
-      // samplePins는 제외하고 사용자가 직접 추가한 demoExtraPins만 병합
+      // samplePins는 제외하고 사용자가 직접 추가한 로컬 핀만 병합
       const dbIds = new Set(dbPins.map((p) => p.id));
-      const extraLocal = demoExtraPins.filter((p) => !dbIds.has(p.id));
+      const extraLocal = getLocalPins().filter((p) => !dbIds.has(p.id));
       setPins([...dbPins, ...extraLocal]);
     } catch (err) {
       // Supabase 실패 시 데모 데이터로 fallback
-      setPins([...demoExtraPins, ...samplePins]);
+      setPins([...getLocalPins(), ...samplePins]);
       const msg = err instanceof Error ? err.message : '핀 데이터를 불러올 수 없습니다';
       setError(`서버 연결 실패: ${msg}`);
       console.error('[usePins] Supabase fetch failed:', err);
