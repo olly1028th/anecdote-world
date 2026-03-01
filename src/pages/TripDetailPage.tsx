@@ -1063,12 +1063,7 @@ export default function TripDetailPage() {
             <SaveCancelButtons onSave={saveChecklistInline} onCancel={() => setEditingChecklist(false)} saving={saving} />
           </div>
         ) : trip.checklist.length > 0 ? (
-          <div className="relative">
-            <div className="absolute top-5 right-5 z-10">
-              <EditButton onClick={startEditChecklist} />
-            </div>
-            <Checklist items={trip.checklist} onToggle={handleChecklistToggle} />
-          </div>
+          <Checklist items={trip.checklist} onToggle={handleChecklistToggle} action={<EditButton onClick={startEditChecklist} />} />
         ) : (
           <div
             onClick={startEditChecklist}

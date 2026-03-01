@@ -1,20 +1,25 @@
+import type { ReactNode } from 'react';
 import type { ChecklistItem } from '../types/trip';
 
 interface Props {
   items: ChecklistItem[];
   onToggle?: (index: number) => void;
+  action?: ReactNode;
 }
 
-export default function Checklist({ items, onToggle }: Props) {
+export default function Checklist({ items, onToggle, action }: Props) {
   const done = items.filter((i) => i.checked).length;
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-slate-900 retro-shadow">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">Checklist</h3>
-        <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border-2 border-[#0d9488] bg-[#0d9488]/10 text-[#0d9488]">
-          {done}/{items.length}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border-2 border-[#0d9488] bg-[#0d9488]/10 text-[#0d9488]">
+            {done}/{items.length}
+          </span>
+          {action}
+        </div>
       </div>
       <div className="space-y-2">
         {items.map((item, i) => (
