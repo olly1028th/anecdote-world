@@ -972,7 +972,7 @@ export default function TripDetailPage() {
             <div className="absolute top-5 right-5 z-10">
               <EditButton onClick={startEditPlaces} />
             </div>
-            <PlaceList places={trip.places} startDate={trip.startDate} isCompleted={isCompleted} />
+            <PlaceList places={trip.places} startDate={trip.startDate} />
           </div>
         ) : (
           <div
