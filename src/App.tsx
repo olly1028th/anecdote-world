@@ -12,6 +12,7 @@ const TripFormPage = lazy(() => import('./pages/TripFormPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const PinFormPage = lazy(() => import('./pages/PinFormPage'));
+const TimelinePage = lazy(() => import('./pages/TimelinePage'));
 
 function ProtectedLayout() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -68,6 +69,7 @@ export default function App() {
           <Route path="/trip/new" element={<Suspense fallback={<Loading />}><TripFormPage /></Suspense>} />
           <Route path="/trip/edit/:id" element={<Suspense fallback={<Loading />}><TripFormPage /></Suspense>} />
           <Route path="/trip/:id" element={<Suspense fallback={<Loading />}><TripDetailPage /></Suspense>} />
+          <Route path="/timeline" element={<Suspense fallback={<Loading />}><TimelinePage /></Suspense>} />
           <Route
             path="/pin/new"
             element={<Suspense fallback={<Loading />}><PinFormPage /></Suspense>}
