@@ -206,25 +206,51 @@ export async function createShare(
     // 미가입 유저 — invited_user_id = null로 진행 (이메일 기반 초대)
   }
 
-  // 중복 체크
-  const { data: existing } = await supabase
-    .from('trip_shares')
-    .select('id')
-    .eq('trip_id', tripId)
-    .eq('invited_email', invitedEmail)
-    .neq('status', 'declined')
-    .maybeSingle();
-  if (existing) throw new Error('이미 초대된 이메일입니다.');
+  try {
+    // 중복 체크
+    const { data: existing } = await supabase
+      .from('trip_shares')
+      .select('id')
+      .eq('trip_id', tripId)
+      .eq('invited_email', invitedEmail)
+      .neq('status', 'declined')
+      .maybeSingle();
+    if (existing) throw new Error('이미 초대된 이메일입니다.');
 
-  const { error } = await supabase.from('trip_shares').insert({
-    trip_id: tripId,
-    owner_id: ownerId,
-    invited_email: invitedEmail,
-    invited_user_id: invitedUserId,
-    permission,
-  });
-  if (error) throw new Error(error.message);
-  window.dispatchEvent(new CustomEvent('share-updated'));
+    const { error } = await supabase.from('trip_shares').insert({
+      trip_id: tripId,
+      owner_id: ownerId,
+      invited_email: invitedEmail,
+      invited_user_id: invitedUserId,
+      permission,
+    });
+    if (error) throw new Error(error.message);
+    window.dispatchEvent(new CustomEvent('share-updated'));
+  } catch (err) {
+    // trip_shares 테이블 미존재 등 Supabase 실패 시 로컬 fallback
+    if (err instanceof Error && err.message === '이미 초대된 이메일입니다.') throw err;
+    console.error('[createShare] Supabase 실패, 로컬 fallback:', err);
+    const all = loadDemoShares();
+    const exists = all.find(
+      (s) => s.trip_id === tripId && s.invited_email === invitedEmail && s.status !== 'declined',
+    );
+    if (exists) throw new Error('이미 초대된 이메일입니다.');
+    const share: DemoShare = {
+      id: `share-${Date.now()}`,
+      trip_id: tripId,
+      owner_id: ownerId,
+      invited_email: invitedEmail,
+      invited_user_id: invitedUserId,
+      permission,
+      status: 'pending',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      trip_title: tripTitle,
+      owner_nickname: '여행자',
+    };
+    saveDemoShares([share, ...all]);
+    window.dispatchEvent(new CustomEvent('share-updated'));
+  }
 }
 
 // ---- 초대 수락 ----
@@ -246,12 +272,23 @@ export async function acceptShare(shareId: string, userId?: string): Promise<voi
   // 초대받은 본인만 수락 가능
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('인증이 필요합니다');
-  const { error } = await supabase
-    .from('trip_shares')
-    .update({ status: 'accepted', invited_user_id: userId ?? user.id })
-    .eq('id', shareId)
-    .eq('invited_email', user.email ?? '');
-  if (error) throw new Error(error.message);
+  try {
+    const { error } = await supabase
+      .from('trip_shares')
+      .update({ status: 'accepted', invited_user_id: userId ?? user.id })
+      .eq('id', shareId)
+      .eq('invited_email', user.email ?? '');
+    if (error) throw new Error(error.message);
+  } catch (err) {
+    console.error('[acceptShare] Supabase 실패, 로컬 fallback:', err);
+    const all = loadDemoShares();
+    const updated = all.map((s) =>
+      s.id === shareId
+        ? { ...s, status: 'accepted' as ShareStatus, invited_user_id: userId ?? user.id, updated_at: new Date().toISOString() }
+        : s,
+    );
+    saveDemoShares(updated);
+  }
   window.dispatchEvent(new CustomEvent('share-updated'));
   window.dispatchEvent(new CustomEvent('trip-added'));
 }
@@ -274,12 +311,23 @@ export async function declineShare(shareId: string): Promise<void> {
   // 초대받은 본인만 거절 가능
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('인증이 필요합니다');
-  const { error } = await supabase
-    .from('trip_shares')
-    .update({ status: 'declined' })
-    .eq('id', shareId)
-    .eq('invited_email', user.email ?? '');
-  if (error) throw new Error(error.message);
+  try {
+    const { error } = await supabase
+      .from('trip_shares')
+      .update({ status: 'declined' })
+      .eq('id', shareId)
+      .eq('invited_email', user.email ?? '');
+    if (error) throw new Error(error.message);
+  } catch (err) {
+    console.error('[declineShare] Supabase 실패, 로컬 fallback:', err);
+    const all = loadDemoShares();
+    const updated = all.map((s) =>
+      s.id === shareId
+        ? { ...s, status: 'declined' as ShareStatus, updated_at: new Date().toISOString() }
+        : s,
+    );
+    saveDemoShares(updated);
+  }
   window.dispatchEvent(new CustomEvent('share-updated'));
 }
 
@@ -297,8 +345,14 @@ export async function removeShare(shareId: string): Promise<void> {
   // 소유자만 삭제 가능
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('인증이 필요합니다');
-  const { error } = await supabase.from('trip_shares').delete().eq('id', shareId).eq('owner_id', user.id);
-  if (error) throw new Error(error.message);
+  try {
+    const { error } = await supabase.from('trip_shares').delete().eq('id', shareId).eq('owner_id', user.id);
+    if (error) throw new Error(error.message);
+  } catch (err) {
+    console.error('[removeShare] Supabase 실패, 로컬 fallback:', err);
+    const all = loadDemoShares();
+    saveDemoShares(all.filter((s) => s.id !== shareId));
+  }
   window.dispatchEvent(new CustomEvent('share-updated'));
 }
 
@@ -319,12 +373,21 @@ export async function updateSharePermission(shareId: string, permission: SharePe
   // 소유자만 권한 변경 가능
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('인증이 필요합니다');
-  const { error } = await supabase
-    .from('trip_shares')
-    .update({ permission })
-    .eq('id', shareId)
-    .eq('owner_id', user.id);
-  if (error) throw new Error(error.message);
+  try {
+    const { error } = await supabase
+      .from('trip_shares')
+      .update({ permission })
+      .eq('id', shareId)
+      .eq('owner_id', user.id);
+    if (error) throw new Error(error.message);
+  } catch (err) {
+    console.error('[updateSharePermission] Supabase 실패, 로컬 fallback:', err);
+    const all = loadDemoShares();
+    const updated = all.map((s) =>
+      s.id === shareId ? { ...s, permission, updated_at: new Date().toISOString() } : s,
+    );
+    saveDemoShares(updated);
+  }
   window.dispatchEvent(new CustomEvent('share-updated'));
 }
 
@@ -381,32 +444,69 @@ export async function shareAllTrips(
     if (userId) invitedUserId = userId;
   } catch { /* 미가입 유저 */ }
 
-  // 이미 공유된 여행 확인
-  const { data: existingShares } = await supabase
-    .from('trip_shares')
-    .select('trip_id')
-    .eq('owner_id', ownerId)
-    .eq('invited_email', invitedEmail)
-    .neq('status', 'declined');
+  try {
+    // 이미 공유된 여행 확인
+    const { data: existingShares } = await supabase
+      .from('trip_shares')
+      .select('trip_id')
+      .eq('owner_id', ownerId)
+      .eq('invited_email', invitedEmail)
+      .neq('status', 'declined');
 
-  const existingTripIds = new Set((existingShares ?? []).map((s: { trip_id: string }) => s.trip_id));
-  const newTripIds = tripIds.filter((id) => !existingTripIds.has(id));
+    const existingTripIds = new Set((existingShares ?? []).map((s: { trip_id: string }) => s.trip_id));
+    const newTripIds = tripIds.filter((id) => !existingTripIds.has(id));
 
-  if (newTripIds.length > 0) {
-    const { error } = await supabase.from('trip_shares').insert(
-      newTripIds.map((tripId) => ({
-        trip_id: tripId,
-        owner_id: ownerId,
-        invited_email: invitedEmail,
-        invited_user_id: invitedUserId,
-        permission,
-      })),
-    );
-    if (error) throw new Error(error.message);
+    if (newTripIds.length > 0) {
+      const { error } = await supabase.from('trip_shares').insert(
+        newTripIds.map((tripId) => ({
+          trip_id: tripId,
+          owner_id: ownerId,
+          invited_email: invitedEmail,
+          invited_user_id: invitedUserId,
+          permission,
+        })),
+      );
+      if (error) throw new Error(error.message);
+    }
+
+    window.dispatchEvent(new CustomEvent('share-updated'));
+    return newTripIds.length;
+  } catch (err) {
+    // trip_shares 테이블 미존재 등 Supabase 실패 시 로컬 fallback
+    console.error('[shareAllTrips] Supabase 실패, 로컬 fallback:', err);
+    const all = loadDemoShares();
+    const now = new Date().toISOString();
+    const newShares: DemoShare[] = [];
+    let added = 0;
+
+    for (const tripId of tripIds) {
+      const exists = all.find(
+        (s) => s.trip_id === tripId && s.invited_email === invitedEmail && s.status !== 'declined',
+      );
+      if (!exists) {
+        newShares.push({
+          id: `share-${Date.now()}-${added}`,
+          trip_id: tripId,
+          owner_id: ownerId,
+          invited_email: invitedEmail,
+          invited_user_id: invitedUserId,
+          permission,
+          status: 'pending',
+          created_at: now,
+          updated_at: now,
+          trip_title: tripTitles?.get(tripId),
+          owner_nickname: '여행자',
+        });
+        added++;
+      }
+    }
+
+    if (added > 0) {
+      saveDemoShares([...newShares, ...all]);
+    }
+    window.dispatchEvent(new CustomEvent('share-updated'));
+    return added;
   }
-
-  window.dispatchEvent(new CustomEvent('share-updated'));
-  return newTripIds.length;
 }
 
 // ---- 전체 공유 취소 ----
@@ -419,12 +519,18 @@ export async function revokeAllShares(ownerId: string, invitedEmail: string): Pr
     return;
   }
 
-  const { error } = await supabase
-    .from('trip_shares')
-    .delete()
-    .eq('owner_id', ownerId)
-    .eq('invited_email', invitedEmail);
-  if (error) throw new Error(error.message);
+  try {
+    const { error } = await supabase
+      .from('trip_shares')
+      .delete()
+      .eq('owner_id', ownerId)
+      .eq('invited_email', invitedEmail);
+    if (error) throw new Error(error.message);
+  } catch (err) {
+    console.error('[revokeAllShares] Supabase 실패, 로컬 fallback:', err);
+    const all = loadDemoShares();
+    saveDemoShares(all.filter((s) => !(s.owner_id === ownerId && s.invited_email === invitedEmail)));
+  }
   window.dispatchEvent(new CustomEvent('share-updated'));
 }
 
