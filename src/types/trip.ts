@@ -23,6 +23,8 @@ export interface Place {
   note: string;
   day?: number;
   time?: string;
+  lat?: number;
+  lng?: number;
 }
 
 export interface ChecklistItem {

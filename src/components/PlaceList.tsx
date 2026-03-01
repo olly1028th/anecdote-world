@@ -1,4 +1,9 @@
+import { lazy, Suspense } from 'react';
 import type { Place } from '../types/trip';
+
+const DayRouteMap = lazy(() =>
+  import('./Map').then((m) => ({ default: m.DayRouteMap })),
+);
 
 interface Props {
   places: Place[];
@@ -19,14 +24,27 @@ function formatDayDate(startDate: string, day: number): string {
   return `${d.getMonth() + 1}.${d.getDate()} (${weekdays[d.getDay()]})`;
 }
 
-function PlaceCard({ place, isCompleted }: { place: Place; isCompleted?: boolean }) {
+function PlaceCard({ place, index, isCompleted }: { place: Place; index?: number; isCompleted?: boolean }) {
   const config = priorityConfig[place.priority];
+  const hasLocation = place.lat != null && place.lng != null;
   return (
     <div className="flex items-start gap-2.5 p-3 bg-[#F9F4E8] dark:bg-slate-700 rounded-xl border-2 border-slate-200 dark:border-slate-600">
-      <span className="w-2 h-2 rounded-full bg-[#f48c25] mt-1.5 shrink-0" />
+      {index != null ? (
+        <div className="w-5 h-5 rounded-full bg-[#f48c25] flex items-center justify-center shrink-0 mt-0.5">
+          <span className="text-white text-[9px] font-bold">{index}</span>
+        </div>
+      ) : (
+        <span className="w-2 h-2 rounded-full bg-[#f48c25] mt-1.5 shrink-0" />
+      )}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-bold text-sm text-slate-900 dark:text-slate-100">{place.name}</span>
+          {hasLocation && (
+            <svg className="w-3 h-3 text-[#0d9488]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          )}
           {!isCompleted && (
             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border-2 ${config.border} ${config.bg}`}>
               {config.label}
@@ -42,6 +60,11 @@ function PlaceCard({ place, isCompleted }: { place: Place; isCompleted?: boolean
       </div>
     </div>
   );
+}
+
+/** 해당 day의 장소 중 좌표가 있는 장소가 있는지 확인 */
+function hasGeoPlaces(places: Place[]) {
+  return places.some((p) => p.lat != null && p.lng != null);
 }
 
 export default function PlaceList({ places, startDate, isCompleted }: Props) {
@@ -80,6 +103,7 @@ export default function PlaceList({ places, startDate, isCompleted }: Props) {
       <div className="space-y-5">
         {sortedDays.map((day) => {
           const dayPlaces = dayMap.get(day) ?? [];
+          const showRoute = hasGeoPlaces(dayPlaces);
           return (
             <div key={day}>
               <div className="flex items-center gap-2 mb-2.5">
@@ -97,8 +121,18 @@ export default function PlaceList({ places, startDate, isCompleted }: Props) {
               </div>
               <div className="space-y-2 ml-3 pl-3 border-l-2 border-[#f48c25]/30">
                 {dayPlaces.map((place, i) => (
-                  <PlaceCard key={i} place={place} isCompleted={isCompleted} />
+                  <PlaceCard key={i} place={place} index={showRoute ? i + 1 : undefined} isCompleted={isCompleted} />
                 ))}
+                {/* day별 이동 동선 지도 */}
+                {showRoute && (
+                  <Suspense fallback={
+                    <div className="mt-2 h-[180px] rounded-lg border-2 border-slate-300 flex items-center justify-center bg-slate-50">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest animate-pulse">Loading map...</span>
+                    </div>
+                  }>
+                    <DayRouteMap places={dayPlaces} dayLabel={`Day ${day}`} />
+                  </Suspense>
+                )}
               </div>
             </div>
           );

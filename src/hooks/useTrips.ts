@@ -70,12 +70,15 @@ function mapDbTripToUi(
     const priority = (['must', 'want', 'maybe'].includes(storedPriority)
       ? storedPriority
       : p.visit_status === 'planned' ? 'want' : 'maybe') as PlacePriority;
+    const hasCoords = p.lat !== 0 || p.lng !== 0;
     return {
       name: p.name,
       priority,
       note: timeMatch ? timeMatch[2] : (p.note || ''),
       day: p.day_number ?? undefined,
       time: timeMatch ? timeMatch[1] : undefined,
+      lat: hasCoords ? p.lat : undefined,
+      lng: hasCoords ? p.lng : undefined,
     };
   });
 
@@ -391,16 +394,18 @@ export async function savePlaces(
     .in('visit_status', ['planned', 'wishlist']);
   if (delErr) throw new Error(delErr.message);
 
-  // 새 핀 삽입 (기존 좌표가 있으면 재사용)
+  // 새 핀 삽입 (Place에 좌표가 있으면 우선 사용, 없으면 기존 핀에서 재사용)
   if (places.length > 0) {
     const pins = places.map((p, i) => {
       const existing = coordMap.get(p.name);
+      const lat = p.lat ?? existing?.lat ?? 0;
+      const lng = p.lng ?? existing?.lng ?? 0;
       return {
         trip_id: tripId,
         user_id: userId,
         name: p.name,
-        lat: existing?.lat ?? 0,
-        lng: existing?.lng ?? 0,
+        lat,
+        lng,
         country: existing?.country ?? '',
         city: existing?.city ?? '',
         address: p.priority, // 우선순위를 address 필드에 저장 (round-trip 보존)
