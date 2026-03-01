@@ -274,6 +274,7 @@ export async function createTrip(input: TripInput): Promise<string> {
     const { data: { user } } = await supabase.auth.getUser();
     userId = user?.id;
   }
+  if (!userId) throw new Error('인증이 필요합니다');
   const { data, error } = await supabase
     .from('trips')
     .insert({ ...input, user_id: userId })
@@ -306,6 +307,7 @@ export async function saveExpenses(
 ): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   const userId = user?.id;
+  if (!userId) throw new Error('인증이 필요합니다');
 
   // 기존 경비 삭제 (소유자 여행만)
   const { error: delErr } = await supabase
@@ -338,6 +340,7 @@ export async function saveChecklistItems(
 ): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   const userId = user?.id;
+  if (!userId) throw new Error('인증이 필요합니다');
 
   // 기존 항목 삭제 (소유자 데이터만)
   const { error: delErr } = await supabase
@@ -370,6 +373,7 @@ export async function savePlaces(
 ): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   const userId = user?.id;
+  if (!userId) throw new Error('인증이 필요합니다');
 
   // 기존 planned/wishlist 핀 좌표 보존 (삭제 전에 조회)
   const { data: existingPins } = await supabase

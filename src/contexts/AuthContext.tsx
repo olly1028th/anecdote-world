@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback } from 'rea
 import type { ReactNode } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { syncLocalDataToSupabase } from '../lib/syncLocal';
 import type { Profile } from '../types/database';
 
 // ---- 타입 ----
@@ -68,7 +69,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       setUser(s?.user ?? null);
-      if (s?.user) fetchProfile(s.user.id);
+      if (s?.user) {
+        fetchProfile(s.user.id);
+        // 로컬 전용 데이터를 Supabase에 비동기 동기화
+        syncLocalDataToSupabase().catch(() => {});
+      }
       setLoading(false);
     });
 
@@ -80,6 +85,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(s?.user ?? null);
       if (s?.user) {
         fetchProfile(s.user.id);
+        // 로그인 시 로컬 전용 데이터 동기화
+        syncLocalDataToSupabase().catch(() => {});
       } else {
         setProfile(null);
       }

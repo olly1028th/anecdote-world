@@ -103,6 +103,12 @@ export function deleteLocalTrip(id: string) {
   localStorage.setItem(LOCAL_DELETED_KEY, JSON.stringify([...deletedTripIds]));
 }
 
+/** 로컬 여행 제거 (동기화 성공 후 정리용, 삭제 기록에 추가하지 않음) */
+export function removeLocalTrip(id: string) {
+  localTrips = localTrips.filter((t) => t.id !== id);
+  localStorage.setItem(LOCAL_TRIPS_KEY, JSON.stringify(localTrips));
+}
+
 // ============================================================
 // 핀 (Pin) 로컬 저장소
 // ============================================================
@@ -127,5 +133,11 @@ export function getLocalPins(): Pin[] {
 /** 핀 로컬 추가 */
 export function addLocalPin(pin: Pin) {
   localPins = [pin, ...localPins];
+  localStorage.setItem(LOCAL_PINS_KEY, JSON.stringify(localPins));
+}
+
+/** 로컬 핀 제거 (동기화 성공 후 정리용) */
+export function removeLocalPin(id: string) {
+  localPins = localPins.filter((p) => p.id !== id);
   localStorage.setItem(LOCAL_PINS_KEY, JSON.stringify(localPins));
 }

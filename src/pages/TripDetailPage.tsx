@@ -272,7 +272,12 @@ export default function TripDetailPage() {
       if (isDemo) {
         updateDemoTrip(id, { expenses: valid });
       } else {
-        await saveExpenses(id, valid);
+        try {
+          await saveExpenses(id, valid);
+        } catch (err) {
+          console.error('[saveExpenses] Supabase 실패, 로컬 저장 fallback:', err);
+          updateDemoTrip(id, { expenses: valid });
+        }
       }
       setEditingExpenses(false);
       refetch();
@@ -303,7 +308,12 @@ export default function TripDetailPage() {
       if (isDemo) {
         updateDemoTrip(id, { checklist: valid });
       } else {
-        await saveChecklistItems(id, valid);
+        try {
+          await saveChecklistItems(id, valid);
+        } catch (err) {
+          console.error('[saveChecklist] Supabase 실패, 로컬 저장 fallback:', err);
+          updateDemoTrip(id, { checklist: valid });
+        }
       }
       setEditingChecklist(false);
       refetch();
@@ -372,7 +382,12 @@ export default function TripDetailPage() {
       if (isDemo) {
         updateDemoTrip(id, { places: valid });
       } else {
-        await savePlaces(id, valid);
+        try {
+          await savePlaces(id, valid);
+        } catch (err) {
+          console.error('[savePlaces] Supabase 실패, 로컬 저장 fallback:', err);
+          updateDemoTrip(id, { places: valid });
+        }
       }
       setEditingPlaces(false);
       refetch();
