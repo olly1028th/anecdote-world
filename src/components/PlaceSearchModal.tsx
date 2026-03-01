@@ -90,18 +90,54 @@ export default function PlaceSearchModal({ initialQuery, onSelect, onClose }: Pr
     if (!q.trim()) return;
     setSearching(true);
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&accept-language=ko`,
-      );
-      const data = await res.json();
-      const mapped: SearchResult[] = data.map((item: { display_name: string; lat: string; lon: string; name?: string }) => ({
-        name: item.name || item.display_name.split(',')[0],
-        displayName: item.display_name,
-        lat: parseFloat(item.lat),
-        lng: parseFloat(item.lon),
-      }));
-      setResults(mapped);
-      // 결과가 있으면 첫 번째 결과로 지도 이동
+      let mapped: SearchResult[] = [];
+
+      // 1차: Photon API (한국어/다국어 검색 우수)
+      try {
+        const photonRes = await fetch(
+          `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lang=ko&limit=5`,
+        );
+        const photonData = await photonRes.json();
+        if (photonData.features?.length > 0) {
+          mapped = photonData.features.map((f: { geometry: { coordinates: [number, number] }; properties: Record<string, string> }) => {
+            const p = f.properties;
+            const name = p.name || p.city || p.town || p.village || p.state || '';
+            const city = p.city || p.town || p.village || p.county || p.state || '';
+            const country = p.country || '';
+            const parts = [name, city !== name ? city : '', country].filter(Boolean);
+            return {
+              name: name || q,
+              displayName: parts.join(', '),
+              lat: f.geometry.coordinates[1],
+              lng: f.geometry.coordinates[0],
+            };
+          });
+        }
+      } catch { /* Photon 실패 시 Nominatim fallback */ }
+
+      // 2차: Nominatim fallback (Photon 결과 부족 시)
+      if (mapped.length < 3) {
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&accept-language=ko`,
+          );
+          const data = await res.json();
+          const nominatimResults: SearchResult[] = data.map((item: { display_name: string; lat: string; lon: string; name?: string }) => ({
+            name: item.name || item.display_name.split(',')[0],
+            displayName: item.display_name,
+            lat: parseFloat(item.lat),
+            lng: parseFloat(item.lon),
+          }));
+          // 중복 제거 (위도/경도 근접 여부)
+          for (const nr of nominatimResults) {
+            if (!mapped.some((m) => Math.abs(m.lat - nr.lat) < 0.01 && Math.abs(m.lng - nr.lng) < 0.01)) {
+              mapped.push(nr);
+            }
+          }
+        } catch { /* ignore */ }
+      }
+
+      setResults(mapped.slice(0, 8));
       if (mapped.length > 0) {
         setFlyTarget({ lat: mapped[0].lat, lng: mapped[0].lng, zoom: 14 });
       }
