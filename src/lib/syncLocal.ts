@@ -1,0 +1,184 @@
+/**
+ * 로컬 전용 데이터를 Supabase에 동기화
+ *
+ * Supabase INSERT 실패 시 localStorage에 fallback으로 저장된 여행/핀을
+ * 앱 시작 시점에 다시 Supabase로 업로드 시도.
+ * 성공 시 localStorage에서 제거하여 기기 간 데이터 일관성 보장.
+ */
+import { supabase, isSupabaseConfigured } from './supabase';
+import { getLocalTrips, getLocalPins, removeLocalTrip, removeLocalPin } from './localStore';
+
+const SYNC_LOCK_KEY = 'anecdote-sync-lock';
+
+export async function syncLocalDataToSupabase(): Promise<void> {
+  if (!isSupabaseConfigured) return;
+
+  // 동시 실행 방지
+  const lock = localStorage.getItem(SYNC_LOCK_KEY);
+  if (lock && Date.now() - Number(lock) < 30_000) return;
+  localStorage.setItem(SYNC_LOCK_KEY, String(Date.now()));
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const localTrips = getLocalTrips();
+    const localPins = getLocalPins();
+
+    if (localTrips.length === 0 && localPins.length === 0) return;
+
+    // 기존 DB 여행 ID 조회 (중복 방지)
+    const { data: existingTrips } = await supabase
+      .from('trips')
+      .select('id')
+      .eq('user_id', user.id);
+    const existingTripIds = new Set((existingTrips ?? []).map((t: { id: string }) => t.id));
+
+    // 기존 DB 핀 조회 (중복 방지: trip_id + name으로 매칭)
+    const { data: existingPins } = await supabase
+      .from('pins')
+      .select('id, trip_id, name')
+      .eq('user_id', user.id);
+    const existingPinKeys = new Set(
+      (existingPins ?? []).map((p: { trip_id: string | null; name: string }) => `${p.trip_id}::${p.name}`),
+    );
+
+    // 오래된 demo ID → 새 Supabase UUID 매핑
+    const tripIdMap = new Map<string, string>();
+
+    // 여행 동기화
+    for (const trip of localTrips) {
+      // 이미 Supabase에 존재하는 여행은 건너뜀
+      if (existingTripIds.has(trip.id)) {
+        removeLocalTrip(trip.id);
+        continue;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('trips')
+          .insert({
+            title: trip.title,
+            status: trip.status,
+            start_date: trip.startDate || null,
+            end_date: trip.endDate || null,
+            cover_image: trip.coverImage || null,
+            memo: trip.memo || null,
+            user_id: user.id,
+          })
+          .select('id')
+          .single();
+
+        if (error || !data) continue;
+
+        const newTripId = data.id;
+        tripIdMap.set(trip.id, newTripId);
+
+        // 여행 내 경비 동기화
+        if (trip.expenses && trip.expenses.length > 0) {
+          const validExpenses = trip.expenses.filter((e) => e.amount > 0);
+          if (validExpenses.length > 0) {
+            await supabase.from('expenses').insert(
+              validExpenses.map((e) => ({
+                trip_id: newTripId,
+                user_id: user.id,
+                category: e.category,
+                amount: e.amount,
+                label: e.label,
+              })),
+            );
+          }
+        }
+
+        // 여행 내 체크리스트 동기화
+        if (trip.checklist && trip.checklist.length > 0) {
+          const validItems = trip.checklist.filter((c) => c.text.trim());
+          if (validItems.length > 0) {
+            await supabase.from('checklist_items').insert(
+              validItems.map((c, i) => ({
+                trip_id: newTripId,
+                user_id: user.id,
+                text: c.text,
+                checked: c.checked,
+                sort_order: i,
+              })),
+            );
+          }
+        }
+
+        // 여행 내 장소(places) → 핀으로 동기화
+        if (trip.places && trip.places.length > 0) {
+          const validPlaces = trip.places.filter((p) => p.name.trim());
+          if (validPlaces.length > 0) {
+            await supabase.from('pins').insert(
+              validPlaces.map((p, i) => ({
+                trip_id: newTripId,
+                user_id: user.id,
+                name: p.name,
+                lat: p.lat ?? 0,
+                lng: p.lng ?? 0,
+                country: '',
+                city: '',
+                address: p.priority,
+                visit_status: p.priority === 'maybe' ? 'wishlist' as const : 'planned' as const,
+                day_number: p.day ?? null,
+                note: p.time ? `[${p.time}] ${p.note || ''}` : (p.note || ''),
+                sort_order: i,
+                category: 'other' as const,
+              })),
+            );
+          }
+        }
+
+        removeLocalTrip(trip.id);
+      } catch {
+        // 이 여행 동기화 실패 — 다음 시작 시 재시도
+      }
+    }
+
+    // 핀 동기화 (별도 저장된 핀: destination 핀 등)
+    for (const pin of localPins) {
+      const mappedTripId = pin.trip_id ? (tripIdMap.get(pin.trip_id) ?? pin.trip_id) : null;
+
+      // trip_id가 아직 demo- 접두사인 경우 (관련 여행 동기화 실패) → 건너뜀
+      if (mappedTripId && mappedTripId.startsWith('demo-')) continue;
+
+      // 중복 방지: 같은 trip_id + name 조합이 이미 DB에 존재
+      const key = `${mappedTripId}::${pin.name}`;
+      if (existingPinKeys.has(key)) {
+        removeLocalPin(pin.id);
+        continue;
+      }
+
+      try {
+        const { error } = await supabase
+          .from('pins')
+          .insert({
+            user_id: user.id,
+            trip_id: mappedTripId,
+            name: pin.name,
+            lat: pin.lat,
+            lng: pin.lng,
+            address: pin.address || '',
+            country: pin.country || '',
+            city: pin.city || '',
+            visit_status: pin.visit_status,
+            visited_at: pin.visited_at || null,
+            category: pin.category || 'other',
+            rating: pin.rating || null,
+            note: pin.note || '',
+            day_number: pin.day_number ?? null,
+            sort_order: pin.sort_order ?? 0,
+          });
+
+        if (!error) {
+          removeLocalPin(pin.id);
+        }
+      } catch {
+        // 이 핀 동기화 실패 — 다음 시작 시 재시도
+      }
+    }
+  } finally {
+    localStorage.removeItem(SYNC_LOCK_KEY);
+  }
+}

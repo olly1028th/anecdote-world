@@ -130,10 +130,31 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
                 category: 'landmark',
                 trip_id: tripId,
               });
-              window.dispatchEvent(new CustomEvent('pin-added'));
             } catch {
-              // 핀 생성 실패해도 여행은 저장됨
+              // 핀 Supabase 저장 실패 → localStorage에 fallback 저장
+              const now = new Date().toISOString();
+              addDemoPin({
+                id: `pin-demo-${Date.now()}`,
+                user_id: 'demo-user-001',
+                trip_id: tripId,
+                name: finalDest.name || finalDest.city || '여행지',
+                address: '',
+                lat: finalDest.lat,
+                lng: finalDest.lng,
+                country: finalDest.country,
+                city: finalDest.city,
+                visit_status: status === 'completed' ? 'visited' : status === 'wishlist' ? 'wishlist' : 'planned',
+                visited_at: status === 'completed' ? (startDate || null) : null,
+                category: 'landmark',
+                rating: null,
+                note: '',
+                day_number: null,
+                sort_order: 0,
+                created_at: now,
+                updated_at: now,
+              });
             }
+            window.dispatchEvent(new CustomEvent('pin-added'));
           }
         } catch {
           saveDemoTrip();
