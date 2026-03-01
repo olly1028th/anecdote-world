@@ -332,17 +332,22 @@ export default function TripDetailPage() {
   const startEditPlaces = () => {
     if (!trip) return;
     if (trip.places.length > 0) {
-      setDraftPlaces([...trip.places]);
+      // 기존 장소 중 day가 없는 것은 Day 1에 배치 (편집 모드에서 보이도록)
+      const places = trip.places.map((p) => ({
+        ...p,
+        day: p.day && p.day > 0 ? p.day : 1,
+      }));
+      setDraftPlaces(places);
     } else {
       // 첫 편집 시 Day 1에 빈 장소 하나 생성
       setDraftPlaces([{ name: '', priority: 'want', note: '', day: 1 }]);
     }
     setEditingPlaces(true);
   };
-  const addDraftPlace = (day: number) => setDraftPlaces([...draftPlaces, { name: '', priority: 'want', note: '', day, time: '' }]);
-  const removeDraftPlace = (i: number) => setDraftPlaces(draftPlaces.filter((_, idx) => idx !== i));
+  const addDraftPlace = (day: number) => setDraftPlaces((prev) => [...prev, { name: '', priority: 'want', note: '', day, time: '' }]);
+  const removeDraftPlace = (i: number) => setDraftPlaces((prev) => prev.filter((_, idx) => idx !== i));
   const updateDraftPlace = (i: number, field: keyof Place, value: string | number) => {
-    setDraftPlaces(draftPlaces.map((p, idx) => (idx === i ? { ...p, [field]: value } : p)));
+    setDraftPlaces((prev) => prev.map((p, idx) => (idx === i ? { ...p, [field]: value } : p)));
   };
   const [searchingPlaceIdx, setSearchingPlaceIdx] = useState<number | null>(null);
   const openPlaceSearch = (idx: number) => {
@@ -350,16 +355,17 @@ export default function TripDetailPage() {
   };
   const handlePlaceSearchSelect = (lat: number, lng: number) => {
     if (searchingPlaceIdx == null) return;
-    setDraftPlaces(draftPlaces.map((p, i) => i === searchingPlaceIdx ? { ...p, lat, lng } : p));
+    setDraftPlaces((prev) => prev.map((p, i) => i === searchingPlaceIdx ? { ...p, lat, lng } : p));
     setSearchingPlaceIdx(null);
     toast('장소 정보가 등록되었습니다');
   };
   const clearPlaceLocation = (idx: number) => {
-    setDraftPlaces(draftPlaces.map((p, i) => i === idx ? { ...p, lat: undefined, lng: undefined } : p));
+    setDraftPlaces((prev) => prev.map((p, i) => i === idx ? { ...p, lat: undefined, lng: undefined } : p));
   };
   const savePlacesInline = async () => {
     if (!trip || !id) return;
-    const valid = draftPlaces.filter((p) => p.name.trim());
+    // day가 유효한 장소만 저장 (미배정 장소 제거)
+    const valid = draftPlaces.filter((p) => p.name.trim() && p.day && p.day > 0);
     try {
       setSaving(true);
       if (isDemo) {
