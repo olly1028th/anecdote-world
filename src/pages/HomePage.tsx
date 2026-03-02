@@ -235,7 +235,7 @@ export default function HomePage() {
             activeStatsTab === 'completed' ? 'bg-[#eab308]/30 -translate-y-1' : 'bg-[#eab308]/10'
           }`}
         >
-          <span className="text-2xl font-bold text-[#eab308]">{visitedPinCount}</span>
+          <span className="text-2xl font-bold text-[#eab308]">{completedTrips.length}</span>
           <span className="text-[10px] uppercase font-bold text-slate-500 mt-1 leading-none">정복 완료</span>
         </button>
         <button
@@ -245,7 +245,7 @@ export default function HomePage() {
             activeStatsTab === 'planned' ? 'bg-[#0d9488]/30 -translate-y-1' : 'bg-[#0d9488]/10'
           }`}
         >
-          <span className="text-2xl font-bold text-[#0d9488]">{plannedPinCount}</span>
+          <span className="text-2xl font-bold text-[#0d9488]">{plannedTrips.length}</span>
           <span className="text-[10px] uppercase font-bold text-slate-500 mt-1 leading-none">정복 예정</span>
         </button>
         <button
@@ -255,7 +255,7 @@ export default function HomePage() {
             activeStatsTab === 'wishlist' ? 'bg-[#6366f1]/30 -translate-y-1' : 'bg-[#6366f1]/10'
           }`}
         >
-          <span className="text-2xl font-bold text-[#6366f1]">{wishlistPinCount}</span>
+          <span className="text-2xl font-bold text-[#6366f1]">{wishlistTrips.length}</span>
           <span className="text-[10px] uppercase font-bold text-slate-500 mt-1 leading-none">위시</span>
         </button>
         <button
@@ -426,10 +426,10 @@ export default function HomePage() {
           onFilterChange={setStatusFilter}
           activeFilter={statusFilter}
           tripCounts={{
-            all: mapPins.length,
-            completed: visitedPinCount,
-            planned: plannedPinCount,
-            wishlist: wishlistPinCount,
+            all: trips.length,
+            completed: completedTrips.length,
+            planned: plannedTrips.length,
+            wishlist: wishlistTrips.length,
           }}
         />
       )}
