@@ -9,6 +9,16 @@ import 'leaflet.markercluster';
 import type { Pin } from '../../types/database';
 import PinMarker from './PinMarker';
 
+/** HTML 특수문자를 이스케이프하여 XSS 방지 */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 interface Props {
   pins: Pin[];
   onPinClick?: (pin: Pin) => void;
@@ -21,14 +31,16 @@ const STATUS_COLORS: Record<string, string> = {
   wishlist: '#6366f1',
 };
 
-/** 핀들의 좌표로 지도 범위를 자동 조정 */
+/** 핀들의 좌표로 지도 범위를 자동 조정 (핀 변경 시에만) */
 function FitBounds({ pins }: { pins: Pin[] }) {
   const map = useMap();
 
-  if (pins.length > 0) {
-    const bounds: LatLngBoundsExpression = pins.map((p) => [p.lat, p.lng] as [number, number]);
-    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
-  }
+  useEffect(() => {
+    if (pins.length > 0) {
+      const bounds: LatLngBoundsExpression = pins.map((p) => [p.lat, p.lng] as [number, number]);
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
+    }
+  }, [map, pins]);
 
   return null;
 }
@@ -84,16 +96,22 @@ function ClusterLayer({ pins, onPinClick }: { pins: Pin[]; onPinClick?: (pin: Pi
       const catLabels: Record<string, string> = { food: '맛집', cafe: '카페', landmark: '명소', hotel: '숙소', nature: '자연', shopping: '쇼핑', activity: '활동', other: '기타' };
       const stars = pin.rating ? '★'.repeat(pin.rating) + '☆'.repeat(5 - pin.rating) : '';
 
+      const safeName = escapeHtml(pin.name);
+      const safeCity = escapeHtml(pin.city || '');
+      const safeCountry = escapeHtml(pin.country || '');
+      const safeNote = pin.note ? escapeHtml(pin.note) : '';
+      const safeCategory = escapeHtml(catLabels[pin.category] || pin.category);
+
       marker.bindPopup(`
         <div style="min-width:180px">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
             <span style="font-size:10px;padding:2px 6px;border-radius:9999px;color:white;background:${color}">${statusLabels[pin.visit_status] || ''}</span>
-            <span style="font-size:10px;color:#9ca3af">${catLabels[pin.category] || pin.category}</span>
+            <span style="font-size:10px;color:#9ca3af">${safeCategory}</span>
           </div>
-          <p style="font-weight:600;font-size:14px;margin:0">${pin.name}</p>
-          <p style="font-size:12px;color:#6b7280;margin:2px 0 0">${pin.city}${pin.country ? ', ' + pin.country : ''}</p>
+          <p style="font-weight:600;font-size:14px;margin:0">${safeName}</p>
+          <p style="font-size:12px;color:#6b7280;margin:2px 0 0">${safeCity}${safeCountry ? ', ' + safeCountry : ''}</p>
           ${stars ? `<p style="font-size:12px;color:#d97706;margin:4px 0 0">${stars}</p>` : ''}
-          ${pin.note ? `<p style="font-size:12px;color:#6b7280;margin:4px 0 0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${pin.note}</p>` : ''}
+          ${safeNote ? `<p style="font-size:12px;color:#6b7280;margin:4px 0 0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${safeNote}</p>` : ''}
         </div>
       `);
 

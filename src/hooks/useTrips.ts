@@ -475,21 +475,18 @@ export function useTrip(id: string | undefined) {
         return;
       }
 
-      const { data: dbTrip, error: tripErr } = await supabase
+      // 1차: 내 여행인지 확인 (user_id 필터 포함)
+      const { data: myTrip } = await supabase
         .from('trips')
         .select('*')
         .eq('id', id)
-        .single();
+        .eq('user_id', userId)
+        .maybeSingle();
 
-      if (tripErr) throw tripErr;
+      let dbTrip = myTrip;
+
+      // 2차: 내 여행이 아니면 공유받은 여행인지 확인
       if (!dbTrip) {
-        setTrip(null);
-        setIsDemo(false);
-        return;
-      }
-
-      // 접근 권한 검증: 내 여행이거나 공유받은 여행인지 확인
-      if ((dbTrip as DbTrip).user_id !== userId) {
         const { data: share } = await supabase
           .from('trip_shares')
           .select('id')
@@ -503,6 +500,20 @@ export function useTrip(id: string | undefined) {
           setError('접근 권한이 없습니다');
           return;
         }
+        // 공유 확인 후 여행 데이터 조회
+        const { data: sharedTrip, error: sharedErr } = await supabase
+          .from('trips')
+          .select('*')
+          .eq('id', id)
+          .single();
+        if (sharedErr) throw sharedErr;
+        dbTrip = sharedTrip;
+      }
+
+      if (!dbTrip) {
+        setTrip(null);
+        setIsDemo(false);
+        return;
       }
 
       const [expensesRes, checklistRes, pinsRes] = await Promise.all([
