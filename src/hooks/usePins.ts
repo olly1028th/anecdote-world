@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { getLocalPins } from '../lib/localStore';
+import { getLocalPins, getDeletedTripIds } from '../lib/localStore';
 import { samplePins } from '../utils/sampleData';
 import type { Pin } from '../types/database';
 
@@ -13,8 +13,12 @@ export function usePins() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchPins = useCallback(async () => {
+    // 삭제된 여행의 샘플 핀 제외 (여행 삭제 시 해당 핀도 지도에서 제거)
+    const deletedIds = getDeletedTripIds();
+    const activeSamplePins = samplePins.filter((p) => !p.trip_id || !deletedIds.has(p.trip_id));
+
     if (!isSupabaseConfigured) {
-      setPins([...getLocalPins(), ...samplePins]);
+      setPins([...getLocalPins(), ...activeSamplePins]);
       setLoading(false);
       return;
     }
@@ -29,7 +33,7 @@ export function usePins() {
       const userEmail = session?.user?.email;
       if (!userId) {
         // 미로그인 → 데모 데이터로 fallback
-        setPins([...getLocalPins(), ...samplePins]);
+        setPins([...getLocalPins(), ...activeSamplePins]);
         setLoading(false);
         return;
       }
@@ -75,7 +79,7 @@ export function usePins() {
       setPins([...dbPins, ...extraLocal]);
     } catch (err) {
       // Supabase 실패 시 데모 데이터로 fallback
-      setPins([...getLocalPins(), ...samplePins]);
+      setPins([...getLocalPins(), ...activeSamplePins]);
       const msg = err instanceof Error ? err.message : '핀 데이터를 불러올 수 없습니다';
       setError(`서버 연결 실패: ${msg}`);
       console.error('[usePins] Supabase fetch failed:', err);

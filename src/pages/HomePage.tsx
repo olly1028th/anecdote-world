@@ -426,10 +426,10 @@ export default function HomePage() {
           onFilterChange={setStatusFilter}
           activeFilter={statusFilter}
           tripCounts={{
-            all: trips.length,
-            completed: completedTrips.length,
-            planned: plannedTrips.length,
-            wishlist: wishlistTrips.length,
+            all: mapPins.length,
+            completed: visitedPinCount,
+            planned: plannedPinCount,
+            wishlist: wishlistPinCount,
           }}
         />
       )}
