@@ -23,7 +23,7 @@
 - **Favorite Moments** — 정복 완료된 여행만 카드로 표시
 - **국기 Fallback** — 커버 이미지 없는 여행에 해당 국가 국기를 자동 표시 (flagcdn.com)
 - **OAuth 인증** — Google · Kakao 소셜 로그인 (Supabase Auth)
-- **데모 모드** — Supabase 없이도 샘플 데이터로 전체 기능 체험, 추가한 데이터는 localStorage에 영구 보관 (Supabase 연동 시 데모 데이터와 완전 분리)
+- **데모 모드** — Supabase 없이도 전체 기능 체험 가능, 추가한 데이터는 localStorage에 영구 보관
 - **에러 바운더리** — 런타임 에러 시 흰 화면 대신 에러 메시지 표시
 
 ## Tech Stack
@@ -62,7 +62,8 @@ src/
 │   ├── ProtectedRoute.tsx   # 인증 라우트 가드
 │   └── Map/
 │       ├── WorldMap.tsx     # Leaflet 월드맵 (lazy loaded)
-│       └── PinMarker.tsx    # 상태별 색상 마커
+│       ├── PinMarker.tsx    # 상태별 색상 마커
+│       └── DayRouteMap.tsx  # Day별 이동동선 지도 (번호 마커 + Polyline)
 ├── pages/             # 페이지 컴포넌트
 │   ├── HomePage.tsx         # 메인: Stats → 세계지도 → 카드 피드 → Moments
 │   ├── LoginPage.tsx        # 소셜 로그인
@@ -87,10 +88,14 @@ src/
 ├── utils/
 │   ├── format.ts            # 날짜, 통화 포맷팅
 │   ├── countryFlag.ts       # 국가명 → 국기 이미지 URL 변환
-│   └── sampleData.ts        # 데모 모드 샘플 데이터
+│   └── sampleData.ts        # (비활성) 샘플 데이터 스텁
 ├── lib/
 │   ├── supabase.ts          # Supabase 클라이언트
-│   └── storage.ts           # Supabase Storage (사진 업로드/삭제, user_id 기반 경로)
+│   ├── storage.ts           # Supabase Storage (사진 업로드/삭제, user_id 기반 경로)
+│   ├── localStore.ts        # 사용자 로컬 데이터 CRUD (localStorage 영구 보관)
+│   ├── cloudinary.ts        # Cloudinary 이미지 URL 변환
+│   ├── syncLocal.ts         # 로컬 → Supabase 동기화
+│   └── email.ts             # 이메일 관련 유틸리티
 ├── App.tsx                  # 라우팅 (Layout Route 패턴)
 ├── main.tsx
 └── index.css
@@ -99,6 +104,9 @@ docs/
 ├── DATABASE.md              # DB 스키마 문서
 ├── schema.sql               # PostgreSQL DDL (테이블 + RLS 정책)
 ├── storage-policy.sql       # Supabase Storage RLS 정책
+├── TEAM-REVIEW-DASHBOARD.md # 5인 전문가 코드 리뷰 대시보드
+├── PHASE1-REPORT.md         # Phase 1 보안 + 크리티컬 버그 수정 리포트
+├── PHASE2-REPORT.md         # Phase 2 안정성 + UX 일관성 리포트
 ├── migrations/              # DB 마이그레이션 SQL
 │   ├── 001_add_favorite_and_share_rpc.sql
 │   └── 002_add_email_based_share_policies.sql
@@ -140,7 +148,7 @@ VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-> 환경 변수 없이도 **데모 모드**로 앱을 사용할 수 있습니다. 샘플 여행 데이터와 핀이 자동으로 표시되며, 추가한 데이터는 localStorage에 영구 보관됩니다.
+> 환경 변수 없이도 **데모 모드**로 앱을 사용할 수 있습니다. 추가한 데이터는 localStorage에 영구 보관됩니다.
 
 ### Development
 
@@ -171,6 +179,7 @@ npm run preview
 | Phase 10 | 위시리스트 상태 추가, 데모 모드 저장 버그 수정, 이미지 압축 | Done |
 | Phase 11 | Supabase Storage 사진 업로드, Storage RLS 정책, 권한 분리 강화 | Done |
 | Phase 12 | 버그 수정 (React #310, 사진 업로드, 공유 에러, 데이터 격리), 프로필 공유 섹션, 비고란 | Done |
+| **Review** | **5인 전문가 코드 리뷰 + Phase 1·2 수정 + 샘플 데이터 제거** | **Done** |
 
 ## Database Schema
 
@@ -191,12 +200,40 @@ Supabase (PostgreSQL) 테이블 구성:
 ## Security
 
 - **DB RLS (Row Level Security)**: 모든 테이블에 `auth.uid() = user_id` 정책 적용 — 다른 유저의 데이터 접근 차단
-- **데이터 격리**: Supabase 모드에서 localStorage 데모 데이터와 DB 데이터 완전 분리 — 계정 전환 시 타 유저 데이터 노출 방지
-- **공유 권한**: `trip_shares` 테이블을 통한 read/edit 권한 분리, 이메일 기반 + user_id 기반 이중 RLS 정책 (초대 수락 후에만 접근 가능)
+- **애플리케이션 레벨 검증**: 모든 SELECT/UPDATE/DELETE 쿼리에 `user_id` 필터 적용 — RLS 비활성 환경에서도 데이터 격리 보장 (코드 리뷰에서 강화)
+- **데이터 격리**: Supabase 모드에서 localStorage 데이터와 DB 데이터 완전 분리 — 계정 전환 시 타 유저 데이터 노출 방지
+- **공유 권한**: `trip_shares` 테이블을 통한 read/edit 권한 분리, `owner_id`/`invited_email` 검증 추가, 이메일 기반 + user_id 기반 이중 RLS 정책 (초대 수락 후에만 접근 가능)
+- **핀/사진 소유권**: 핀 수정·삭제, 핀 사진 CRUD에 `user_id` 검증 추가 — 타 사용자의 핀/사진 변경 차단
 - **Storage 격리**: 사진 경로가 `{user_id}/{trip_id}/{filename}` 구조 — 본인 폴더에만 업로드/삭제 가능
 - **OAuth 인증**: Google/Kakao 소셜 로그인으로 비밀번호 저장 없음
 
 ## Recent Changes
+
+### Code Review — 5인 전문가 코드 리뷰 & 개선
+
+> 5명의 전문가 에이전트(Backend, Frontend, QA, UI/UX, Service Planner)가 전체 소스코드를 동시 독립 분석한 후, 우선순위별로 개선 작업을 진행했습니다.
+> 상세 리포트: [TEAM-REVIEW-DASHBOARD.md](docs/TEAM-REVIEW-DASHBOARD.md) · [PHASE1-REPORT.md](docs/PHASE1-REPORT.md) · [PHASE2-REPORT.md](docs/PHASE2-REPORT.md)
+
+**Phase 1 — 보안 + Critical 버그 (7건)**
+- **SEC-1**: `useTrip` 단건 조회에 `user_id` 필터 추가 (타 사용자 데이터 노출 차단)
+- **SEC-2**: `updatePin`/`deletePin`에 `.eq('user_id', user.id)` 추가 (타 사용자 핀 변경 차단)
+- **SEC-3**: `trip_shares` 쿼리에 `owner_id`/`invited_email` 검증 추가 (공유 권한 우회 차단)
+- **SEC-4**: 핀 사진 CRUD에 소유권 검증 로직 추가
+- **BUG-1~3**: 체크리스트 정렬 유실, 핀 사진 미표시, 경비 금액 0 저장 등 Critical 버그 수정
+
+**Phase 2 — 안정성 + UX 일관성 (7건)**
+- **BUG-6**: 렌더 본문 `setState` → `useEffect` 패턴으로 수정 (TripFormPage, PinFormPage)
+- **BUG-7**: 비동기 fetch에 `mountedRef` 패턴 추가 — 언마운트 후 setState 경고 방지 (useTrips, usePins)
+- **H-FE-4**: 검색 입력에 250ms 디바운싱 적용 (SearchFilter)
+- **H-FE-5**: `pinFilters` 배열 `useMemo` 최적화 (HomePage)
+- **H-UX-1**: PinFormPage 전체 네오브루탈리스트 스타일 오버홀
+- **H-UX-2**: DashboardPage/ProfilePage 스타일 통일 (네오브루탈리스트)
+- **H-UX-3**: 다크모드 입력 필드 일관성 (TripFormPage, SearchFilter)
+
+**샘플 데이터 제거**
+- 하드코딩 샘플 여행/핀 데이터 완전 제거 — 사용자 등록 데이터만 표시
+- `localStore.ts`에서 샘플 병합 로직 제거, `usePins.ts`에서 `samplePins` 의존성 제거
+- Supabase 로그인 사용자: DB 데이터만, 데모 모드: localStorage 데이터만 표시
 
 ### Phase 12 — 버그 수정 & 프로필 공유 섹션 & 비고란
 

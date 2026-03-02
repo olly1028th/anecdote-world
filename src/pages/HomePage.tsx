@@ -231,21 +231,21 @@ export default function HomePage() {
         <button
           type="button"
           onClick={() => setActiveStatsTab(activeStatsTab === 'completed' ? null : 'completed')}
-          className={`border-2 border-[#eab308] rounded-xl p-3 flex flex-col items-center text-center transition-all cursor-pointer ${
-            activeStatsTab === 'completed' ? 'bg-[#eab308]/30 -translate-y-1' : 'bg-[#eab308]/10'
+          className={`border-2 border-[#0d9488] rounded-xl p-3 flex flex-col items-center text-center transition-all cursor-pointer ${
+            activeStatsTab === 'completed' ? 'bg-[#0d9488]/30 -translate-y-1' : 'bg-[#0d9488]/10'
           }`}
         >
-          <span className="text-2xl font-bold text-[#eab308]">{visitedPinCount}</span>
+          <span className="text-2xl font-bold text-[#0d9488]">{completedTrips.length}</span>
           <span className="text-[10px] uppercase font-bold text-slate-500 mt-1 leading-none">정복 완료</span>
         </button>
         <button
           type="button"
           onClick={() => setActiveStatsTab(activeStatsTab === 'planned' ? null : 'planned')}
-          className={`border-2 border-[#0d9488] rounded-xl p-3 flex flex-col items-center text-center transition-all cursor-pointer ${
-            activeStatsTab === 'planned' ? 'bg-[#0d9488]/30 -translate-y-1' : 'bg-[#0d9488]/10'
+          className={`border-2 border-[#eab308] rounded-xl p-3 flex flex-col items-center text-center transition-all cursor-pointer ${
+            activeStatsTab === 'planned' ? 'bg-[#eab308]/30 -translate-y-1' : 'bg-[#eab308]/10'
           }`}
         >
-          <span className="text-2xl font-bold text-[#0d9488]">{plannedPinCount}</span>
+          <span className="text-2xl font-bold text-[#eab308]">{plannedTrips.length}</span>
           <span className="text-[10px] uppercase font-bold text-slate-500 mt-1 leading-none">정복 예정</span>
         </button>
         <button
@@ -255,7 +255,7 @@ export default function HomePage() {
             activeStatsTab === 'wishlist' ? 'bg-[#6366f1]/30 -translate-y-1' : 'bg-[#6366f1]/10'
           }`}
         >
-          <span className="text-2xl font-bold text-[#6366f1]">{wishlistPinCount}</span>
+          <span className="text-2xl font-bold text-[#6366f1]">{wishlistTrips.length}</span>
           <span className="text-[10px] uppercase font-bold text-slate-500 mt-1 leading-none">위시</span>
         </button>
         <button
@@ -287,7 +287,7 @@ export default function HomePage() {
                     to={`/trip/${trip.id}`}
                     className="flex items-center gap-3 bg-[#F9F4E8] dark:bg-slate-800 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-[#f48c25] transition-colors no-underline"
                   >
-                    <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border-[3px] border-slate-900 bg-[#eab308]/20 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border-[3px] border-slate-900 bg-[#0d9488]/20 flex items-center justify-center">
                       {thumbSrc ? (
                         <img src={thumbSrc} alt={trip.title} className="w-full h-full object-cover" />
                       ) : (
@@ -323,7 +323,7 @@ export default function HomePage() {
                     to={`/trip/${trip.id}`}
                     className="flex items-center gap-3 bg-[#F9F4E8] dark:bg-slate-800 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-[#f48c25] transition-colors no-underline"
                   >
-                    <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border-[3px] border-slate-900 bg-[#0d9488]/20 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border-[3px] border-slate-900 bg-[#eab308]/20 flex items-center justify-center">
                       {thumbSrc ? (
                         <img src={thumbSrc} alt={trip.title} className="w-full h-full object-cover" />
                       ) : (
@@ -426,10 +426,10 @@ export default function HomePage() {
           onFilterChange={setStatusFilter}
           activeFilter={statusFilter}
           tripCounts={{
-            all: mapPins.length,
-            completed: visitedPinCount,
-            planned: plannedPinCount,
-            wishlist: wishlistPinCount,
+            all: trips.length,
+            completed: completedTrips.length,
+            planned: plannedTrips.length,
+            wishlist: wishlistTrips.length,
           }}
         />
       )}
