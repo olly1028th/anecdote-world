@@ -230,7 +230,6 @@ export function useTrips() {
       if (!mountedRef.current) return;
 
       // Supabase 성공 시에도 로컬 여행 포함 (Supabase INSERT 실패 시 fallback으로 저장된 여행)
-      // sampleTrips는 제외하고 사용자가 직접 추가한 로컬 여행만 병합
       const dbIds = new Set(mapped.map((t) => t.id));
       const extraLocal = getLocalTrips().filter((t) => !dbIds.has(t.id) && !getDeletedTripIds().has(t.id));
       setTrips([...mapped, ...extraLocal]);
