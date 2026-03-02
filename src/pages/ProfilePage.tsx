@@ -87,26 +87,16 @@ export default function ProfilePage() {
       <button
         type="button"
         onClick={() => navigate(-1)}
-        className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-[#FF6B6B] transition-colors bg-transparent border-0 p-0 cursor-pointer"
+        className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-[#f48c25] transition-colors bg-transparent border-0 p-0 cursor-pointer"
       >
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M15 19l-7-7 7-7"
-          />
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
-        뒤로
+        Back
       </button>
 
       {/* ── 프로필 헤더 ── */}
-      <section className="bg-white dark:bg-[#2a1f15] rounded-3xl p-6 shadow-md shadow-gray-200/50 dark:shadow-black/20">
+      <section className="bg-white dark:bg-[#2a1f15] rounded-xl p-6 border-[3px] border-slate-900 dark:border-slate-100 retro-shadow">
         <div className="flex items-start gap-5">
           {/* 아바타 */}
           {profile?.avatar_url ? (
@@ -161,16 +151,16 @@ export default function ProfilePage() {
                   <button
                     onClick={handleSave}
                     disabled={updating}
-                    className="px-4 py-2 bg-[#FF6B6B] text-white text-sm font-medium rounded-xl hover:bg-[#e85d5d] disabled:opacity-50 transition-colors cursor-pointer"
+                    className="px-4 py-2 bg-[#f48c25] text-white text-xs font-bold uppercase tracking-widest rounded-xl border-2 border-slate-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:bg-[#d97a1e] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50 transition-all cursor-pointer"
                   >
-                    {updating ? '저장 중...' : '저장'}
+                    {updating ? 'Saving...' : 'Save'}
                   </button>
                   <button
                     onClick={handleCancel}
                     disabled={updating}
-                    className="px-4 py-2 bg-gray-100 dark:bg-[#1a1208] text-gray-500 dark:text-slate-400 text-sm font-medium rounded-xl hover:bg-gray-200 dark:hover:bg-[#2a1f15] disabled:opacity-50 transition-colors cursor-pointer"
+                    className="px-4 py-2 bg-white dark:bg-[#1a1208] text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest rounded-xl border-2 border-slate-900 dark:border-slate-100 hover:bg-gray-50 dark:hover:bg-[#2a1f15] disabled:opacity-50 transition-colors cursor-pointer"
                   >
-                    취소
+                    Cancel
                   </button>
                 </div>
               </div>
@@ -178,7 +168,7 @@ export default function ProfilePage() {
               /* ── 읽기 모드 ── */
               <>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-bold text-[#2D3436] dark:text-slate-100 truncate">
+                  <h1 className="text-xl font-bold text-[#1c140d] dark:text-slate-100 truncate">
                     {profile?.nickname || '여행자'}
                   </h1>
                   {isDemo && (
@@ -201,9 +191,9 @@ export default function ProfilePage() {
 
                 <button
                   onClick={handleEdit}
-                  className="mt-3 px-4 py-2 bg-[#F0EEE6] dark:bg-[#1a1208] text-[#4A4A4A] dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-[#e8e5db] dark:hover:bg-[#2a1f15] transition-colors cursor-pointer"
+                  className="mt-3 px-4 py-2 bg-white dark:bg-[#1a1208] text-slate-500 dark:text-slate-300 text-xs font-bold uppercase tracking-widest rounded-xl border-2 border-slate-900 dark:border-slate-100 hover:bg-[#f48c25]/10 transition-colors cursor-pointer"
                 >
-                  수정
+                  Edit
                 </button>
               </>
             )}
@@ -214,44 +204,44 @@ export default function ProfilePage() {
       {/* ── 나의 통계 ── */}
       <section>
         <div className="flex items-center gap-2 mb-4">
-          <h2 className="text-lg font-bold text-[#2D3436] dark:text-slate-100">나의 통계</h2>
+          <h2 className="text-sm font-bold uppercase tracking-widest text-[#1c140d] dark:text-slate-100">나의 통계</h2>
           <div className="h-[2px] flex-1 bg-[#F0EEE6] dark:bg-[#4a3f35]" />
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <div className="bg-white dark:bg-[#2a1f15] rounded-3xl p-5 shadow-md shadow-gray-200/50 dark:shadow-black/20 text-center">
+          <div className="bg-white dark:bg-[#2a1f15] rounded-xl p-5 border-[3px] border-slate-900 dark:border-slate-100 retro-shadow text-center">
             <span className="block text-xl mb-1">✈️</span>
-            <p className="text-2xl font-bold text-[#2D3436] dark:text-slate-100">
+            <p className="text-2xl font-bold text-[#1c140d] dark:text-slate-100">
               {stats.completedCount}
             </p>
             <p className="text-xs font-medium text-gray-400 dark:text-slate-500 mt-1">다녀온 여행</p>
           </div>
 
-          <div className="bg-white dark:bg-[#2a1f15] rounded-3xl p-5 shadow-md shadow-gray-200/50 dark:shadow-black/20 text-center">
+          <div className="bg-white dark:bg-[#2a1f15] rounded-xl p-5 border-[3px] border-slate-900 dark:border-slate-100 retro-shadow text-center">
             <span className="block text-xl mb-1">🌍</span>
-            <p className="text-2xl font-bold text-[#2D3436] dark:text-slate-100">
+            <p className="text-2xl font-bold text-[#1c140d] dark:text-slate-100">
               {stats.countriesVisited.length}
             </p>
             <p className="text-xs font-medium text-gray-400 dark:text-slate-500 mt-1">방문 국가</p>
           </div>
 
-          <div className="bg-white dark:bg-[#2a1f15] rounded-3xl p-5 shadow-md shadow-gray-200/50 dark:shadow-black/20 text-center">
+          <div className="bg-white dark:bg-[#2a1f15] rounded-xl p-5 border-[3px] border-slate-900 dark:border-slate-100 retro-shadow text-center">
             <span className="block text-xl mb-1">💰</span>
-            <p className="text-2xl font-bold text-[#2D3436] dark:text-slate-100">
+            <p className="text-2xl font-bold text-[#1c140d] dark:text-slate-100">
               {formatCurrency(stats.totalSpent)}
             </p>
             <p className="text-xs font-medium text-gray-400 dark:text-slate-500 mt-1">총 경비</p>
           </div>
 
-          <div className="bg-white dark:bg-[#2a1f15] rounded-3xl p-5 shadow-md shadow-gray-200/50 dark:shadow-black/20 text-center">
+          <div className="bg-white dark:bg-[#2a1f15] rounded-xl p-5 border-[3px] border-slate-900 dark:border-slate-100 retro-shadow text-center">
             <span className="block text-xl mb-1">📍</span>
-            <p className="text-2xl font-bold text-[#2D3436] dark:text-slate-100">{totalPins}</p>
+            <p className="text-2xl font-bold text-[#1c140d] dark:text-slate-100">{totalPins}</p>
             <p className="text-xs font-medium text-gray-400 dark:text-slate-500 mt-1">등록한 핀</p>
           </div>
 
-          <div className="bg-white dark:bg-[#2a1f15] rounded-3xl p-5 shadow-md shadow-gray-200/50 dark:shadow-black/20 text-center">
+          <div className="bg-white dark:bg-[#2a1f15] rounded-xl p-5 border-[3px] border-slate-900 dark:border-slate-100 retro-shadow text-center">
             <span className="block text-xl mb-1">📸</span>
-            <p className="text-2xl font-bold text-[#2D3436] dark:text-slate-100">
+            <p className="text-2xl font-bold text-[#1c140d] dark:text-slate-100">
               {stats.totalPhotos}
             </p>
             <p className="text-xs font-medium text-gray-400 dark:text-slate-500 mt-1">촬영한 사진</p>
@@ -262,11 +252,11 @@ export default function ProfilePage() {
       {/* ── 방문 국가 ── */}
       <section>
         <div className="flex items-center gap-2 mb-4">
-          <h2 className="text-lg font-bold text-[#2D3436] dark:text-slate-100">방문 국가</h2>
+          <h2 className="text-sm font-bold uppercase tracking-widest text-[#1c140d] dark:text-slate-100">방문 국가</h2>
           <div className="h-[2px] flex-1 bg-[#F0EEE6] dark:bg-[#4a3f35]" />
         </div>
 
-        <div className="bg-white dark:bg-[#2a1f15] rounded-3xl p-6 shadow-md shadow-gray-200/50 dark:shadow-black/20">
+        <div className="bg-white dark:bg-[#2a1f15] rounded-xl p-6 border-[3px] border-slate-900 dark:border-slate-100 retro-shadow">
           {stats.countriesVisited.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {stats.countriesVisited.map((country) => (
@@ -290,7 +280,7 @@ export default function ProfilePage() {
       {pendingInvitations.length > 0 && (
         <section>
           <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-lg font-bold text-[#2D3436] dark:text-slate-100">대기 중인 초대</h2>
+            <h2 className="text-sm font-bold uppercase tracking-widest text-[#1c140d] dark:text-slate-100">대기 중인 초대</h2>
             <span className="px-2 py-0.5 bg-[#f43f5e]/15 text-[#f43f5e] text-xs font-bold rounded-full animate-pulse">
               {pendingInvitations.length}
             </span>
@@ -301,7 +291,7 @@ export default function ProfilePage() {
             {pendingInvitations.map((inv) => (
               <div
                 key={inv.id}
-                className="flex items-center gap-3 bg-white dark:bg-[#2a1f15] p-4 rounded-2xl shadow-md shadow-gray-200/50 dark:shadow-black/20 border-l-4 border-[#f43f5e]"
+                className="flex items-center gap-3 bg-white dark:bg-[#2a1f15] p-4 rounded-xl border-[3px] border-[#f43f5e] retro-shadow"
               >
                 <div className="w-10 h-10 rounded-full bg-[#0d9488] flex items-center justify-center shrink-0">
                   <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -309,7 +299,7 @@ export default function ProfilePage() {
                   </svg>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-[#2D3436] dark:text-slate-100 truncate">
+                  <p className="text-sm font-bold text-[#1c140d] dark:text-slate-100 truncate">
                     {inv.trip_title || '여행 초대'}
                   </p>
                   <p className="text-xs text-gray-400 dark:text-slate-500 font-medium mt-0.5">
@@ -339,7 +329,7 @@ export default function ProfilePage() {
       {/* ── 공유받은 여행 ── */}
       <section>
         <div className="flex items-center gap-2 mb-4">
-          <h2 className="text-lg font-bold text-[#2D3436] dark:text-slate-100">공유받은 여행</h2>
+          <h2 className="text-sm font-bold uppercase tracking-widest text-[#1c140d] dark:text-slate-100">공유받은 여행</h2>
           {receivedShares.length > 0 && (
             <span className="px-2 py-0.5 bg-[#0d9488]/15 text-[#0d9488] text-xs font-bold rounded-full">
               {receivedShares.length}
@@ -360,7 +350,7 @@ export default function ProfilePage() {
                 <Link
                   key={share.id}
                   to={`/trip/${share.trip_id}`}
-                  className="flex items-center gap-3 bg-white dark:bg-[#2a1f15] p-4 rounded-2xl shadow-md shadow-gray-200/50 dark:shadow-black/20 no-underline hover:ring-2 hover:ring-[#0d9488]/40 transition-all"
+                  className="flex items-center gap-3 bg-white dark:bg-[#2a1f15] p-4 rounded-xl border-[3px] border-slate-900 dark:border-slate-100 retro-shadow no-underline hover:border-[#f48c25] transition-all"
                 >
                   <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-[#0d9488]/10">
                     {coverSrc ? (
@@ -370,7 +360,7 @@ export default function ProfilePage() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-[#2D3436] dark:text-slate-100 truncate">{share.trip_title}</p>
+                    <p className="text-sm font-bold text-[#1c140d] dark:text-slate-100 truncate">{share.trip_title}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <div className="w-5 h-5 rounded-full bg-[#0d9488] flex items-center justify-center">
                         <span className="text-white text-[8px] font-bold">{share.owner_nickname[0].toUpperCase()}</span>
@@ -395,7 +385,7 @@ export default function ProfilePage() {
             })}
           </div>
         ) : (
-          <div className="bg-white dark:bg-[#2a1f15] rounded-3xl p-8 shadow-md shadow-gray-200/50 dark:shadow-black/20 text-center">
+          <div className="bg-white dark:bg-[#2a1f15] rounded-xl p-8 border-[3px] border-slate-900 dark:border-slate-100 retro-shadow text-center">
             <p className="text-3xl mb-2">🔗</p>
             <p className="text-sm text-gray-400 dark:text-slate-500 font-medium">공유받은 여행이 없습니다</p>
             <p className="text-xs text-gray-300 dark:text-slate-600 mt-1">다른 사용자가 여행을 공유하면 여기에 표시됩니다</p>
@@ -407,14 +397,14 @@ export default function ProfilePage() {
       {sharedUsers.length > 0 && (
         <section>
           <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-lg font-bold text-[#2D3436] dark:text-slate-100">내가 공유한 크루</h2>
+            <h2 className="text-sm font-bold uppercase tracking-widest text-[#1c140d] dark:text-slate-100">내가 공유한 크루</h2>
             <span className="px-2 py-0.5 bg-[#f48c25]/15 text-[#f48c25] text-xs font-bold rounded-full">
               {sharedUsers.length}
             </span>
             <div className="h-[2px] flex-1 bg-[#F0EEE6] dark:bg-[#4a3f35]" />
           </div>
 
-          <div className="bg-white dark:bg-[#2a1f15] rounded-3xl p-5 shadow-md shadow-gray-200/50 dark:shadow-black/20 space-y-3">
+          <div className="bg-white dark:bg-[#2a1f15] rounded-xl p-5 border-[3px] border-slate-900 dark:border-slate-100 retro-shadow space-y-3">
             {sharedUsers.map((su) => (
               <div
                 key={su.email}
@@ -426,7 +416,7 @@ export default function ProfilePage() {
                   {su.email[0].toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-[#2D3436] dark:text-slate-100 truncate">{su.email}</p>
+                  <p className="text-sm font-bold text-[#1c140d] dark:text-slate-100 truncate">{su.email}</p>
                   <p className="text-xs text-gray-400 dark:text-slate-500 font-medium">
                     {su.tripCount}개 여행 · {su.permission === 'edit' ? '편집' : '읽기'}
                     {su.status === 'pending' && ' · 수락 대기중'}

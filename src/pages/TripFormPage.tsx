@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import type { TripStatus, ExpenseCategory, Expense, ChecklistItem } from '../types/trip';
 import { createTrip, updateTrip, saveExpenses, saveChecklistItems, useTrip, addDemoTrip, updateDemoTrip } from '../hooks/useTrips';
@@ -56,21 +56,23 @@ export default function TripFormPage() {
     setDestination(info);
   }, []);
 
-  if (isEdit && existing && !initialized) {
-    setTitle(existing.title);
-    setStatus(existing.status);
-    if (existing.destination) {
-      setDestination({ ...EMPTY_DESTINATION, name: existing.destination });
+  useEffect(() => {
+    if (isEdit && existing && !initialized) {
+      setTitle(existing.title);
+      setStatus(existing.status);
+      if (existing.destination) {
+        setDestination({ ...EMPTY_DESTINATION, name: existing.destination });
+      }
+      setStartDate(existing.startDate);
+      setEndDate(existing.endDate);
+      setCoverImage(existing.coverImage);
+      setPhotos(existing.photos);
+      setMemo(existing.memo);
+      setExpenses(existing.expenses.length > 0 ? existing.expenses : []);
+      setChecklist(existing.checklist.length > 0 ? existing.checklist : []);
+      setInitialized(true);
     }
-    setStartDate(existing.startDate);
-    setEndDate(existing.endDate);
-    setCoverImage(existing.coverImage);
-    setPhotos(existing.photos);
-    setMemo(existing.memo);
-    setExpenses(existing.expenses.length > 0 ? existing.expenses : []);
-    setChecklist(existing.checklist.length > 0 ? existing.checklist : []);
-    setInitialized(true);
-  }
+  }, [isEdit, existing, initialized]);
 
   const addExpense = () => setExpenses([...expenses, emptyExpense()]);
   const removeExpense = (index: number) => setExpenses(expenses.filter((_, i) => i !== index));
@@ -302,7 +304,7 @@ export default function TripFormPage() {
               className={`flex-1 py-3 rounded-xl text-sm font-bold uppercase tracking-tight transition-all cursor-pointer border-2 border-slate-900 ${
                 status === 'planned'
                   ? 'bg-[#eab308] text-slate-900 retro-shadow'
-                  : 'bg-white text-slate-400 shadow-none'
+                  : 'bg-white dark:bg-[#2a1f15] text-slate-400 shadow-none'
               }`}
             >
               계획 중
@@ -313,7 +315,7 @@ export default function TripFormPage() {
               className={`flex-1 py-3 rounded-xl text-sm font-bold uppercase tracking-tight transition-all cursor-pointer border-2 border-slate-900 ${
                 status === 'completed'
                   ? 'bg-[#0d9488] text-white retro-shadow'
-                  : 'bg-white text-slate-400 shadow-none'
+                  : 'bg-white dark:bg-[#2a1f15] text-slate-400 shadow-none'
               }`}
             >
               완료
@@ -324,7 +326,7 @@ export default function TripFormPage() {
               className={`flex-1 py-3 rounded-xl text-sm font-bold uppercase tracking-tight transition-all cursor-pointer border-2 border-slate-900 ${
                 status === 'wishlist'
                   ? 'bg-[#6366f1] text-white retro-shadow'
-                  : 'bg-white text-slate-400 shadow-none'
+                  : 'bg-white dark:bg-[#2a1f15] text-slate-400 shadow-none'
               }`}
             >
               위시
@@ -344,8 +346,8 @@ export default function TripFormPage() {
             onBlur={() => setTouched((p) => ({ ...p, title: true }))}
             placeholder="예: 도쿄 벚꽃 여행"
             required
-            className={`w-full px-4 py-3 rounded-xl border-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 ${
-              errors.title ? 'border-[#f43f5e] focus:border-[#f43f5e] focus:ring-[#f43f5e]/40' : 'border-slate-900 focus:border-[#f48c25]'
+            className={`w-full px-4 py-3 rounded-xl border-2 text-sm font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 ${
+              errors.title ? 'border-[#f43f5e] focus:border-[#f43f5e] focus:ring-[#f43f5e]/40' : 'border-slate-900 dark:border-slate-100 focus:border-[#f48c25]'
             }`}
           />
           {errors.title && (
@@ -369,7 +371,7 @@ export default function TripFormPage() {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
+              className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 dark:border-slate-100 text-sm font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]"
             />
           </div>
           <div>
@@ -379,7 +381,7 @@ export default function TripFormPage() {
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               onBlur={() => setTouched((p) => ({ ...p, endDate: true }))}
-              className={`w-full px-4 py-3 rounded-xl border-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 ${
+              className={`w-full px-4 py-3 rounded-xl border-2 text-sm font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 ${
                 errors.endDate ? 'border-[#f43f5e] focus:border-[#f43f5e] focus:ring-[#f43f5e]/40' : 'border-slate-900 focus:border-[#f48c25]'
               }`}
             />
@@ -407,7 +409,7 @@ export default function TripFormPage() {
             onChange={(e) => setMemo(e.target.value)}
             placeholder={status === 'completed' ? '이 여행 어땠어요?' : '여행에 대한 메모...'}
             rows={3}
-            className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25] resize-none"
+            className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25] resize-none"
           />
         </div>
 
@@ -435,7 +437,7 @@ export default function TripFormPage() {
                   <select
                     value={expense.category}
                     onChange={(e) => updateExpense(i, 'category', e.target.value)}
-                    className="w-24 shrink-0 px-2 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
+                    className="w-24 shrink-0 px-2 py-2.5 rounded-lg border-2 border-slate-900 dark:border-slate-100 text-xs font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
                   >
                     {EXPENSE_CATEGORIES.map((cat) => (
                       <option key={cat} value={cat}>{expenseCategoryLabel(cat)}</option>
@@ -447,14 +449,14 @@ export default function TripFormPage() {
                     onChange={(e) => updateExpense(i, 'amount', Number(e.target.value))}
                     placeholder="금액"
                     min={0}
-                    className="w-28 shrink-0 px-3 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
+                    className="w-28 shrink-0 px-3 py-2.5 rounded-lg border-2 border-slate-900 dark:border-slate-100 text-xs font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
                   />
                   <input
                     type="text"
                     value={expense.label}
                     onChange={(e) => updateExpense(i, 'label', e.target.value)}
                     placeholder="설명"
-                    className="flex-1 min-w-0 px-3 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
+                    className="flex-1 min-w-0 px-3 py-2.5 rounded-lg border-2 border-slate-900 dark:border-slate-100 text-xs font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
                   />
                   <button
                     type="button"
@@ -496,7 +498,7 @@ export default function TripFormPage() {
                       value={item.text}
                       onChange={(e) => updateChecklistText(i, e.target.value)}
                       placeholder="예: 항공편 예약"
-                      className="flex-1 min-w-0 px-3 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
+                      className="flex-1 min-w-0 px-3 py-2.5 rounded-lg border-2 border-slate-900 dark:border-slate-100 text-xs font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
                     />
                     <button
                       type="button"

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { listTripPhotos } from '../lib/storage';
 import {
@@ -122,10 +122,12 @@ export function useTrips() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const mountedRef = useRef(true);
 
   const fetchTrips = useCallback(async () => {
     // Supabase 미설정 → 데모 모드 (로컬 추가 여행 포함)
     if (!isSupabaseConfigured) {
+      if (!mountedRef.current) return;
       setTrips(getMergedDemoTrips());
       setLoading(false);
       return;
@@ -225,24 +227,29 @@ export function useTrips() {
         );
       }
 
+      if (!mountedRef.current) return;
+
       // Supabase 성공 시에도 로컬 여행 포함 (Supabase INSERT 실패 시 fallback으로 저장된 여행)
       // sampleTrips는 제외하고 사용자가 직접 추가한 로컬 여행만 병합
       const dbIds = new Set(mapped.map((t) => t.id));
       const extraLocal = getLocalTrips().filter((t) => !dbIds.has(t.id) && !getDeletedTripIds().has(t.id));
       setTrips([...mapped, ...extraLocal]);
     } catch (err) {
+      if (!mountedRef.current) return;
       // Supabase 실패 시 데모 데이터로 fallback
       setTrips(getMergedDemoTrips());
       const msg = err instanceof Error ? err.message : '데이터를 불러올 수 없습니다';
       setError(`서버 연결 실패: ${msg}`);
       console.error('[useTrips] Supabase fetch failed:', err);
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    mountedRef.current = true;
     fetchTrips();
+    return () => { mountedRef.current = false; };
   }, [fetchTrips]);
 
   // 모달 등에서 여행 추가 시 자동 refetch
@@ -447,12 +454,14 @@ export function useTrip(id: string | undefined) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDemo, setIsDemo] = useState(false);
+  const mountedRef = useRef(true);
 
   const refetch = useCallback(async () => {
     if (!id) return;
 
     // 데모 모드 (로컬 추가 여행 포함)
     if (!isSupabaseConfigured) {
+      if (!mountedRef.current) return;
       setTrip(getMergedDemoTrips().find((t) => t.id === id) ?? null);
       setIsDemo(true);
       setLoading(false);
@@ -465,6 +474,7 @@ export function useTrip(id: string | undefined) {
 
       // 현재 로그인한 사용자 확인
       const { data: { session } } = await supabase.auth.getSession();
+      if (!mountedRef.current) return;
       const userId = session?.user?.id;
       const userEmail = session?.user?.email;
       if (!userId) {
@@ -475,21 +485,18 @@ export function useTrip(id: string | undefined) {
         return;
       }
 
-      const { data: dbTrip, error: tripErr } = await supabase
+      // 1차: 내 여행인지 확인 (user_id 필터 포함)
+      const { data: myTrip } = await supabase
         .from('trips')
         .select('*')
         .eq('id', id)
-        .single();
+        .eq('user_id', userId)
+        .maybeSingle();
 
-      if (tripErr) throw tripErr;
+      let dbTrip = myTrip;
+
+      // 2차: 내 여행이 아니면 공유받은 여행인지 확인
       if (!dbTrip) {
-        setTrip(null);
-        setIsDemo(false);
-        return;
-      }
-
-      // 접근 권한 검증: 내 여행이거나 공유받은 여행인지 확인
-      if ((dbTrip as DbTrip).user_id !== userId) {
         const { data: share } = await supabase
           .from('trip_shares')
           .select('id')
@@ -503,6 +510,20 @@ export function useTrip(id: string | undefined) {
           setError('접근 권한이 없습니다');
           return;
         }
+        // 공유 확인 후 여행 데이터 조회
+        const { data: sharedTrip, error: sharedErr } = await supabase
+          .from('trips')
+          .select('*')
+          .eq('id', id)
+          .single();
+        if (sharedErr) throw sharedErr;
+        dbTrip = sharedTrip;
+      }
+
+      if (!dbTrip) {
+        setTrip(null);
+        setIsDemo(false);
+        return;
       }
 
       const [expensesRes, checklistRes, pinsRes] = await Promise.all([
@@ -541,6 +562,7 @@ export function useTrip(id: string | undefined) {
         // Storage 버킷 미생성 시 무시
       }
 
+      if (!mountedRef.current) return;
       setTrip(
         mapDbTripToUi(
           dbTrip as DbTrip,
@@ -553,6 +575,7 @@ export function useTrip(id: string | undefined) {
       );
       setIsDemo(false);
     } catch (err) {
+      if (!mountedRef.current) return;
       // Supabase 조회 실패 시 데모 데이터에서 fallback 시도
       const demoFallback = getMergedDemoTrips().find((t) => t.id === id) ?? null;
       if (demoFallback) {
@@ -566,16 +589,18 @@ export function useTrip(id: string | undefined) {
       }
       console.error('[useTrip] Supabase fetch failed:', err);
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   }, [id]);
 
   useEffect(() => {
+    mountedRef.current = true;
     if (!id) {
       setLoading(false);
       return;
     }
     refetch();
+    return () => { mountedRef.current = false; };
   }, [id, refetch]);
 
   return { trip, loading, error, refetch, isDemo };

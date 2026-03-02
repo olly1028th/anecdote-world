@@ -57,6 +57,23 @@ const Loading = () => (
   </div>
 );
 
+function NotFoundPage() {
+  const navigate = useNavigate();
+  return (
+    <div className="max-w-6xl mx-auto px-4 py-20 text-center space-y-6">
+      <h1 className="text-6xl font-bold uppercase italic tracking-tighter text-slate-900 dark:text-slate-100">404</h1>
+      <p className="text-lg text-slate-600 dark:text-slate-400">페이지를 찾을 수 없습니다</p>
+      <button
+        type="button"
+        onClick={() => navigate('/')}
+        className="inline-block px-6 py-3 bg-[#f48c25] text-white font-bold border-[3px] border-slate-900 rounded-xl retro-shadow hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"
+      >
+        홈으로 돌아가기
+      </button>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <div className="min-h-screen bg-[var(--color-bg)] transition-colors duration-200">
@@ -78,7 +95,9 @@ export default function App() {
             path="/pin/edit/:id"
             element={<Suspense fallback={<Loading />}><PinFormPage /></Suspense>}
           />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </div>
   );
