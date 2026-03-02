@@ -144,6 +144,26 @@ export const sampleTrips: Trip[] = [
     createdAt: '2026-01-15T00:00:00Z',
     updatedAt: '2026-01-15T00:00:00Z',
   },
+  {
+    id: '5',
+    title: '산토리니 석양 여행',
+    destination: '산토리니, 그리스',
+    status: 'wishlist',
+    startDate: '',
+    endDate: '',
+    coverImage: 'https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?w=600&h=400&fit=crop',
+    memo: '세계에서 가장 아름다운 석양을 보고 싶다',
+    expenses: [],
+    itinerary: [],
+    photos: [],
+    places: [
+      { name: '이아 마을', priority: 'must', note: '석양 포인트' },
+      { name: '피라 마을', priority: 'want', note: '쇼핑 & 레스토랑' },
+    ],
+    checklist: [],
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-01-01T00:00:00Z',
+  },
 ];
 
 /** 하드코딩된 샘플 핀 데이터 (데모 모드에서 세계지도에 표시) */
@@ -211,7 +231,7 @@ export const samplePins: Pin[] = [
   {
     id: 'pin-4',
     user_id: 'demo-user-001',
-    trip_id: null,
+    trip_id: '5',
     name: '산토리니',
     address: 'Oia, Santorini, Greece',
     lat: 36.4618,
