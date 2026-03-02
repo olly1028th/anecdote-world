@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { getLocalPins, getDeletedTripIds } from '../lib/localStore';
 import { samplePins } from '../utils/sampleData';
@@ -11,6 +11,7 @@ export function usePins() {
   const [pins, setPins] = useState<Pin[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const mountedRef = useRef(true);
 
   const fetchPins = useCallback(async () => {
     // 삭제된 여행의 샘플 핀 제외 (여행 삭제 시 해당 핀도 지도에서 제거)
@@ -18,6 +19,7 @@ export function usePins() {
     const activeSamplePins = samplePins.filter((p) => !p.trip_id || !deletedIds.has(p.trip_id));
 
     if (!isSupabaseConfigured) {
+      if (!mountedRef.current) return;
       setPins([...getLocalPins(), ...activeSamplePins]);
       setLoading(false);
       return;
@@ -29,6 +31,7 @@ export function usePins() {
 
       // 현재 로그인한 사용자 확인
       const { data: { session } } = await supabase.auth.getSession();
+      if (!mountedRef.current) return;
       const userId = session?.user?.id;
       const userEmail = session?.user?.email;
       if (!userId) {
@@ -72,24 +75,29 @@ export function usePins() {
       const extraShared = sharedPins.filter((p) => !myPinIds.has(p.id));
       const dbPins = [...myPins, ...extraShared];
 
+      if (!mountedRef.current) return;
+
       // Supabase 성공 시에도 로컬 데모 핀 포함 (Supabase INSERT 실패 시 fallback으로 저장된 핀)
       // samplePins는 제외하고 사용자가 직접 추가한 로컬 핀만 병합
       const dbIds = new Set(dbPins.map((p) => p.id));
       const extraLocal = getLocalPins().filter((p) => !dbIds.has(p.id));
       setPins([...dbPins, ...extraLocal]);
     } catch (err) {
+      if (!mountedRef.current) return;
       // Supabase 실패 시 데모 데이터로 fallback
       setPins([...getLocalPins(), ...activeSamplePins]);
       const msg = err instanceof Error ? err.message : '핀 데이터를 불러올 수 없습니다';
       setError(`서버 연결 실패: ${msg}`);
       console.error('[usePins] Supabase fetch failed:', err);
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    mountedRef.current = true;
     fetchPins();
+    return () => { mountedRef.current = false; };
   }, [fetchPins]);
 
   // 핀 추가 시 자동 refetch

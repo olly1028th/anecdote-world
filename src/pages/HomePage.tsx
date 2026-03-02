@@ -145,12 +145,12 @@ export default function HomePage() {
     return result;
   }, [trips, statusFilter, searchQuery]);
 
-  const pinFilters: { key: PinFilter; label: string }[] = [
+  const pinFilters = useMemo<{ key: PinFilter; label: string }[]>(() => [
     { key: 'all', label: `전체 (${mapPins.length})` },
-    { key: 'visited', label: `방문 (${mapPins.filter((p) => p.visit_status === 'visited').length})` },
-    { key: 'planned', label: `계획 (${mapPins.filter((p) => p.visit_status === 'planned').length})` },
-    { key: 'wishlist', label: `위시 (${mapPins.filter((p) => p.visit_status === 'wishlist').length})` },
-  ];
+    { key: 'visited', label: `방문 (${visitedPinCount})` },
+    { key: 'planned', label: `계획 (${plannedPinCount})` },
+    { key: 'wishlist', label: `위시 (${wishlistPinCount})` },
+  ], [mapPins.length, visitedPinCount, plannedPinCount, wishlistPinCount]);
 
   if (loading) {
     return <HomePageSkeleton />;
