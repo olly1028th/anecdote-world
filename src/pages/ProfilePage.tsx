@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useProfile } from '../hooks/useProfile';
 import { useStats } from '../hooks/useStats';
-import { useReceivedShares, useSharedUsers } from '../hooks/useShares';
+import { useReceivedShares, useSharedUsers, usePendingInvitations, acceptShare, declineShare } from '../hooks/useShares';
 import { formatCurrency, formatDate } from '../utils/format';
 import { getCountryFlagUrl } from '../utils/countryFlag';
 
@@ -16,6 +16,25 @@ export default function ProfilePage() {
   const stats = useStats();
   const { shares: receivedShares, loading: sharesLoading } = useReceivedShares(user?.email ?? undefined);
   const { users: sharedUsers } = useSharedUsers(user?.id);
+  const { invitations: pendingInvitations } = usePendingInvitations(user?.email ?? undefined);
+
+  const handleAcceptInvitation = async (shareId: string) => {
+    try {
+      await acceptShare(shareId, user?.id);
+      toast('초대를 수락했습니다');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : '수락 실패', 'error');
+    }
+  };
+
+  const handleDeclineInvitation = async (shareId: string) => {
+    try {
+      await declineShare(shareId);
+      toast('초대를 거절했습니다');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : '거절 실패', 'error');
+    }
+  };
 
   const [editing, setEditing] = useState(false);
   const [nickname, setNickname] = useState(profile?.nickname ?? '');
@@ -266,6 +285,56 @@ export default function ProfilePage() {
           )}
         </div>
       </section>
+
+      {/* ── 대기 중인 초대 ── */}
+      {pendingInvitations.length > 0 && (
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-lg font-bold text-[#2D3436] dark:text-slate-100">대기 중인 초대</h2>
+            <span className="px-2 py-0.5 bg-[#f43f5e]/15 text-[#f43f5e] text-xs font-bold rounded-full animate-pulse">
+              {pendingInvitations.length}
+            </span>
+            <div className="h-[2px] flex-1 bg-[#F0EEE6] dark:bg-[#4a3f35]" />
+          </div>
+
+          <div className="space-y-3">
+            {pendingInvitations.map((inv) => (
+              <div
+                key={inv.id}
+                className="flex items-center gap-3 bg-white dark:bg-[#2a1f15] p-4 rounded-2xl shadow-md shadow-gray-200/50 dark:shadow-black/20 border-l-4 border-[#f43f5e]"
+              >
+                <div className="w-10 h-10 rounded-full bg-[#0d9488] flex items-center justify-center shrink-0">
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-[#2D3436] dark:text-slate-100 truncate">
+                    {inv.trip_title || '여행 초대'}
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-slate-500 font-medium mt-0.5">
+                    {inv.owner_nickname || '사용자'}님이 {inv.permission === 'edit' ? '편집' : '읽기'} 권한으로 초대
+                  </p>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={() => handleAcceptInvitation(inv.id)}
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-[#0d9488] hover:bg-[#0d9488]/90 transition-colors cursor-pointer border-0"
+                  >
+                    수락
+                  </button>
+                  <button
+                    onClick={() => handleDeclineInvitation(inv.id)}
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-500 bg-gray-100 dark:bg-[#1a1208] hover:bg-gray-200 dark:hover:bg-[#2a1f15] transition-colors cursor-pointer border-0"
+                  >
+                    거절
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── 공유받은 여행 ── */}
       <section>

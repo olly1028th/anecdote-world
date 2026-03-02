@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { sendShareInvitationEmail } from '../lib/email';
 import type { SharePermission, ShareStatus, TripShare } from '../types/database';
 
 // ---- 데모 모드 로컬 저장소 ----
@@ -162,6 +163,21 @@ export function createDemoShareDirect(
   window.dispatchEvent(new CustomEvent('share-updated'));
 }
 
+// ---- 소유자 닉네임 조회 ----
+
+async function getOwnerNickname(ownerId: string): Promise<string> {
+  try {
+    const { data } = await supabase
+      .from('profiles')
+      .select('nickname')
+      .eq('id', ownerId)
+      .single();
+    return data?.nickname || '여행자';
+  } catch {
+    return '여행자';
+  }
+}
+
 // ---- 초대 보내기 ----
 
 export async function createShare(
@@ -226,6 +242,14 @@ export async function createShare(
     });
     if (error) throw new Error(error.message);
     window.dispatchEvent(new CustomEvent('share-updated'));
+
+    // 이메일 알림 발송 (비동기, 실패해도 공유는 정상)
+    const ownerNickname = await getOwnerNickname(ownerId);
+    sendShareInvitationEmail({
+      invitedEmail,
+      tripTitle: tripTitle || '여행',
+      ownerNickname,
+    });
   } catch (err) {
     // trip_shares 테이블 미존재 등 Supabase 실패 시 로컬 fallback
     if (err instanceof Error && err.message === '이미 초대된 이메일입니다.') throw err;
@@ -470,6 +494,19 @@ export async function shareAllTrips(
     }
 
     window.dispatchEvent(new CustomEvent('share-updated'));
+
+    // 새로 공유된 여행이 있으면 이메일 알림 발송
+    if (newTripIds.length > 0) {
+      const ownerNickname = await getOwnerNickname(ownerId);
+      sendShareInvitationEmail({
+        invitedEmail,
+        tripTitle: newTripIds.length === 1
+          ? (tripTitles?.get(newTripIds[0]) || '여행')
+          : `${tripTitles?.get(newTripIds[0]) || '여행'} 외 ${newTripIds.length - 1}개`,
+        ownerNickname,
+      });
+    }
+
     return newTripIds.length;
   } catch (err) {
     // trip_shares 테이블 미존재 등 Supabase 실패 시 로컬 fallback
