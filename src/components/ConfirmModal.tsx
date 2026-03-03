@@ -27,7 +27,7 @@ export default function ConfirmModal({
       onClick={onCancel}
     >
       <div
-        className="bg-white dark:bg-[#2a1f15] w-full max-w-sm rounded-2xl border-[3px] border-slate-900 dark:border-[#4a3f35] retro-shadow p-6 space-y-4"
+        className="bg-white dark:bg-[#2a1f15] w-full max-w-sm max-h-[85dvh] overflow-y-auto rounded-2xl border-[3px] border-slate-900 dark:border-[#4a3f35] retro-shadow p-6 space-y-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3">

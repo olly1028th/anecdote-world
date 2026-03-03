@@ -195,7 +195,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
       onClick={handleBackdropClick}
     >
       <div
-        className={`bg-[#F9F4E8] dark:bg-[#1a1208] w-full sm:max-w-lg sm:rounded-xl rounded-t-xl max-h-[90vh] sm:max-h-[85vh] overflow-y-auto border-[3px] border-slate-900 dark:border-[#4a3f35] sm:retro-shadow transition-all duration-300 ${
+        className={`bg-[#F9F4E8] dark:bg-[#1a1208] w-full sm:max-w-lg sm:rounded-xl rounded-t-xl max-h-[85dvh] sm:max-h-[85vh] overflow-y-auto border-[3px] border-slate-900 dark:border-[#4a3f35] sm:retro-shadow transition-all duration-300 ${
           visible ? 'translate-y-0 opacity-100' : 'translate-y-full sm:translate-y-8 opacity-0'
         }`}
       >
@@ -319,7 +319,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
           </div>
 
           {/* 버튼 */}
-          <div className="flex gap-3 pt-2 pb-2">
+          <div className="flex gap-3 pt-2 pb-2" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
             <button
               type="button"
               onClick={onClose}

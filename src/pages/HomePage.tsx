@@ -627,7 +627,8 @@ export default function HomePage() {
       {shareModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center" onClick={() => setShareModalOpen(false)}>
           <div
-            className="bg-[#F9F4E8] dark:bg-[#1a1208] w-full max-w-md rounded-t-2xl sm:rounded-2xl border-[3px] border-slate-900 retro-shadow p-6 space-y-5 max-h-[80vh] overflow-y-auto"
+            className="bg-[#F9F4E8] dark:bg-[#1a1208] w-full max-w-md rounded-t-2xl sm:rounded-2xl border-[3px] border-slate-900 retro-shadow p-6 space-y-5 max-h-[85dvh] overflow-y-auto"
+            style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
