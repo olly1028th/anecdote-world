@@ -114,7 +114,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<TripStatus | 'all'>('all');
 
-  // 세계지도에 표시할 핀: 메인 핀 + day-number만 있는 여행의 대표 핀 포함
+  // 세계지도에 표시할 핀: 메인 핀만 (day_number 있는 일정 장소는 제외)
   const mapPins = useMemo(() => getMapDisplayPins(pins), [pins]);
   const filteredPins =
     pinFilter === 'all' ? mapPins : mapPins.filter((p) => p.visit_status === pinFilter);
