@@ -299,15 +299,35 @@ CREATE POLICY "Invited users can view and respond to shares"
 CREATE POLICY "Invited users can accept/decline"
   ON public.trip_shares FOR UPDATE USING (auth.uid() = invited_user_id);
 -- 이메일 기반 초대 조회 (invited_user_id가 NULL인 pending 초대 포함)
+-- ※ auth.users 직접 접근 불가 → SECURITY DEFINER 함수 사용
 CREATE POLICY "Invited users can view shares by email"
   ON public.trip_shares FOR SELECT USING (
-    invited_email = (SELECT email FROM auth.users WHERE id = auth.uid())
+    invited_email = public.current_user_email()
   );
 -- 이메일 기반 초대 수락/거절 (invited_user_id가 아직 NULL인 경우)
 CREATE POLICY "Invited users can accept/decline by email"
   ON public.trip_shares FOR UPDATE USING (
-    invited_email = (SELECT email FROM auth.users WHERE id = auth.uid())
+    invited_email = public.current_user_email()
   );
+
+
+-- ============================================================
+-- 헬퍼 함수: 현재 사용자 이메일 조회 (RLS 정책용)
+-- ============================================================
+-- auth.users 테이블은 authenticated 역할에 SELECT 권한 없음.
+-- SECURITY DEFINER로 안전하게 이메일 조회 (trip_shares 이메일 기반 RLS에 사용).
+CREATE OR REPLACE FUNCTION public.current_user_email()
+RETURNS TEXT
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT email FROM auth.users WHERE id = auth.uid();
+$$;
+
+REVOKE ALL ON FUNCTION public.current_user_email() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.current_user_email() TO authenticated;
 
 
 -- ============================================================
