@@ -380,6 +380,38 @@ export async function removeShare(shareId: string): Promise<void> {
   window.dispatchEvent(new CustomEvent('share-updated'));
 }
 
+// ---- 공유 해제 (수신자가 공유 떠나기) ----
+
+export async function leaveShare(ownerId: string): Promise<void> {
+  if (!isSupabaseConfigured) {
+    const all = loadDemoShares();
+    const { data: { user } } = { data: { user: { id: 'demo-user-001', email: '' } } };
+    saveDemoShares(all.filter((s) => !(s.owner_id === ownerId && (s.invited_user_id === user.id || s.status === 'accepted'))));
+    window.dispatchEvent(new CustomEvent('share-updated'));
+    window.dispatchEvent(new CustomEvent('trip-added'));
+    return;
+  }
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('인증이 필요합니다');
+
+  try {
+    // 해당 소유자로부터 받은 모든 공유를 삭제
+    const { error } = await supabase
+      .from('trip_shares')
+      .delete()
+      .eq('owner_id', ownerId)
+      .or(`invited_user_id.eq.${user.id},invited_email.eq.${user.email ?? ''}`);
+    if (error) throw new Error(error.message);
+  } catch (err) {
+    console.error('[leaveShare] Supabase 실패, 로컬 fallback:', err);
+    const all = loadDemoShares();
+    saveDemoShares(all.filter((s) => !(s.owner_id === ownerId && (s.invited_user_id === user.id || s.invited_email === user.email))));
+  }
+  window.dispatchEvent(new CustomEvent('share-updated'));
+  window.dispatchEvent(new CustomEvent('trip-added'));
+}
+
 // ---- 권한 변경 ----
 
 export async function updateSharePermission(shareId: string, permission: SharePermission): Promise<void> {

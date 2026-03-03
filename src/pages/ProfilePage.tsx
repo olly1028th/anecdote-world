@@ -4,9 +4,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useProfile } from '../hooks/useProfile';
 import { useStats } from '../hooks/useStats';
-import { useReceivedShares, useSharedUsers, usePendingInvitations, acceptShare, declineShare } from '../hooks/useShares';
+import { useReceivedShares, useSharedUsers, usePendingInvitations, acceptShare, declineShare, leaveShare } from '../hooks/useShares';
 import { formatCurrency, formatDate } from '../utils/format';
 import { getCountryFlagUrl } from '../utils/countryFlag';
+import ConfirmModal from '../components/ConfirmModal';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -34,6 +35,35 @@ export default function ProfilePage() {
     } catch (err) {
       toast(err instanceof Error ? err.message : '거절 실패', 'error');
     }
+  };
+
+  // Confirm modal for leave share
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    danger?: boolean;
+    onConfirm: () => void;
+  }>({ open: false, title: '', message: '', onConfirm: () => {} });
+
+  const handleLeaveShare = (ownerId: string, ownerNickname: string) => {
+    setConfirmModal({
+      open: true,
+      title: '공유 해제',
+      message: `${ownerNickname}님의 공유를 해제하시겠습니까? 해당 사용자의 모든 여행이 더 이상 표시되지 않습니다.`,
+      confirmLabel: '공유 해제',
+      danger: true,
+      onConfirm: async () => {
+        setConfirmModal((p) => ({ ...p, open: false }));
+        try {
+          await leaveShare(ownerId);
+          toast('공유가 해제되었습니다');
+        } catch (err) {
+          toast(err instanceof Error ? err.message : '공유 해제 실패', 'error');
+        }
+      },
+    });
   };
 
   const [editing, setEditing] = useState(false);
@@ -343,46 +373,75 @@ export default function ProfilePage() {
             <div className="animate-pulse text-gray-400 text-sm">불러오는 중...</div>
           </div>
         ) : receivedShares.length > 0 ? (
-          <div className="space-y-3">
-            {receivedShares.map((share) => {
-              const coverSrc = share.trip_cover || getCountryFlagUrl(share.trip_destination, 160);
-              return (
-                <Link
-                  key={share.id}
-                  to={`/trip/${share.trip_id}`}
-                  className="flex items-center gap-3 bg-white dark:bg-[#2a1f15] p-4 rounded-xl border-[3px] border-slate-900 dark:border-slate-100 retro-shadow no-underline hover:border-[#f48c25] transition-all"
-                >
-                  <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-[#0d9488]/10">
-                    {coverSrc ? (
-                      <img src={coverSrc} alt={share.trip_title} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-2xl">🌍</div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-[#1c140d] dark:text-slate-100 truncate">{share.trip_title}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <div className="w-5 h-5 rounded-full bg-[#0d9488] flex items-center justify-center">
-                        <span className="text-white text-[8px] font-bold">{share.owner_nickname[0].toUpperCase()}</span>
+          <div className="space-y-5">
+            {/* 소유자별 그룹핑 */}
+            {(() => {
+              const ownerGroups = new Map<string, typeof receivedShares>();
+              for (const share of receivedShares) {
+                const key = share.owner_id;
+                if (!ownerGroups.has(key)) ownerGroups.set(key, []);
+                ownerGroups.get(key)!.push(share);
+              }
+              return [...ownerGroups.entries()].map(([ownerId, ownerShares]) => {
+                const ownerNickname = ownerShares[0].owner_nickname;
+                const permission = ownerShares.some((s) => s.permission === 'edit') ? 'edit' : 'read';
+                return (
+                  <div key={ownerId} className="space-y-2">
+                    {/* 소유자 헤더 + 공유 해제 버튼 */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full bg-[#0d9488] flex items-center justify-center">
+                          <span className="text-white text-[10px] font-bold">{ownerNickname[0].toUpperCase()}</span>
+                        </div>
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{ownerNickname}</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          permission === 'edit'
+                            ? 'bg-[#f48c25]/15 text-[#f48c25]'
+                            : 'bg-[#0d9488]/15 text-[#0d9488]'
+                        }`}>
+                          {permission === 'edit' ? '편집' : '읽기'}
+                        </span>
                       </div>
-                      <span className="text-xs text-gray-500 dark:text-slate-400 font-medium truncate">
-                        {share.owner_nickname}
-                      </span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        share.permission === 'edit'
-                          ? 'bg-[#f48c25]/15 text-[#f48c25]'
-                          : 'bg-[#0d9488]/15 text-[#0d9488]'
-                      }`}>
-                        {share.permission === 'edit' ? '편집' : '읽기'}
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleLeaveShare(ownerId, ownerNickname)}
+                        className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-[#f43f5e] cursor-pointer border-2 border-slate-300 dark:border-slate-600 hover:border-[#f43f5e] px-2.5 py-1 rounded-full transition-colors bg-transparent"
+                      >
+                        공유 해제
+                      </button>
                     </div>
+                    {/* 해당 소유자의 공유 여행 목록 */}
+                    {ownerShares.map((share) => {
+                      const coverSrc = share.trip_cover || getCountryFlagUrl(share.trip_destination, 160);
+                      return (
+                        <Link
+                          key={share.id}
+                          to={`/trip/${share.trip_id}`}
+                          className="flex items-center gap-3 bg-white dark:bg-[#2a1f15] p-4 rounded-xl border-[3px] border-slate-900 dark:border-slate-100 retro-shadow no-underline hover:border-[#f48c25] transition-all"
+                        >
+                          <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-[#0d9488]/10">
+                            {coverSrc ? (
+                              <img src={coverSrc} alt={share.trip_title} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-2xl">🌍</div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-[#1c140d] dark:text-slate-100 truncate">{share.trip_title}</p>
+                            <p className="text-[10px] text-gray-400 dark:text-slate-500 font-medium mt-0.5">
+                              {share.trip_destination || '여행'}
+                            </p>
+                          </div>
+                          <svg className="w-5 h-5 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                          </svg>
+                        </Link>
+                      );
+                    })}
                   </div>
-                  <svg className="w-5 h-5 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
-              );
-            })}
+                );
+              });
+            })()}
           </div>
         ) : (
           <div className="bg-white dark:bg-[#2a1f15] rounded-xl p-8 border-[3px] border-slate-900 dark:border-slate-100 retro-shadow text-center">
@@ -434,6 +493,16 @@ export default function ProfilePage() {
           </div>
         </section>
       )}
+
+      <ConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel={confirmModal.confirmLabel}
+        danger={confirmModal.danger}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal((p) => ({ ...p, open: false }))}
+      />
     </div>
   );
 }

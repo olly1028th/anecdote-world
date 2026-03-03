@@ -164,24 +164,25 @@ export function useTrips() {
 
       if (tripsErr) throw tripsErr;
 
-      // 2) 공유받은 여행 ID 조회
+      // 2) 공유받은 여행 조회 — 공유 소유자의 *모든* 여행을 가져옴 (최신 여행 포함)
       let sharedTrips: DbTrip[] = [];
       if (userEmail) {
         const { data: shares } = await supabase
           .from('trip_shares')
-          .select('trip_id')
+          .select('owner_id')
           .eq('status', 'accepted')
           .or(`invited_user_id.eq.${userId},invited_email.eq.${userEmail}`);
-        const sharedTripIds = (shares ?? []).map((s: { trip_id: string }) => s.trip_id);
+        const sharedOwnerIds = [...new Set((shares ?? []).map((s: { owner_id: string }) => s.owner_id))];
         const myTripIds = new Set((myTrips ?? []).map((t: DbTrip) => t.id));
-        const uniqueSharedIds = sharedTripIds.filter((id) => !myTripIds.has(id));
-        if (uniqueSharedIds.length > 0) {
+        // 소유자 ID 중 자기 자신 제외
+        const otherOwnerIds = sharedOwnerIds.filter((oid) => oid !== userId);
+        if (otherOwnerIds.length > 0) {
           const { data } = await supabase
             .from('trips')
             .select('*')
-            .in('id', uniqueSharedIds)
+            .in('user_id', otherOwnerIds)
             .order('created_at', { ascending: false });
-          sharedTrips = (data as DbTrip[]) ?? [];
+          sharedTrips = ((data as DbTrip[]) ?? []).filter((t) => !myTripIds.has(t.id));
         }
       }
 
@@ -585,16 +586,29 @@ export function useTrip(id: string | undefined) {
 
       let dbTrip = myTrip;
 
-      // 2차: 내 여행이 아니면 공유받은 여행인지 확인
+      // 2차: 내 여행이 아니면 공유받은 소유자의 여행인지 확인
       if (!dbTrip) {
-        const { data: share } = await supabase
-          .from('trip_shares')
-          .select('id')
-          .eq('trip_id', id)
-          .eq('status', 'accepted')
-          .or(`invited_user_id.eq.${userId},invited_email.eq.${userEmail ?? ''}`)
+        // 해당 여행의 소유자가 나에게 공유를 수락한 소유자인지 확인
+        const { data: tripData } = await supabase
+          .from('trips')
+          .select('id, user_id')
+          .eq('id', id)
           .maybeSingle();
-        if (!share) {
+
+        let hasAccess = false;
+        if (tripData) {
+          const { data: share } = await supabase
+            .from('trip_shares')
+            .select('id')
+            .eq('owner_id', tripData.user_id)
+            .eq('status', 'accepted')
+            .or(`invited_user_id.eq.${userId},invited_email.eq.${userEmail ?? ''}`)
+            .limit(1)
+            .maybeSingle();
+          hasAccess = !!share;
+        }
+
+        if (!hasAccess) {
           // Supabase에 없는 여행 → 로컬 데이터 fallback 시도
           // (Supabase INSERT 실패 시 localStorage에 저장된 여행)
           const localFallback = getMergedDemoTrips().find((t) => t.id === id);
