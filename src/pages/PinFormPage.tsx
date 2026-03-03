@@ -146,26 +146,34 @@ export default function PinFormPage() {
         window.dispatchEvent(new CustomEvent('pin-added'));
       };
 
+      let supabaseSaved = false;
       if (!isSupabaseConfigured) {
         saveDemoPin();
       } else if (isEdit && id) {
         try {
           await updatePin(id, input);
           window.dispatchEvent(new CustomEvent('pin-added'));
-        } catch {
+          supabaseSaved = true;
+        } catch (err) {
+          console.error('[PinFormPage] 핀 수정 Supabase 실패:', err);
           saveDemoPin();
         }
       } else {
         try {
           await createPin(input);
           window.dispatchEvent(new CustomEvent('pin-added'));
-        } catch {
-          // Supabase 실패 시 데모 모드로 폴백
+          supabaseSaved = true;
+        } catch (err) {
+          console.error('[PinFormPage] 핀 생성 Supabase 실패:', err);
           saveDemoPin();
         }
       }
       navigate('/');
-      toast(isEdit ? '핀이 수정되었습니다' : '핀이 저장되었습니다');
+      if (isSupabaseConfigured && !supabaseSaved) {
+        toast('서버 저장 실패 — 로컬에 임시 저장되었습니다', 'error');
+      } else {
+        toast(isEdit ? '핀이 수정되었습니다' : '핀이 저장되었습니다');
+      }
     } catch (err) {
       toast(err instanceof Error ? err.message : '저장에 실패했습니다', 'error');
     } finally {

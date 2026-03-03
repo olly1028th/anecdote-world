@@ -269,19 +269,21 @@ export default function TripDetailPage() {
     const valid = draftExpenses.filter((e) => e.amount > 0);
     try {
       setSaving(true);
+      let sbOk = true;
       if (isDemo) {
         updateDemoTrip(id, { expenses: valid });
       } else {
         try {
           await saveExpenses(id, valid);
         } catch (err) {
+          sbOk = false;
           console.error('[saveExpenses] Supabase 실패, 로컬 저장 fallback:', err);
           updateDemoTrip(id, { expenses: valid });
         }
       }
       setEditingExpenses(false);
       refetch();
-      toast('경비가 저장되었습니다');
+      toast(sbOk ? '경비가 저장되었습니다' : '서버 저장 실패 — 로컬에 임시 저장되었습니다', sbOk ? 'success' : 'error');
     } catch (err) {
       toast(err instanceof Error ? err.message : '저장 실패', 'error');
     } finally {
@@ -305,19 +307,21 @@ export default function TripDetailPage() {
     const valid = draftChecklist.filter((c) => c.text.trim());
     try {
       setSaving(true);
+      let clOk = true;
       if (isDemo) {
         updateDemoTrip(id, { checklist: valid });
       } else {
         try {
           await saveChecklistItems(id, valid);
         } catch (err) {
+          clOk = false;
           console.error('[saveChecklist] Supabase 실패, 로컬 저장 fallback:', err);
           updateDemoTrip(id, { checklist: valid });
         }
       }
       setEditingChecklist(false);
       refetch();
-      toast('체크리스트가 저장되었습니다');
+      toast(clOk ? '체크리스트가 저장되었습니다' : '서버 저장 실패 — 로컬에 임시 저장되었습니다', clOk ? 'success' : 'error');
     } catch (err) {
       toast(err instanceof Error ? err.message : '저장 실패', 'error');
     } finally {
@@ -379,12 +383,14 @@ export default function TripDetailPage() {
     const valid = draftPlaces.filter((p) => p.name.trim() && p.day && p.day > 0);
     try {
       setSaving(true);
+      let plOk = true;
       if (isDemo) {
         updateDemoTrip(id, { places: valid });
       } else {
         try {
           await savePlaces(id, valid);
         } catch (err) {
+          plOk = false;
           console.error('[savePlaces] Supabase 실패, 로컬 저장 fallback:', err);
           updateDemoTrip(id, { places: valid });
         }
@@ -392,7 +398,7 @@ export default function TripDetailPage() {
       setEditingPlaces(false);
       refetch();
       window.dispatchEvent(new CustomEvent('pin-added'));
-      toast('일정이 저장되었습니다');
+      toast(plOk ? '일정이 저장되었습니다' : '서버 저장 실패 — 로컬에 임시 저장되었습니다', plOk ? 'success' : 'error');
     } catch (err) {
       toast(err instanceof Error ? err.message : '저장 실패', 'error');
     } finally {
