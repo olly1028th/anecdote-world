@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useDarkMode } from '../hooks/useDarkMode';
-import { usePendingInvitations, acceptShare, declineShare } from '../hooks/useShares';
+import { usePendingInvitations, acceptSharesFromOwner, declineSharesFromOwner } from '../hooks/useShares';
 
 export default function Header() {
   const { user, profile, isDemo, signOut } = useAuth();
@@ -24,18 +24,18 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [bellOpen]);
 
-  const handleAccept = async (shareId: string) => {
+  const handleAccept = async (shareIds: string[]) => {
     try {
-      await acceptShare(shareId, user?.id);
+      await acceptSharesFromOwner(shareIds, user?.id);
       toast('초대를 수락했습니다');
     } catch (err) {
       toast(err instanceof Error ? err.message : '수락 실패', 'error');
     }
   };
 
-  const handleDecline = async (shareId: string) => {
+  const handleDecline = async (shareIds: string[]) => {
     try {
-      await declineShare(shareId);
+      await declineSharesFromOwner(shareIds);
       toast('초대를 거절했습니다');
     } catch (err) {
       toast(err instanceof Error ? err.message : '거절 실패', 'error');
@@ -107,24 +107,29 @@ export default function Header() {
                   <div className="p-2 space-y-2">
                     {invitations.map((inv) => (
                       <div
-                        key={inv.id}
+                        key={inv.owner_id}
                         className="bg-white dark:bg-[#2a1f15] p-3 rounded-lg border-2 border-[#0d9488]/30"
                       >
-                        <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
-                          {inv.trip_title || '여행 초대'}
-                        </p>
-                        <p className="text-[10px] text-slate-400 font-medium mt-0.5">
-                          {inv.owner_nickname || '사용자'}님 · {inv.permission === 'edit' ? '편집' : '읽기'} 권한
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-[#0d9488] flex items-center justify-center shrink-0">
+                            <span className="text-white text-[10px] font-bold">{inv.owner_nickname[0].toUpperCase()}</span>
+                          </div>
+                          <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+                            {inv.owner_nickname}님의 초대
+                          </p>
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-medium mt-1">
+                          {inv.tripCount}개 여행 · {inv.permission === 'edit' ? '편집' : '읽기'} 권한
                         </p>
                         <div className="flex gap-2 mt-2">
                           <button
-                            onClick={() => handleAccept(inv.id)}
+                            onClick={() => handleAccept(inv.shareIds)}
                             className="flex-1 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider text-white bg-[#0d9488] border-2 border-slate-900 cursor-pointer hover:bg-[#0d9488]/90 transition-colors"
                           >
                             수락
                           </button>
                           <button
-                            onClick={() => handleDecline(inv.id)}
+                            onClick={() => handleDecline(inv.shareIds)}
                             className="flex-1 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-white dark:bg-[#1a1208] border-2 border-slate-900 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#2a1f15] transition-colors"
                           >
                             거절

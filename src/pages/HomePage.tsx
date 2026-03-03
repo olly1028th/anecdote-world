@@ -4,7 +4,7 @@ import type { VisitStatus } from '../types/database';
 import { useTrips } from '../hooks/useTrips';
 import { usePins } from '../hooks/usePins';
 import { useFavoritePhotos } from '../hooks/useFavoritePhotos';
-import { usePendingInvitations, acceptShare, declineShare, shareAllTrips, revokeAllShares, useSharedUsers } from '../hooks/useShares';
+import { usePendingInvitations, acceptSharesFromOwner, declineSharesFromOwner, shareAllTrips, revokeAllShares, useSharedUsers } from '../hooks/useShares';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { formatDate } from '../utils/format';
@@ -57,18 +57,18 @@ export default function HomePage() {
     }
   }, [error, toast]);
 
-  const handleAcceptInvitation = async (shareId: string) => {
+  const handleAcceptInvitation = async (shareIds: string[]) => {
     try {
-      await acceptShare(shareId, user?.id);
+      await acceptSharesFromOwner(shareIds, user?.id);
       toast('초대를 수락했습니다');
     } catch (err) {
       toast(err instanceof Error ? err.message : '수락 실패', 'error');
     }
   };
 
-  const handleDeclineInvitation = async (shareId: string) => {
+  const handleDeclineInvitation = async (shareIds: string[]) => {
     try {
-      await declineShare(shareId);
+      await declineSharesFromOwner(shareIds);
       toast('초대를 거절했습니다');
     } catch (err) {
       toast(err instanceof Error ? err.message : '거절 실패', 'error');
@@ -181,7 +181,7 @@ export default function HomePage() {
         </button>
       </section>
 
-      {/* 받은 초대 알림 */}
+      {/* 받은 초대 알림 (소유자별 1개) */}
       {invitations.length > 0 && (
         <section className="space-y-3">
           <div className="flex items-center gap-2">
@@ -192,31 +192,29 @@ export default function HomePage() {
           </div>
           {invitations.map((inv) => (
             <div
-              key={inv.id}
+              key={inv.owner_id}
               className="bg-white dark:bg-slate-800 p-4 rounded-xl border-[3px] border-[#0d9488] retro-shadow flex items-center gap-3"
             >
               <div className="w-10 h-10 rounded-full bg-[#0d9488] flex items-center justify-center shrink-0">
-                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                </svg>
+                <span className="text-white text-sm font-bold">{inv.owner_nickname[0].toUpperCase()}</span>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
-                  {inv.trip_title || '여행 초대'}
+                  {inv.owner_nickname}님의 초대
                 </p>
                 <p className="text-[10px] text-slate-400 font-medium mt-0.5">
-                  {inv.owner_nickname || '사용자'}님이 {inv.permission === 'edit' ? '편집' : '읽기'} 권한으로 초대했습니다
+                  {inv.tripCount}개 여행 · {inv.permission === 'edit' ? '편집' : '읽기'} 권한
                 </p>
               </div>
               <div className="flex gap-2 shrink-0">
                 <button
-                  onClick={() => handleAcceptInvitation(inv.id)}
+                  onClick={() => handleAcceptInvitation(inv.shareIds)}
                   className="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider text-white bg-[#0d9488] border-2 border-slate-900 cursor-pointer hover:bg-[#0d9488]/90 transition-colors"
                 >
                   수락
                 </button>
                 <button
-                  onClick={() => handleDeclineInvitation(inv.id)}
+                  onClick={() => handleDeclineInvitation(inv.shareIds)}
                   className="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-white border-2 border-slate-900 cursor-pointer hover:bg-gray-50 transition-colors"
                 >
                   거절
