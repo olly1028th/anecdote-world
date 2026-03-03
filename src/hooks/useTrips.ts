@@ -129,6 +129,7 @@ function mapDbTripToUi(
 
 export function useTrips() {
   const [trips, setTrips] = useState<Trip[]>([]);
+  const [sharedTrips, setSharedTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
@@ -191,7 +192,8 @@ export function useTrips() {
         }
       }
 
-      // 3) 전체 여행 병합
+      // 3) 전체 여행 (매핑용 — 관련 데이터 한 번에 조회)
+      const myTripIdSet = new Set((myTrips ?? []).map((t: DbTrip) => t.id));
       const allDbTrips = [...(myTrips ?? []), ...sharedTrips] as DbTrip[];
 
       let mapped: Trip[] = [];
@@ -242,14 +244,20 @@ export function useTrips() {
 
       if (!mountedRef.current) return;
 
+      // 내 여행과 공유 여행 분리
+      const myMapped = mapped.filter((t) => myTripIdSet.has(t.id));
+      const sharedMapped = mapped.filter((t) => !myTripIdSet.has(t.id));
+
       // Supabase 성공 시에도 로컬 여행 포함 (Supabase INSERT 실패 시 fallback으로 저장된 여행)
       const dbIds = new Set(mapped.map((t) => t.id));
       const extraLocal = getLocalTrips().filter((t) => !dbIds.has(t.id) && !getDeletedTripIds().has(t.id));
-      setTrips([...mapped, ...extraLocal]);
+      setTrips([...myMapped, ...extraLocal]);
+      setSharedTrips(sharedMapped);
     } catch (err) {
       if (!mountedRef.current) return;
       // Supabase 실패 시 데모 데이터로 fallback (에러 토스트 없이 조용히 전환)
       setTrips(getMergedDemoTrips());
+      setSharedTrips([]);
       console.warn('[useTrips] Supabase fetch failed, using local data:', err);
     } finally {
       if (mountedRef.current) setLoading(false);
@@ -282,7 +290,7 @@ export function useTrips() {
     return () => document.removeEventListener('visibilitychange', handler);
   }, [fetchTrips]);
 
-  return { trips, loading, error, refetch: fetchTrips };
+  return { trips, sharedTrips, loading, error, refetch: fetchTrips };
 }
 
 // ---- Trip Mutations ----

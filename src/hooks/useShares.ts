@@ -753,6 +753,8 @@ export interface ReceivedShare {
   trip_title: string;
   trip_destination: string;
   trip_cover: string;
+  trip_status: string;
+  trip_start_date: string;
   owner_nickname: string;
 }
 
@@ -780,6 +782,8 @@ export function useReceivedShares(userEmail: string | undefined) {
           trip_title: s.trip_title || '여행',
           trip_destination: '',
           trip_cover: '',
+          trip_status: 'planned',
+          trip_start_date: '',
           owner_nickname: s.owner_nickname || '사용자',
         }));
       setShares(received);
@@ -791,7 +795,7 @@ export function useReceivedShares(userEmail: string | undefined) {
       setLoading(true);
       const { data, error } = await supabase
         .from('trip_shares')
-        .select('id, trip_id, owner_id, permission, status, created_at, trips(title, destination, cover_image), profiles!trip_shares_owner_id_fkey(nickname)')
+        .select('id, trip_id, owner_id, permission, status, created_at, trips(title, destination, cover_image, status, start_date), profiles!trip_shares_owner_id_fkey(nickname)')
         .eq('invited_email', userEmail)
         .eq('status', 'accepted')
         .order('created_at', { ascending: false });
@@ -810,6 +814,8 @@ export function useReceivedShares(userEmail: string | undefined) {
           trip_title: trip?.title || '여행',
           trip_destination: trip?.destination || '',
           trip_cover: trip?.cover_image || '',
+          trip_status: trip?.status || 'planned',
+          trip_start_date: trip?.start_date || '',
           owner_nickname: profile?.nickname || '사용자',
         };
       });
