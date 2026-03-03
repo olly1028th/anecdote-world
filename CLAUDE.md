@@ -104,6 +104,193 @@ src/
 | `trip_shares` | 여행 공유/초대 | trip_id, owner_id, invited_email |
 | `profiles` | 사용자 프로필 | id (= auth user_id) |
 
+## 데이터 흐름 아키텍처
+
+### 공통 데이터 소스 (3계층)
+
+```
+┌─────────────────────────────────────────────────┐
+│  1. Supabase DB (PostgreSQL)                    │ ← 로그인 사용자 전용
+│     trips, pins, expenses, checklist_items ...   │
+├─────────────────────────────────────────────────┤
+│  2. localStorage (localStore.ts)                │ ← Supabase INSERT 실패 시 fallback
+│     anecdote-demo-trips, anecdote-demo-pins      │
+├─────────────────────────────────────────────────┤
+│  3. sampleData.ts (하드코딩)                     │ ← 현재 빈 배열 []
+│     sampleTrips = [], samplePins = []            │
+└─────────────────────────────────────────────────┘
+```
+
+### useTrips() 데이터 병합 흐름
+
+```
+Supabase 설정됨? ──NO──→ getMergedDemoTrips() (로컬만)
+       │
+      YES
+       │
+로그인 됨? ──NO──→ getMergedDemoTrips() (로컬만)
+       │
+      YES
+       │
+    ┌──────────────────────────┐
+    │ DB에서 내 trips SELECT    │
+    │ + trip_shares로 공유 trips │
+    │ + expenses, checklist,    │
+    │   pins, pin_photos 병합   │
+    └──────┬───────────────────┘
+           │
+           ▼
+    mapDbTripToUi() 변환 (snake_case → camelCase)
+           │
+           ▼
+    ┌──────────────────────────────────┐
+    │ 로컬 데이터 병합 (항상 실행):       │
+    │ extraLocal = getLocalTrips()     │
+    │   .filter(t => !dbIds.has(t.id)  │
+    │              && !deletedIds)     │
+    │                                  │
+    │ setTrips([...dbTrips, ...extra]) │
+    └──────────────────────────────────┘
+```
+
+### usePins() 데이터 병합 흐름
+
+useTrips와 동일 패턴이나 차이점:
+- `getMergedDemoTrips()` 대신 `getLocalPins()` 직접 반환 (sampleData 미포함)
+- **핀은 삭제 추적(tombstone) 없음** — trips는 `deletedTripIds` Set이 있지만 pins에는 없어서, Supabase DELETE 실패 시 핀이 다시 나타날 수 있음
+
+### 영역별 데이터 소비 구조
+
+#### 1. 스탯카드 (Stats Card)
+
+**파일**: `useStats.ts` → `HomePage.tsx`, `DashboardPage.tsx`, `ProfilePage.tsx`
+
+```
+useTrips() → trips[] ──┐
+                       ├──→ useStats() ──→ Stats 객체
+usePins()  → pins[] ──┘
+```
+
+| 스탯 | 데이터 소스 | 필터링 조건 |
+|------|-----------|------------|
+| 완료된 여행 수 | `trips` | `status === 'completed'` |
+| 계획된 여행 수 | `trips` | `status === 'planned'` |
+| 방문 국가 수 | `pins` | `getMapDisplayPins()` → `visit_status === 'visited'` → unique `country` |
+| 방문 도시 수 | `pins` | 동일, unique `city` |
+| 총 지출 | `trips` | **completed trips만** `expenses[]` 합산 |
+| 총 사진 수 | `trips` | `trip.photos.length` 합산 |
+| 체크리스트 진행 | `trips` | **planned trips만** 집계 |
+
+**⚠️ 불일치 원인**: 국가/도시 카운트는 trips가 아닌 pins 기반이고, `getMapDisplayPins()` 필터를 거침:
+- `lat === 0 && lng === 0` 핀 → 제외 (지오코딩 실패)
+- `day_number != null` 핀 → main pin 없는 trip만 대표 1개 포함
+- **결과: trip은 있는데 유효한 pin이 없으면 국가/도시 0으로 표시**
+
+#### 2. 검색 필터 (Search Filter)
+
+**파일**: `SearchFilter.tsx` → `HomePage.tsx`
+
+```
+useTrips() → trips[]
+               │
+               ├─ completedTrips (status=completed)  ← 스탯 탭 섹션 (고정)
+               ├─ plannedTrips   (status=planned)    ← 스탯 탭 섹션 (고정)
+               ├─ wishlistTrips  (status=wishlist)   ← 스탯 탭 섹션 (고정)
+               │
+               └─ displayTrips = useMemo(() => {
+                    1단계: statusFilter 적용
+                    2단계: searchQuery 적용 (title, destination, memo)
+                  })
+                    │
+                    └──→ "검색 결과" 섹션에만 렌더링
+```
+
+| 항목 | 설명 |
+|------|------|
+| 필터 상태 저장 | 로컬 컴포넌트 state (새로고침 시 초기화, localStorage 미사용) |
+| 검색 대상 | `title`, `destination`, `memo` (클라이언트 사이드, 250ms 디바운스) |
+| 필터 적용 범위 | **"검색 결과" 섹션에만** 적용 |
+| 스탯 탭/지도 | 필터 영향 **받지 않음** |
+
+**⚠️ 불일치 원인**: 필터 뱃지 숫자(tripCounts)는 전체 trips 기준이지만, 화면에 보이는 목록은 필터된 displayTrips만 표시
+
+#### 3. 세계지도 핀 매핑 (World Map Pin Mapping)
+
+**파일**: `usePins.ts` → `mapPins.ts` → `WorldMap.tsx`
+
+```
+usePins() → allPins[]
+               │
+               ▼
+        getMapDisplayPins(allPins)    ← src/utils/mapPins.ts
+               │
+               ├─ 1단계: lat === 0 && lng === 0 제거
+               ├─ 2단계: day_number == null 핀 (main pin) 유지
+               └─ 3단계: main pin 없는 trip → 첫 번째 day pin 대표 포함
+               │
+               ▼
+        HomePage에서 추가 status 필터 (핀 필터 버튼)
+               │
+               ▼
+        <WorldMap pins={filteredPins} />
+               ├─ 15개 이하: PinMarker 개별 렌더
+               └─ 15개 초과: ClusterLayer 클러스터링
+```
+
+**⚠️ 불일치 원인**:
+- trip.places에 장소 있어도 좌표 없으면 (`lat:0, lng:0`) 지도에 안 나옴
+- day_number 핀은 main pin이 하나라도 있으면 지도에서 제외
+- **trip 장소 수 ≠ 지도 핀 수 ≠ 스탯 국가 수** (각각 다른 필터)
+
+### 3개 영역 불일치 전체 구조
+
+```
+┌───────────────────────────────────────────────────────┐
+│                   useTrips() → trips[]                │
+│  ┌──────────────┬────────────────┬──────────────────┐ │
+│  │ Stats Card   │ Search Filter  │ (참조 안 함)      │ │
+│  │ 전체 기준     │ 필터된 결과만   │                   │ │
+│  └──────┬───────┴───────┬────────┘                   │ │
+│         │               │                            │ │
+│    숫자 불일치!     검색결과만 영향                      │ │
+└───────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────┐
+│                   usePins() → pins[]                  │
+│                        │                              │
+│                        ▼                              │
+│               getMapDisplayPins()                     │
+│               ├─ (0,0) 좌표 제외                      │
+│               ├─ day_number 핀 대부분 제외              │
+│               │                                      │
+│               ├──→ Stats: 이 필터된 핀으로 국가/도시     │
+│               └──→ WorldMap: 이 필터된 핀으로 마커       │
+│                                                      │
+│  ⚠️ trip.places 장소 수 ≠ 지도 핀 수 ≠ 스탯 국가 수    │
+└───────────────────────────────────────────────────────┘
+```
+
+### 웹 vs 모바일 차이
+
+**데이터 로직 차이: 없음** — 동일한 hooks, 동일한 필터, 분기 로직 없음
+
+**레이아웃 차이 (CSS만)**:
+
+| 요소 | 모바일 (< 640px) | 데스크톱 (≥ 640px) |
+|------|-----------------|-------------------|
+| 스탯 그리드 | `grid-cols-2` (2×2) | `grid-cols-4` (1×4) |
+| 지도 높이 | `h-[260px]` | `h-[340px]` → `md:h-[380px]` |
+| 핀 필터 버튼 | 좌측 정렬 + 오버플로 스크롤 | 우측 배치 |
+| 공유 모달 | 하단 시트 (bottom sheet) | 중앙 정렬 |
+
+**정보가 달라 보이는 실제 원인**:
+
+| 원인 | 설명 |
+|------|------|
+| 다른 로그인 상태 | 모바일: 미로그인 → 데모 데이터, PC: 로그인 → Supabase 데이터 |
+| localStorage 기기별 독립 | Supabase INSERT 실패 시 해당 기기 localStorage에만 저장, 다른 기기에서 없음 |
+| Realtime 미사용 | A기기에서 핀 추가 → B기기는 새로고침 전까지 반영 안 됨 (커스텀 이벤트는 같은 탭 내에서만 동작) |
+
 ## 스타일링 컨벤션
 
 - **색상 팔레트**: 오렌지 `#f48c25`, 틸 `#0d9488`, 핑크 `#f43f5e`, 노랑 `#eab308`, 다크브라운 `#1c140d`, 크림 배경 `#F9F4E8`
