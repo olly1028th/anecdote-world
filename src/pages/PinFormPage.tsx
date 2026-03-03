@@ -185,11 +185,12 @@ export default function PinFormPage() {
     ? [lat, lng]
     : [36.5, 127.5]; // 한국 중심 기본값
 
-  const inputClass = "w-full px-4 py-3 rounded-xl border-2 border-slate-900 dark:border-slate-100 text-sm font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]";
-  const labelClass = "block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2";
+  const inputClass = "w-full px-4 py-3 rounded-xl border-[3px] border-slate-900 dark:border-slate-100 text-sm font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25]";
+  const labelClass = "block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2";
+  const sectionClass = "bg-white dark:bg-[#2a1f15] rounded-xl p-4 sm:p-5 border-[3px] border-slate-900 dark:border-slate-100 retro-shadow space-y-4";
 
   return (
-    <div className="px-6 space-y-6 max-w-2xl mx-auto pb-24">
+    <div className="px-4 sm:px-6 space-y-6 max-w-2xl mx-auto pb-24">
       {/* 뒤로가기 */}
       <Link
         to="/"
@@ -203,19 +204,19 @@ export default function PinFormPage() {
 
       <div>
         <p className="text-sm font-bold text-[#f48c25] uppercase tracking-widest mb-1">Pin Setup</p>
-        <h1 className="text-2xl font-bold text-[#1c140d] dark:text-slate-100">
+        <h1 className="text-2xl font-bold text-[#1c140d] dark:text-slate-100 uppercase italic tracking-tight">
           {isEdit ? 'Edit Pin' : 'New Pin'}
         </h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* 지도 위치 선택 */}
-        <div>
+        <div className={sectionClass}>
           <label className={labelClass}>
             Location <span className="text-[#f43f5e]">*</span>
             <span className="text-[10px] text-slate-400 ml-2 normal-case tracking-normal">지도를 클릭하세요</span>
           </label>
-          <div className="h-[220px] sm:h-[300px] rounded-xl overflow-hidden border-[3px] border-slate-900 dark:border-slate-100 retro-shadow">
+          <div className="h-[220px] sm:h-[300px] rounded-xl overflow-hidden border-[3px] border-slate-900 dark:border-slate-100 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.15)]">
             <MapContainer
               center={mapCenter}
               zoom={lat !== null ? 13 : 5}
@@ -240,7 +241,7 @@ export default function PinFormPage() {
         </div>
 
         {/* 방문 상태 */}
-        <div>
+        <div className={sectionClass}>
           <label className={labelClass}>Status</label>
           <div className="flex gap-3">
             {VISIT_OPTIONS.map((opt) => (
@@ -248,10 +249,10 @@ export default function PinFormPage() {
                 key={opt.value}
                 type="button"
                 onClick={() => setVisitStatus(opt.value)}
-                className={`flex-1 py-3 rounded-xl text-sm font-bold uppercase tracking-tight transition-all cursor-pointer border-2 border-slate-900 ${
+                className={`flex-1 py-3 rounded-xl text-sm font-bold uppercase tracking-tight transition-all cursor-pointer border-[3px] border-slate-900 dark:border-slate-100 ${
                   visitStatus === opt.value
                     ? opt.color
-                    : 'bg-white dark:bg-[#2a1f15] text-slate-400 shadow-none'
+                    : 'bg-white dark:bg-[#1a1208] text-slate-400 shadow-none'
                 }`}
               >
                 {opt.label}
@@ -260,57 +261,61 @@ export default function PinFormPage() {
           </div>
         </div>
 
-        {/* 핀 이름 */}
-        <div>
-          <label className={labelClass}>
-            Name <span className="text-[#f43f5e]">*</span>
-          </label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="예: 센소지, 에펠탑"
-            required
-            className={inputClass}
-          />
-        </div>
-
-        {/* 주소 / 국가 / 도시 */}
-        <div>
-          <label className={labelClass}>Address</label>
-          <input
-            type="text"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="상세 주소"
-            className={inputClass}
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
+        {/* 기본 정보 */}
+        <div className={sectionClass}>
+          <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Basic Info</h3>
+          {/* 핀 이름 */}
           <div>
-            <label className={labelClass}>Country</label>
+            <label className={labelClass}>
+              Name <span className="text-[#f43f5e]">*</span>
+            </label>
             <input
               type="text"
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              placeholder="예: 일본"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="예: 센소지, 에펠탑"
+              required
               className={inputClass}
             />
           </div>
+
+          {/* 주소 */}
           <div>
-            <label className={labelClass}>City</label>
+            <label className={labelClass}>Address</label>
             <input
               type="text"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              placeholder="예: 도쿄"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="상세 주소"
               className={inputClass}
             />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Country</label>
+              <input
+                type="text"
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                placeholder="예: 일본"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>City</label>
+              <input
+                type="text"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="예: 도쿄"
+                className={inputClass}
+              />
+            </div>
           </div>
         </div>
 
         {/* 카테고리 */}
-        <div>
+        <div className={sectionClass}>
           <label className={labelClass}>Category</label>
           <div className="flex flex-wrap gap-2">
             {CATEGORY_OPTIONS.map((opt) => (
@@ -318,10 +323,10 @@ export default function PinFormPage() {
                 key={opt.value}
                 type="button"
                 onClick={() => setCategory(opt.value)}
-                className={`px-4 py-2 rounded-full text-sm font-bold transition-all cursor-pointer border-2 border-slate-900 ${
+                className={`px-4 py-2 rounded-full text-sm font-bold transition-all cursor-pointer border-[3px] border-slate-900 dark:border-slate-100 ${
                   category === opt.value
                     ? 'bg-[#f48c25] text-white retro-shadow'
-                    : 'bg-white dark:bg-[#2a1f15] text-slate-500 dark:text-slate-400 shadow-none'
+                    : 'bg-white dark:bg-[#1a1208] text-slate-500 dark:text-slate-400 shadow-none'
                 }`}
               >
                 {opt.label}
@@ -331,73 +336,75 @@ export default function PinFormPage() {
         </div>
 
         {/* 여행 연결 */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className={labelClass}>Trip</label>
-            <select
-              value={tripId ?? ''}
-              onChange={(e) => setTripId(e.target.value || null)}
-              className={inputClass}
-            >
-              <option value="">없음</option>
-              {trips.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.title}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className={labelClass}>Day</label>
-            <input
-              type="number"
-              min={1}
-              value={dayNumber ?? ''}
-              onChange={(e) => setDayNumber(e.target.value ? Number(e.target.value) : null)}
-              placeholder="예: 1"
-              className={inputClass}
-            />
+        <div className={sectionClass}>
+          <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Link to Trip</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Trip</label>
+              <select
+                value={tripId ?? ''}
+                onChange={(e) => setTripId(e.target.value || null)}
+                className={inputClass}
+              >
+                <option value="">없음</option>
+                {trips.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={labelClass}>Day</label>
+              <input
+                type="number"
+                min={1}
+                value={dayNumber ?? ''}
+                onChange={(e) => setDayNumber(e.target.value ? Number(e.target.value) : null)}
+                placeholder="예: 1"
+                className={inputClass}
+              />
+            </div>
           </div>
         </div>
 
-        {/* 방문 날짜 (방문 상태일 때만) */}
+        {/* 방문 날짜 & 별점 (방문 상태일 때만) */}
         {visitStatus === 'visited' && (
-          <div>
-            <label className={labelClass}>Visit Date</label>
-            <input
-              type="date"
-              value={visitedAt}
-              onChange={(e) => setVisitedAt(e.target.value)}
-              className={inputClass}
-            />
-          </div>
-        )}
-
-        {/* 별점 (방문 상태일 때만) */}
-        {visitStatus === 'visited' && (
-          <div>
-            <label className={labelClass}>Rating</label>
-            <div className="flex gap-1">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  type="button"
-                  onClick={() => setRating(rating === star ? null : star)}
-                  className="text-2xl cursor-pointer transition-colors bg-transparent border-0 p-0"
-                  style={{ color: rating !== null && star <= rating ? '#f48c25' : '#d1d5db' }}
-                >
-                  ★
-                </button>
-              ))}
-              {rating !== null && (
-                <span className="text-sm text-slate-400 ml-2 self-center font-bold">{rating}/5</span>
-              )}
+          <div className={sectionClass}>
+            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Visit Details</h3>
+            <div>
+              <label className={labelClass}>Visit Date</label>
+              <input
+                type="date"
+                value={visitedAt}
+                onChange={(e) => setVisitedAt(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Rating</label>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setRating(rating === star ? null : star)}
+                    className="text-2xl cursor-pointer transition-colors bg-transparent border-0 p-0"
+                    style={{ color: rating !== null && star <= rating ? '#f48c25' : '#d1d5db' }}
+                  >
+                    ★
+                  </button>
+                ))}
+                {rating !== null && (
+                  <span className="text-sm text-slate-400 ml-2 self-center font-bold">{rating}/5</span>
+                )}
+              </div>
             </div>
           </div>
         )}
 
         {/* 메모 */}
-        <div>
+        <div className={sectionClass}>
           <label className={labelClass}>Note</label>
           <textarea
             value={note}
@@ -412,14 +419,14 @@ export default function PinFormPage() {
         <div className="flex gap-3 pt-4">
           <Link
             to="/"
-            className="flex-1 py-3.5 rounded-xl text-sm font-bold uppercase tracking-tight text-slate-500 bg-white dark:bg-[#2a1f15] border-2 border-slate-900 text-center no-underline hover:bg-gray-50 dark:hover:bg-[#1a1208] transition-all"
+            className="flex-1 py-3.5 rounded-xl text-sm font-bold uppercase tracking-tight text-slate-500 bg-white dark:bg-[#2a1f15] border-[3px] border-slate-900 dark:border-slate-100 text-center no-underline hover:bg-gray-50 dark:hover:bg-[#1a1208] transition-all"
           >
             Cancel
           </Link>
           <button
             type="submit"
             disabled={saving || !name.trim() || lat === null || lng === null}
-            className="flex-1 py-3.5 rounded-xl text-sm font-bold uppercase tracking-tight text-white bg-[#f48c25] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-[#d97a1e] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 py-3.5 rounded-xl text-sm font-bold uppercase tracking-tight text-white bg-[#f48c25] border-[3px] border-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-[#d97a1e] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? 'Saving...' : isEdit ? 'Update Pin' : 'Add Pin'}
           </button>

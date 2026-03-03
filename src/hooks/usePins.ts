@@ -12,12 +12,14 @@ export function usePins() {
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
 
+  const fetchIdRef = useRef(0);
   const fetchPins = useCallback(async () => {
+    const currentFetchId = ++fetchIdRef.current;
     const deletedIds = getDeletedPinIds();
     const getFilteredLocalPins = () => getLocalPins().filter((p) => !deletedIds.has(p.id));
 
     if (!isSupabaseConfigured) {
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || currentFetchId !== fetchIdRef.current) return;
       setPins(getFilteredLocalPins());
       setLoading(false);
       return;
@@ -29,7 +31,7 @@ export function usePins() {
 
       // 현재 로그인한 사용자 확인
       const { data: { session } } = await supabase.auth.getSession();
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || currentFetchId !== fetchIdRef.current) return;
       const userId = session?.user?.id;
       const userEmail = session?.user?.email;
       if (!userId) {
@@ -73,7 +75,7 @@ export function usePins() {
       const extraShared = sharedPins.filter((p) => !myPinIds.has(p.id));
       const dbPins = [...myPins, ...extraShared];
 
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || currentFetchId !== fetchIdRef.current) return;
 
       // Supabase 성공 시에도 로컬 핀 포함 (Supabase INSERT 실패 시 fallback으로 저장된 핀)
       const dbIds = new Set(dbPins.map((p) => p.id));
