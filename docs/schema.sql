@@ -58,6 +58,7 @@ CREATE TABLE public.trips (
   end_date    DATE,
   cover_image TEXT DEFAULT '',                  -- 대표 이미지 URL
   memo        TEXT DEFAULT '',                  -- 한줄 후기 / 메모
+  photo_captions JSONB DEFAULT '{}'::jsonb,     -- 사진별 캡션 { url: caption }
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );

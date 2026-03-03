@@ -173,6 +173,17 @@ export function updateLocalPinsByTripId(tripId: string, updates: Partial<Pin>) {
   localStorage.setItem(LOCAL_PINS_KEY, JSON.stringify(localPins));
 }
 
+/** 특정 여행의 planned/wishlist 로컬 핀 교체 (savePlaces 로컬 버전) */
+export function replaceLocalPinsForTrip(tripId: string, newPins: Pin[]) {
+  // 기존 planned/wishlist 핀 제거 (visited 핀은 유지)
+  localPins = localPins.filter(
+    (p) => p.trip_id !== tripId || p.visit_status === 'visited',
+  );
+  // 새 핀 추가
+  localPins = [...newPins, ...localPins];
+  localStorage.setItem(LOCAL_PINS_KEY, JSON.stringify(localPins));
+}
+
 /** 핀 로컬 삭제 (삭제 기록에 추가 — 다른 기기에서 부활 방지) */
 export function deleteLocalPin(id: string) {
   localPins = localPins.filter((p) => p.id !== id);
@@ -185,4 +196,35 @@ export function deleteLocalPin(id: string) {
 export function removeLocalPin(id: string) {
   localPins = localPins.filter((p) => p.id !== id);
   localStorage.setItem(LOCAL_PINS_KEY, JSON.stringify(localPins));
+}
+
+// ============================================================
+// 사진 캡션 로컬 저장소 (DB 컬럼 유무와 무관하게 동작)
+// ============================================================
+
+const CAPTIONS_KEY_PREFIX = 'anecdote-captions-';
+
+/** 특정 여행의 사진 캡션 저장 */
+export function savePhotoCaptions(tripId: string, captions: Record<string, string>) {
+  const cleaned = { ...captions };
+  for (const key of Object.keys(cleaned)) {
+    if (!cleaned[key]) delete cleaned[key];
+  }
+  if (Object.keys(cleaned).length === 0) {
+    localStorage.removeItem(CAPTIONS_KEY_PREFIX + tripId);
+  } else {
+    localStorage.setItem(CAPTIONS_KEY_PREFIX + tripId, JSON.stringify(cleaned));
+  }
+}
+
+/** 특정 여행의 사진 캡션 로드 */
+export function loadPhotoCaptions(tripId: string): Record<string, string> | undefined {
+  try {
+    const raw = localStorage.getItem(CAPTIONS_KEY_PREFIX + tripId);
+    if (!raw) return undefined;
+    const parsed = JSON.parse(raw) as Record<string, string>;
+    return Object.keys(parsed).length > 0 ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
 }

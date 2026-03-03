@@ -8,6 +8,7 @@ export { addLocalPin as addDemoPin } from '../lib/localStore';
 
 export function usePins() {
   const [pins, setPins] = useState<Pin[]>([]);
+  const [sharedPins, setSharedPins] = useState<Pin[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
@@ -70,21 +71,22 @@ export function usePins() {
         }
       }
 
-      // 3) 병합 (중복 제거)
+      // 3) 내 핀과 공유 핀 분리 (중복 제거)
       const myPinIds = new Set(myPins.map((p) => p.id));
       const extraShared = sharedPins.filter((p) => !myPinIds.has(p.id));
-      const dbPins = [...myPins, ...extraShared];
 
       if (!mountedRef.current || currentFetchId !== fetchIdRef.current) return;
 
       // Supabase 성공 시에도 로컬 핀 포함 (Supabase INSERT 실패 시 fallback으로 저장된 핀)
-      const dbIds = new Set(dbPins.map((p) => p.id));
-      const extraLocal = getFilteredLocalPins().filter((p) => !dbIds.has(p.id));
-      setPins([...dbPins, ...extraLocal]);
+      const myDbIds = new Set(myPins.map((p) => p.id));
+      const extraLocal = getFilteredLocalPins().filter((p) => !myDbIds.has(p.id));
+      setPins([...myPins, ...extraLocal]);
+      setSharedPins(extraShared);
     } catch (err) {
       if (!mountedRef.current) return;
       // Supabase 실패 시 로컬 데이터로 fallback (에러 토스트 없이 조용히 전환)
       setPins(getFilteredLocalPins());
+      setSharedPins([]);
       console.warn('[usePins] Supabase fetch failed, using local data:', err);
     } finally {
       if (mountedRef.current) setLoading(false);
@@ -117,7 +119,7 @@ export function usePins() {
     return () => document.removeEventListener('visibilitychange', handler);
   }, [fetchPins]);
 
-  return { pins, loading, error, refetch: fetchPins };
+  return { pins, sharedPins, loading, error, refetch: fetchPins };
 }
 
 // ---- Pin Mutations ----

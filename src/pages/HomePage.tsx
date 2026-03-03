@@ -266,7 +266,7 @@ export default function HomePage() {
             activeStatsTab === 'pins' ? 'bg-[#f43f5e]/30 -translate-y-1' : 'bg-[#f43f5e]/10'
           }`}
         >
-          <span className="text-2xl font-bold text-[#f43f5e]">{mapPins.length}</span>
+          <span className="text-2xl font-bold text-[#f43f5e]">{trips.length}</span>
           <span className="text-[10px] uppercase font-bold text-slate-500 mt-1 leading-none">Stars</span>
         </button>
       </section>
@@ -383,33 +383,36 @@ export default function HomePage() {
 
           {activeStatsTab === 'pins' && (
             <div className="space-y-2">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">All Pins</h3>
-              {mapPins.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-4 font-medium">등록된 핀이 없습니다.</p>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">All Stars ({trips.length})</h3>
+              {trips.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-4 font-medium">등록된 여행이 없습니다.</p>
               ) : (
-                mapPins.map((pin) => {
-                  const pinTrip = pin.trip_id ? trips.find((t) => t.id === pin.trip_id) : null;
-                  const statusLabels: Record<string, string> = { visited: 'Visited', planned: 'Planned', wishlist: 'Wish' };
-                  const statusBg: Record<string, string> = { visited: 'bg-[#0d9488] text-white', planned: 'bg-[#eab308]', wishlist: 'bg-[#f43f5e] text-white' };
+                trips.map((trip) => {
+                  const thumbSrc = trip.coverImage || getCountryFlagUrl(trip.destination, 160);
+                  const statusLabels: Record<string, string> = { completed: 'Visited', planned: 'Planned', wishlist: 'Wish' };
+                  const statusBg: Record<string, string> = { completed: 'bg-[#0d9488] text-white', planned: 'bg-[#eab308]', wishlist: 'bg-[#f43f5e] text-white' };
                   return (
                     <Link
-                      key={pin.id}
-                      to={pinTrip ? `/trip/${pinTrip.id}` : `/pin/edit/${pin.id}`}
+                      key={trip.id}
+                      to={`/trip/${trip.id}`}
                       className="flex items-center gap-3 bg-[#F9F4E8] dark:bg-slate-800 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-[#f48c25] transition-colors no-underline"
                     >
-                      <div className="w-10 h-10 rounded-lg bg-[#f43f5e]/10 border-2 border-slate-200 flex items-center justify-center shrink-0">
-                        <span className="text-lg">📍</span>
+                      <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border-[3px] border-slate-900 bg-[#f43f5e]/10 flex items-center justify-center">
+                        {thumbSrc ? (
+                          <img src={thumbSrc} alt={trip.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-lg">🌍</span>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{pin.name}</p>
+                        <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{trip.title}</p>
                         <p className="text-[10px] text-slate-400 mt-0.5 uppercase tracking-wider font-bold">
-                          {pin.city && <span>{pin.city}</span>}
-                          {pin.country && <span>, {pin.country}</span>}
-                          {pinTrip && <span> · {pinTrip.title}</span>}
+                          {trip.destination && <span>{trip.destination}</span>}
+                          {trip.startDate && <span> · {formatDate(trip.startDate)}</span>}
                         </p>
                       </div>
-                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0 border-2 border-slate-900 uppercase tracking-wider ${statusBg[pin.visit_status] || ''}`}>
-                        {statusLabels[pin.visit_status] || pin.visit_status}
+                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0 border-2 border-slate-900 uppercase tracking-wider ${statusBg[trip.status] || ''}`}>
+                        {statusLabels[trip.status] || trip.status}
                       </span>
                     </Link>
                   );

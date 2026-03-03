@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTrip, deleteTrip, updateTrip, toggleChecklistItem, saveExpenses, saveChecklistItems, savePlaces, updateDemoTrip, deleteDemoTrip } from '../hooks/useTrips';
 import { supabase } from '../lib/supabase';
+import { savePhotoCaptions, replaceLocalPinsForTrip } from '../lib/localStore';
 import { uploadTripPhoto, deleteTripPhoto } from '../lib/storage';
 import { useSharesForTrip, createShare, removeShare, updateSharePermission } from '../hooks/useShares';
 import { useExchangeRate } from '../hooks/useExchangeRate';
@@ -407,11 +408,40 @@ export default function TripDetailPage() {
     if (!trip || !id) return;
     // day가 유효한 장소만 저장 (미배정 장소 제거)
     const valid = draftPlaces.filter((p) => p.name.trim() && p.day && p.day > 0);
+
+    // 장소 → 로컬 Pin 레코드 변환 헬퍼
+    const buildLocalPins = () => {
+      const now = new Date().toISOString();
+      const pinStatus = trip.status === 'completed' ? 'visited' as const : trip.status === 'wishlist' ? 'wishlist' as const : 'planned' as const;
+      return valid.map((p, i) => ({
+        id: `pin-local-${id}-${i}-${Date.now()}`,
+        user_id: user?.id ?? 'demo-user-001',
+        trip_id: id,
+        name: p.name,
+        address: p.priority,
+        lat: p.lat ?? 0,
+        lng: p.lng ?? 0,
+        country: '',
+        city: '',
+        visit_status: p.priority === 'maybe' ? 'wishlist' as const : pinStatus,
+        visited_at: trip.status === 'completed' ? (trip.startDate || null) : null,
+        category: 'other' as const,
+        rating: null,
+        note: p.time ? `[${p.time}] ${p.note || ''}` : (p.note || ''),
+        day_number: p.day ?? null,
+        sort_order: i,
+        created_at: now,
+        updated_at: now,
+      }));
+    };
+
     try {
       setSaving(true);
       let plOk = true;
       if (isDemo) {
         updateDemoTrip(id, { places: valid });
+        // 데모모드: 로컬 핀 레코드도 생성 (세계지도에 반영)
+        replaceLocalPinsForTrip(id, buildLocalPins());
       } else {
         try {
           await savePlaces(id, valid);
@@ -419,6 +449,8 @@ export default function TripDetailPage() {
           plOk = false;
           console.error('[savePlaces] Supabase 실패, 로컬 저장 fallback:', err);
           updateDemoTrip(id, { places: valid });
+          // Supabase 실패 시에도 로컬 핀 생성 (세계지도에 반영)
+          replaceLocalPinsForTrip(id, buildLocalPins());
         }
       }
       setEditingPlaces(false);
@@ -460,22 +492,24 @@ export default function TripDetailPage() {
   // --- 사진 캡션 저장 ---
   const handleCaptionChange = async (url: string, caption: string) => {
     if (!trip || !id) return;
-    const updated = { ...trip.photoCaptions, [url]: caption };
+    const updated = { ...(trip.photoCaptions ?? {}), [url]: caption };
     // 빈 캡션은 삭제
     if (!caption) delete updated[url];
-    try {
-      if (isDemo) {
-        updateDemoTrip(id, { photoCaptions: updated });
-      } else {
-        await supabase.from('trips').update({ photo_captions: updated }).eq('id', id).eq('user_id', user?.id ?? '');
+
+    // 1. localStorage에 즉시 저장 (DB 컬럼 유무와 무관하게 항상 동작)
+    savePhotoCaptions(id, updated);
+
+    // 2. Supabase에도 저장 시도 (photo_captions 컬럼이 있으면 DB에도 반영)
+    if (!isDemo && user) {
+      try {
+        await supabase.from('trips').update({ photo_captions: updated }).eq('id', id).eq('user_id', user.id);
+      } catch {
+        // DB 컬럼 미존재 시 무시 — localStorage에 이미 저장됨
       }
-      refetch();
-    } catch (err) {
-      console.error('[handleCaptionChange] 캡션 저장 실패:', err);
-      // fallback: 로컬에 저장
-      updateDemoTrip(id, { photoCaptions: updated });
-      refetch();
     }
+
+    // 3. refetch하여 UI 갱신 (mapDbTripToUi에서 localStorage 캡션 병합)
+    refetch();
   };
 
   // 에러가 있지만 폴백 데이터가 있으면 토스트로 알림만 표시

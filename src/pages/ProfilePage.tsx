@@ -387,9 +387,12 @@ export default function ProfilePage() {
                 const permission = ownerShares.some((s) => s.permission === 'edit') ? 'edit' : 'read';
                 return (
                   <div key={ownerId} className="space-y-2">
-                    {/* 소유자 헤더 + 공유 해제 버튼 */}
+                    {/* 소유자 헤더 — 클릭하면 공유 뷰 페이지로 이동 */}
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
+                      <Link
+                        to={`/shared/${ownerId}`}
+                        className="flex items-center gap-2 no-underline hover:opacity-80 transition-opacity"
+                      >
                         <div className="w-7 h-7 rounded-full bg-[#0d9488] flex items-center justify-center">
                           <span className="text-white text-[10px] font-bold">{ownerNickname[0].toUpperCase()}</span>
                         </div>
@@ -401,7 +404,8 @@ export default function ProfilePage() {
                         }`}>
                           {permission === 'edit' ? '편집' : '읽기'}
                         </span>
-                      </div>
+                        <span className="text-[10px] font-bold text-slate-300 dark:text-slate-500 ml-1">{ownerShares.length}개 ›</span>
+                      </Link>
                       <button
                         type="button"
                         onClick={() => handleLeaveShare(ownerId, ownerNickname)}
@@ -410,8 +414,8 @@ export default function ProfilePage() {
                         공유 해제
                       </button>
                     </div>
-                    {/* 해당 소유자의 공유 여행 목록 */}
-                    {ownerShares.map((share) => {
+                    {/* 해당 소유자의 최근 2개 여행 미리보기 */}
+                    {ownerShares.slice(0, 2).map((share) => {
                       const coverSrc = share.trip_cover || getCountryFlagUrl(share.trip_destination, 160);
                       return (
                         <Link
@@ -438,6 +442,15 @@ export default function ProfilePage() {
                         </Link>
                       );
                     })}
+                    {/* 3개 이상이면 "모두 보기" 링크 */}
+                    {ownerShares.length > 2 && (
+                      <Link
+                        to={`/shared/${ownerId}`}
+                        className="block text-center py-2 text-[10px] font-bold uppercase tracking-widest text-[#0d9488] hover:text-[#f48c25] transition-colors no-underline"
+                      >
+                        {ownerNickname}님의 여행 모두 보기 ({ownerShares.length}개) ›
+                      </Link>
+                    )}
                   </div>
                 );
               });
