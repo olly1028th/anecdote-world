@@ -108,6 +108,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
         }
       };
 
+      let supabaseSaved = false;
       if (isSupabaseConfigured) {
         try {
           const tripId = await createTrip({
@@ -117,6 +118,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
             end_date: endDate || undefined,
             memo: memo.trim() || undefined,
           });
+          supabaseSaved = true;
           if (finalDest.lat != null && finalDest.lng != null) {
             try {
               await createPin({
@@ -130,8 +132,9 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
                 category: 'landmark',
                 trip_id: tripId,
               });
-            } catch {
+            } catch (pinErr) {
               // 핀 Supabase 저장 실패 → localStorage에 fallback 저장
+              console.error('[TripFormModal] 핀 Supabase 저장 실패:', pinErr);
               const now = new Date().toISOString();
               addDemoPin({
                 id: `pin-demo-${Date.now()}`,
@@ -156,7 +159,8 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
             }
             window.dispatchEvent(new CustomEvent('pin-added'));
           }
-        } catch {
+        } catch (tripErr) {
+          console.error('[TripFormModal] 여행 Supabase 저장 실패:', tripErr);
           saveDemoTrip();
         }
       } else {
@@ -166,7 +170,10 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
       window.dispatchEvent(new CustomEvent('trip-added'));
       onSaved();
       onClose();
-      toast('여행이 생성되었습니다');
+      toast(
+        supabaseSaved ? '여행이 생성되었습니다' : '서버 저장 실패 — 로컬에 임시 저장되었습니다',
+        supabaseSaved ? 'success' : 'error',
+      );
     } catch (err) {
       toast(err instanceof Error ? err.message : '저장에 실패했습니다', 'error');
     } finally {
