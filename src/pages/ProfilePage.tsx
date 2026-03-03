@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useProfile } from '../hooks/useProfile';
 import { useStats } from '../hooks/useStats';
-import { useReceivedShares, useSharedUsers, usePendingInvitations, acceptShare, declineShare, leaveShare } from '../hooks/useShares';
+import { useReceivedShares, useSharedUsers, usePendingInvitations, acceptSharesFromOwner, declineSharesFromOwner, leaveShare } from '../hooks/useShares';
 import { formatCurrency, formatDate } from '../utils/format';
 import { getCountryFlagUrl } from '../utils/countryFlag';
 import ConfirmModal from '../components/ConfirmModal';
@@ -19,18 +19,18 @@ export default function ProfilePage() {
   const { users: sharedUsers } = useSharedUsers(user?.id);
   const { invitations: pendingInvitations } = usePendingInvitations(user?.email ?? undefined);
 
-  const handleAcceptInvitation = async (shareId: string) => {
+  const handleAcceptInvitation = async (shareIds: string[]) => {
     try {
-      await acceptShare(shareId, user?.id);
+      await acceptSharesFromOwner(shareIds, user?.id);
       toast('초대를 수락했습니다');
     } catch (err) {
       toast(err instanceof Error ? err.message : '수락 실패', 'error');
     }
   };
 
-  const handleDeclineInvitation = async (shareId: string) => {
+  const handleDeclineInvitation = async (shareIds: string[]) => {
     try {
-      await declineShare(shareId);
+      await declineSharesFromOwner(shareIds);
       toast('초대를 거절했습니다');
     } catch (err) {
       toast(err instanceof Error ? err.message : '거절 실패', 'error');
@@ -306,7 +306,7 @@ export default function ProfilePage() {
         </div>
       </section>
 
-      {/* ── 대기 중인 초대 ── */}
+      {/* ── 대기 중인 초대 (소유자별 1개) ── */}
       {pendingInvitations.length > 0 && (
         <section>
           <div className="flex items-center gap-2 mb-4">
@@ -320,31 +320,29 @@ export default function ProfilePage() {
           <div className="space-y-3">
             {pendingInvitations.map((inv) => (
               <div
-                key={inv.id}
+                key={inv.owner_id}
                 className="flex items-center gap-3 bg-white dark:bg-[#2a1f15] p-4 rounded-xl border-[3px] border-[#f43f5e] retro-shadow"
               >
                 <div className="w-10 h-10 rounded-full bg-[#0d9488] flex items-center justify-center shrink-0">
-                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                  </svg>
+                  <span className="text-white text-sm font-bold">{inv.owner_nickname[0].toUpperCase()}</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-[#1c140d] dark:text-slate-100 truncate">
-                    {inv.trip_title || '여행 초대'}
+                    {inv.owner_nickname}님의 초대
                   </p>
                   <p className="text-xs text-gray-400 dark:text-slate-500 font-medium mt-0.5">
-                    {inv.owner_nickname || '사용자'}님이 {inv.permission === 'edit' ? '편집' : '읽기'} 권한으로 초대
+                    {inv.tripCount}개 여행 · {inv.permission === 'edit' ? '편집' : '읽기'} 권한
                   </p>
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <button
-                    onClick={() => handleAcceptInvitation(inv.id)}
+                    onClick={() => handleAcceptInvitation(inv.shareIds)}
                     className="px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-[#0d9488] hover:bg-[#0d9488]/90 transition-colors cursor-pointer border-0"
                   >
                     수락
                   </button>
                   <button
-                    onClick={() => handleDeclineInvitation(inv.id)}
+                    onClick={() => handleDeclineInvitation(inv.shareIds)}
                     className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-500 bg-gray-100 dark:bg-[#1a1208] hover:bg-gray-200 dark:hover:bg-[#2a1f15] transition-colors cursor-pointer border-0"
                   >
                     거절

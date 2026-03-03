@@ -82,10 +82,45 @@ export function useSharesForTrip(tripId: string | undefined) {
   return { shares, loading, refetch };
 }
 
-// ---- 받은 초대 목록 (초대받은 유저용) ----
+// ---- 받은 초대 목록 (소유자별 그룹핑) ----
+
+export interface GroupedInvitation {
+  owner_id: string;
+  owner_nickname: string;
+  permission: SharePermission;
+  tripCount: number;
+  shareIds: string[];
+  tripTitles: string[];
+  latestCreatedAt: string;
+}
+
+function groupByOwner(shares: DemoShare[]): GroupedInvitation[] {
+  const map = new Map<string, GroupedInvitation>();
+  for (const s of shares) {
+    const existing = map.get(s.owner_id);
+    if (existing) {
+      existing.tripCount++;
+      existing.shareIds.push(s.id);
+      if (s.trip_title) existing.tripTitles.push(s.trip_title);
+      if (s.permission === 'edit') existing.permission = 'edit';
+      if (s.created_at > existing.latestCreatedAt) existing.latestCreatedAt = s.created_at;
+    } else {
+      map.set(s.owner_id, {
+        owner_id: s.owner_id,
+        owner_nickname: s.owner_nickname || '사용자',
+        permission: s.permission,
+        tripCount: 1,
+        shareIds: [s.id],
+        tripTitles: s.trip_title ? [s.trip_title] : [],
+        latestCreatedAt: s.created_at,
+      });
+    }
+  }
+  return [...map.values()].sort((a, b) => b.latestCreatedAt.localeCompare(a.latestCreatedAt));
+}
 
 export function usePendingInvitations(userEmail: string | undefined) {
-  const [invitations, setInvitations] = useState<DemoShare[]>([]);
+  const [invitations, setInvitations] = useState<GroupedInvitation[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refetch = useCallback(async () => {
@@ -96,7 +131,8 @@ export function usePendingInvitations(userEmail: string | undefined) {
 
     if (!isSupabaseConfigured) {
       const all = loadDemoShares();
-      setInvitations(all.filter((s) => s.invited_email === userEmail && s.status === 'pending'));
+      const pending = all.filter((s) => s.invited_email === userEmail && s.status === 'pending');
+      setInvitations(groupByOwner(pending));
       setLoading(false);
       return;
     }
@@ -110,7 +146,25 @@ export function usePendingInvitations(userEmail: string | undefined) {
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
       if (error) throw new Error(error.message);
-      setInvitations((data as DemoShare[]) ?? []);
+      // Supabase join 결과를 DemoShare 형태로 정규화
+      const normalized: DemoShare[] = ((data as Record<string, unknown>[]) ?? []).map((s) => {
+        const trip = s.trips as Record<string, string> | null;
+        const profile = s.profiles as Record<string, string> | null;
+        return {
+          id: s.id as string,
+          trip_id: s.trip_id as string,
+          owner_id: s.owner_id as string,
+          invited_email: s.invited_email as string,
+          invited_user_id: s.invited_user_id as string | null,
+          permission: s.permission as SharePermission,
+          status: s.status as ShareStatus,
+          created_at: s.created_at as string,
+          updated_at: (s.updated_at as string) ?? '',
+          trip_title: trip?.title || '여행',
+          owner_nickname: profile?.nickname || '사용자',
+        };
+      });
+      setInvitations(groupByOwner(normalized));
     } catch {
       setInvitations([]);
     } finally {
@@ -129,6 +183,86 @@ export function usePendingInvitations(userEmail: string | undefined) {
   }, [refetch]);
 
   return { invitations, loading, refetch };
+}
+
+// ---- 소유자의 모든 초대 일괄 수락 ----
+
+export async function acceptSharesFromOwner(shareIds: string[], userId?: string): Promise<void> {
+  if (!isSupabaseConfigured) {
+    const all = loadDemoShares();
+    const idSet = new Set(shareIds);
+    const updated = all.map((s) =>
+      idSet.has(s.id)
+        ? { ...s, status: 'accepted' as ShareStatus, invited_user_id: userId ?? 'demo-user-001', updated_at: new Date().toISOString() }
+        : s,
+    );
+    saveDemoShares(updated);
+    window.dispatchEvent(new CustomEvent('share-updated'));
+    window.dispatchEvent(new CustomEvent('trip-added'));
+    return;
+  }
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('인증이 필요합니다');
+  try {
+    const { error } = await supabase
+      .from('trip_shares')
+      .update({ status: 'accepted', invited_user_id: userId ?? user.id })
+      .in('id', shareIds)
+      .eq('invited_email', user.email ?? '');
+    if (error) throw new Error(error.message);
+  } catch (err) {
+    console.error('[acceptSharesFromOwner] Supabase 실패, 로컬 fallback:', err);
+    const all = loadDemoShares();
+    const idSet = new Set(shareIds);
+    const updated = all.map((s) =>
+      idSet.has(s.id)
+        ? { ...s, status: 'accepted' as ShareStatus, invited_user_id: userId ?? user.id, updated_at: new Date().toISOString() }
+        : s,
+    );
+    saveDemoShares(updated);
+  }
+  window.dispatchEvent(new CustomEvent('share-updated'));
+  window.dispatchEvent(new CustomEvent('trip-added'));
+}
+
+// ---- 소유자의 모든 초대 일괄 거절 ----
+
+export async function declineSharesFromOwner(shareIds: string[]): Promise<void> {
+  if (!isSupabaseConfigured) {
+    const all = loadDemoShares();
+    const idSet = new Set(shareIds);
+    const updated = all.map((s) =>
+      idSet.has(s.id)
+        ? { ...s, status: 'declined' as ShareStatus, updated_at: new Date().toISOString() }
+        : s,
+    );
+    saveDemoShares(updated);
+    window.dispatchEvent(new CustomEvent('share-updated'));
+    return;
+  }
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('인증이 필요합니다');
+  try {
+    const { error } = await supabase
+      .from('trip_shares')
+      .update({ status: 'declined' })
+      .in('id', shareIds)
+      .eq('invited_email', user.email ?? '');
+    if (error) throw new Error(error.message);
+  } catch (err) {
+    console.error('[declineSharesFromOwner] Supabase 실패, 로컬 fallback:', err);
+    const all = loadDemoShares();
+    const idSet = new Set(shareIds);
+    const updated = all.map((s) =>
+      idSet.has(s.id)
+        ? { ...s, status: 'declined' as ShareStatus, updated_at: new Date().toISOString() }
+        : s,
+    );
+    saveDemoShares(updated);
+  }
+  window.dispatchEvent(new CustomEvent('share-updated'));
 }
 
 // ---- 데모 여행 전용 초대 (isSupabaseConfigured 무관) ----
@@ -795,7 +929,7 @@ export function useReceivedShares(userEmail: string | undefined) {
       setLoading(true);
       const { data, error } = await supabase
         .from('trip_shares')
-        .select('id, trip_id, owner_id, permission, status, created_at, trips(title, destination, cover_image, status, start_date), profiles!trip_shares_owner_id_fkey(nickname)')
+        .select('id, trip_id, owner_id, permission, status, created_at, trips(title, destination, cover_image, visit_status:status, start_date), profiles!trip_shares_owner_id_fkey(nickname)')
         .eq('invited_email', userEmail)
         .eq('status', 'accepted')
         .order('created_at', { ascending: false });
@@ -814,7 +948,7 @@ export function useReceivedShares(userEmail: string | undefined) {
           trip_title: trip?.title || '여행',
           trip_destination: trip?.destination || '',
           trip_cover: trip?.cover_image || '',
-          trip_status: trip?.status || 'planned',
+          trip_status: trip?.visit_status || 'planned',
           trip_start_date: trip?.start_date || '',
           owner_nickname: profile?.nickname || '사용자',
         };

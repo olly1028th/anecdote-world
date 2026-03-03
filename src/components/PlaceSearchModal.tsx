@@ -182,7 +182,7 @@ export default function PlaceSearchModal({ initialQuery, onSelect, onClose }: Pr
     <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center" onClick={onClose}>
       <div
         className="bg-white dark:bg-slate-800 w-full max-w-md rounded-t-2xl sm:rounded-2xl border-[3px] border-slate-900 retro-shadow overflow-hidden flex flex-col"
-        style={{ maxHeight: '85vh' }}
+        style={{ maxHeight: '85dvh' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* 헤더 */}
@@ -223,7 +223,7 @@ export default function PlaceSearchModal({ initialQuery, onSelect, onClose }: Pr
         </div>
 
         {/* 지도 */}
-        <div className="relative" style={{ height: '220px' }}>
+        <div className="relative h-[160px] sm:h-[220px]">
           <MapContainer
             center={[36.5, 127.5]}
             zoom={6}
@@ -269,7 +269,7 @@ export default function PlaceSearchModal({ initialQuery, onSelect, onClose }: Pr
         </div>
 
         {/* 검색 결과 목록 */}
-        <div className="flex-1 overflow-y-auto px-5 py-3" style={{ maxHeight: '180px' }}>
+        <div className="flex-1 overflow-y-auto px-5 py-3 max-h-[120px] sm:max-h-[180px]">
           {results.length > 0 ? (
             <div className="space-y-1.5">
               {results.map((r, i) => {
@@ -309,7 +309,7 @@ export default function PlaceSearchModal({ initialQuery, onSelect, onClose }: Pr
         </div>
 
         {/* 확인/취소 버튼 */}
-        <div className="flex gap-2 px-5 pb-5 pt-2">
+        <div className="flex gap-2 px-5 pt-2 shrink-0" style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}>
           <button
             type="button"
             onClick={onClose}
