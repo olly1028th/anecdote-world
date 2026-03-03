@@ -78,11 +78,9 @@ export function usePins() {
       setPins([...dbPins, ...extraLocal]);
     } catch (err) {
       if (!mountedRef.current) return;
-      // Supabase 실패 시 로컬 데이터로 fallback
+      // Supabase 실패 시 로컬 데이터로 fallback (에러 토스트 없이 조용히 전환)
       setPins(getLocalPins());
-      const msg = err instanceof Error ? err.message : '핀 데이터를 불러올 수 없습니다';
-      setError(`서버 연결 실패: ${msg}`);
-      console.error('[usePins] Supabase fetch failed:', err);
+      console.warn('[usePins] Supabase fetch failed, using local data:', err);
     } finally {
       if (mountedRef.current) setLoading(false);
     }

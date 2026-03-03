@@ -235,11 +235,9 @@ export function useTrips() {
       setTrips([...mapped, ...extraLocal]);
     } catch (err) {
       if (!mountedRef.current) return;
-      // Supabase 실패 시 데모 데이터로 fallback
+      // Supabase 실패 시 데모 데이터로 fallback (에러 토스트 없이 조용히 전환)
       setTrips(getMergedDemoTrips());
-      const msg = err instanceof Error ? err.message : '데이터를 불러올 수 없습니다';
-      setError(`서버 연결 실패: ${msg}`);
-      console.error('[useTrips] Supabase fetch failed:', err);
+      console.warn('[useTrips] Supabase fetch failed, using local data:', err);
     } finally {
       if (mountedRef.current) setLoading(false);
     }
