@@ -119,6 +119,8 @@ export function removeLocalTrip(id: string) {
 // 핀 (Pin) 로컬 저장소
 // ============================================================
 
+const LOCAL_DELETED_PINS_KEY = 'anecdote-demo-deleted-pins';
+
 function loadLocalPins(): Pin[] {
   try {
     const raw = localStorage.getItem(LOCAL_PINS_KEY);
@@ -128,18 +130,39 @@ function loadLocalPins(): Pin[] {
   }
 }
 
+function loadDeletedPinIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(LOCAL_DELETED_PINS_KEY);
+    return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
 /** 사용자가 로컬에 추가한 핀 목록 (모듈 레벨 캐시) */
 let localPins: Pin[] = loadLocalPins();
+/** 사용자가 삭제한 핀 ID */
+const deletedPinIds: Set<string> = loadDeletedPinIds();
 
 /** 사용자 로컬 핀 목록 반환 */
 export function getLocalPins(): Pin[] {
   return localPins;
 }
 
+/** 삭제된 핀 ID 목록 반환 */
+export function getDeletedPinIds(): Set<string> {
+  return deletedPinIds;
+}
+
 /** 핀 로컬 추가 */
 export function addLocalPin(pin: Pin) {
   localPins = [pin, ...localPins];
   localStorage.setItem(LOCAL_PINS_KEY, JSON.stringify(localPins));
+  // 삭제 기록에서 제거 (같은 ID로 다시 추가하는 경우)
+  if (deletedPinIds.has(pin.id)) {
+    deletedPinIds.delete(pin.id);
+    localStorage.setItem(LOCAL_DELETED_PINS_KEY, JSON.stringify([...deletedPinIds]));
+  }
 }
 
 /** 핀 로컬 수정 (trip_id 기준 일괄 수정 지원) */
@@ -150,7 +173,15 @@ export function updateLocalPinsByTripId(tripId: string, updates: Partial<Pin>) {
   localStorage.setItem(LOCAL_PINS_KEY, JSON.stringify(localPins));
 }
 
-/** 로컬 핀 제거 (동기화 성공 후 정리용) */
+/** 핀 로컬 삭제 (삭제 기록에 추가 — 다른 기기에서 부활 방지) */
+export function deleteLocalPin(id: string) {
+  localPins = localPins.filter((p) => p.id !== id);
+  localStorage.setItem(LOCAL_PINS_KEY, JSON.stringify(localPins));
+  deletedPinIds.add(id);
+  localStorage.setItem(LOCAL_DELETED_PINS_KEY, JSON.stringify([...deletedPinIds]));
+}
+
+/** 로컬 핀 제거 (동기화 성공 후 정리용, 삭제 기록에 추가하지 않음) */
 export function removeLocalPin(id: string) {
   localPins = localPins.filter((p) => p.id !== id);
   localStorage.setItem(LOCAL_PINS_KEY, JSON.stringify(localPins));

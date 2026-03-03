@@ -256,6 +256,19 @@ export function useTrips() {
     return () => window.removeEventListener('trip-added', handler);
   }, [fetchTrips]);
 
+  // 탭/앱 활성화 시 최신 데이터 refetch (크로스 디바이스 동기화)
+  const lastFetchRef = useRef(0);
+  useEffect(() => {
+    const handler = () => {
+      if (document.visibilityState === 'visible' && Date.now() - lastFetchRef.current > 30_000) {
+        lastFetchRef.current = Date.now();
+        fetchTrips();
+      }
+    };
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
+  }, [fetchTrips]);
+
   return { trips, loading, error, refetch: fetchTrips };
 }
 

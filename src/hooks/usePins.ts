@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { getLocalPins } from '../lib/localStore';
+import { getLocalPins, getDeletedPinIds } from '../lib/localStore';
 import type { Pin } from '../types/database';
 
 // 기존 API 호환을 위한 re-export (localStore.ts 에서 관리)
@@ -13,9 +13,12 @@ export function usePins() {
   const mountedRef = useRef(true);
 
   const fetchPins = useCallback(async () => {
+    const deletedIds = getDeletedPinIds();
+    const getFilteredLocalPins = () => getLocalPins().filter((p) => !deletedIds.has(p.id));
+
     if (!isSupabaseConfigured) {
       if (!mountedRef.current) return;
-      setPins(getLocalPins());
+      setPins(getFilteredLocalPins());
       setLoading(false);
       return;
     }
@@ -31,7 +34,7 @@ export function usePins() {
       const userEmail = session?.user?.email;
       if (!userId) {
         // 미로그인 → 로컬 데이터로 fallback
-        setPins(getLocalPins());
+        setPins(getFilteredLocalPins());
         setLoading(false);
         return;
       }
@@ -74,12 +77,12 @@ export function usePins() {
 
       // Supabase 성공 시에도 로컬 핀 포함 (Supabase INSERT 실패 시 fallback으로 저장된 핀)
       const dbIds = new Set(dbPins.map((p) => p.id));
-      const extraLocal = getLocalPins().filter((p) => !dbIds.has(p.id));
+      const extraLocal = getFilteredLocalPins().filter((p) => !dbIds.has(p.id));
       setPins([...dbPins, ...extraLocal]);
     } catch (err) {
       if (!mountedRef.current) return;
       // Supabase 실패 시 로컬 데이터로 fallback (에러 토스트 없이 조용히 전환)
-      setPins(getLocalPins());
+      setPins(getFilteredLocalPins());
       console.warn('[usePins] Supabase fetch failed, using local data:', err);
     } finally {
       if (mountedRef.current) setLoading(false);
@@ -97,6 +100,19 @@ export function usePins() {
     const handler = () => fetchPins();
     window.addEventListener('pin-added', handler);
     return () => window.removeEventListener('pin-added', handler);
+  }, [fetchPins]);
+
+  // 탭/앱 활성화 시 최신 데이터 refetch (크로스 디바이스 동기화)
+  const lastFetchRef = useRef(0);
+  useEffect(() => {
+    const handler = () => {
+      if (document.visibilityState === 'visible' && Date.now() - lastFetchRef.current > 30_000) {
+        lastFetchRef.current = Date.now();
+        fetchPins();
+      }
+    };
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
   }, [fetchPins]);
 
   return { pins, loading, error, refetch: fetchPins };
