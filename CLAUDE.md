@@ -365,3 +365,14 @@ usePins() → allPins[]
 - **지오코딩**: Photon API (`photon.komoot.io`)로 장소명 → 좌표 변환, 검색 결과에서 선택
 - **동선 지도**: `DayRouteMap` 컴포넌트 — 번호 마커 + 점선 Polyline으로 day별 이동경로 시각화
 - **수정 파일**: `trip.ts` (Place에 lat/lng), `TripDetailPage.tsx`, `PlaceList.tsx`, `Map/DayRouteMap.tsx` (신규), `Map/index.ts`
+
+### 스탯카드/검색필터/세계지도 데이터 일관성 수정
+
+- **문제**: 스탯카드 국가/도시 카운트, 검색필터, 세계지도 핀이 서로 다른 데이터 기준으로 표시
+- **원인 1**: `useStats.ts`가 `getMapDisplayPins()` 필터를 거쳐 국가/도시를 집계 → 좌표 (0,0) 핀이나 day_number 핀의 국가 누락
+- **수정 1**: 국가/도시 카운트를 전체 핀의 country/city 텍스트 기반으로 변경 (좌표 필터 독립)
+- **원인 2**: 핀 삭제 시 tombstone 없음 → Supabase DELETE 실패 시 핀 부활
+- **수정 2**: `localStore.ts`에 `deletedPinIds` 추적 추가 (trips의 `deletedTripIds`와 동일 패턴)
+- **원인 3**: 다른 기기에서 동일 계정 사용 시 데이터 불일치 (Realtime 미사용)
+- **수정 3**: `useTrips`/`usePins`에 `visibilitychange` 이벤트 리스너 추가 → 탭 활성화 시 30초 쓰로틀로 자동 refetch
+- **수정 파일**: `useStats.ts`, `localStore.ts`, `usePins.ts`, `useTrips.ts`

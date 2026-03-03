@@ -98,9 +98,11 @@ export function useStats(): Stats {
     }
 
     // ---- Pin 기반 통계 ----
-    // 세계지도와 동일한 필터: 메인 핀 + day-number만 있는 여행의 대표 핀 포함
-    const mapPins = getMapDisplayPins(pins);
-    const visitedPins = mapPins.filter((p) => p.visit_status === 'visited');
+
+    // 국가/도시 카운트: 모든 핀에서 유효한 country/city 텍스트 기반 집계.
+    // getMapDisplayPins 좌표 필터와 독립 — 좌표가 (0,0)이거나
+    // day_number가 있는 핀도 국가/도시 통계에 포함시킨다.
+    const visitedPins = pins.filter((p) => p.visit_status === 'visited');
 
     // 방문한 국가 (unique)
     const countriesVisited = Array.from(
@@ -111,6 +113,9 @@ export function useStats(): Stats {
     const citiesVisited = Array.from(
       new Set(visitedPins.map((p) => p.city).filter(Boolean)),
     );
+
+    // 카테고리/상태 통계는 세계지도 표시 핀 기준 (지도와 수치 일치)
+    const mapPins = getMapDisplayPins(pins);
 
     // 카테고리별 핀 수
     const pinCategoryMap = new Map<string, number>();
