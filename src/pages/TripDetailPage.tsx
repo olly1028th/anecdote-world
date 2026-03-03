@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useTrip, deleteTrip, toggleChecklistItem, saveExpenses, saveChecklistItems, savePlaces, updateDemoTrip, deleteDemoTrip } from '../hooks/useTrips';
+import { useTrip, deleteTrip, updateTrip, toggleChecklistItem, saveExpenses, saveChecklistItems, savePlaces, updateDemoTrip, deleteDemoTrip } from '../hooks/useTrips';
 import { supabase } from '../lib/supabase';
 import { uploadTripPhoto, deleteTripPhoto } from '../lib/storage';
 import { useSharesForTrip, createShare, removeShare, updateSharePermission } from '../hooks/useShares';
@@ -17,7 +17,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import PlaceSearchModal from '../components/PlaceSearchModal';
 import { TripDetailSkeleton } from '../components/Skeleton';
 import { formatDate, calcDuration, totalExpenses, formatCurrency, expenseCategoryLabel } from '../utils/format';
-import type { Expense, ExpenseCategory, ChecklistItem, Place } from '../types/trip';
+import type { Expense, ExpenseCategory, ChecklistItem, Place, TripStatus } from '../types/trip';
 import type { SharePermission } from '../types/database';
 
 const EXPENSE_CATEGORIES: ExpenseCategory[] = [
@@ -253,6 +253,32 @@ export default function TripDetailPage() {
     });
   };
 
+  // --- 여행 상태 원클릭 전환 ---
+  const [statusSaving, setStatusSaving] = useState(false);
+  const cycleStatus = async () => {
+    if (!trip || !id || statusSaving) return;
+    const order: TripStatus[] = ['planned', 'completed', 'wishlist'];
+    const currentIdx = order.indexOf(trip.status);
+    const nextStatus = order[(currentIdx + 1) % order.length];
+    try {
+      setStatusSaving(true);
+      if (isDemo) {
+        updateDemoTrip(id, { status: nextStatus });
+      } else {
+        await updateTrip(id, { status: nextStatus });
+      }
+      window.dispatchEvent(new CustomEvent('trip-added'));
+      window.dispatchEvent(new CustomEvent('pin-added'));
+      refetch();
+      const labels: Record<TripStatus, string> = { completed: '다녀왔어요', planned: '계획중', wishlist: '위시리스트' };
+      toast(`상태가 "${labels[nextStatus]}"(으)로 변경되었습니다`);
+    } catch (err) {
+      toast(err instanceof Error ? err.message : '상태 변경 실패', 'error');
+    } finally {
+      setStatusSaving(false);
+    }
+  };
+
   // --- Expense inline edit ---
   const startEditExpenses = () => {
     if (!trip) return;
@@ -431,6 +457,27 @@ export default function TripDetailPage() {
     }
   };
 
+  // --- 사진 캡션 저장 ---
+  const handleCaptionChange = async (url: string, caption: string) => {
+    if (!trip || !id) return;
+    const updated = { ...trip.photoCaptions, [url]: caption };
+    // 빈 캡션은 삭제
+    if (!caption) delete updated[url];
+    try {
+      if (isDemo) {
+        updateDemoTrip(id, { photoCaptions: updated });
+      } else {
+        await supabase.from('trips').update({ photo_captions: updated }).eq('id', id).eq('user_id', user?.id ?? '');
+      }
+      refetch();
+    } catch (err) {
+      console.error('[handleCaptionChange] 캡션 저장 실패:', err);
+      // fallback: 로컬에 저장
+      updateDemoTrip(id, { photoCaptions: updated });
+      refetch();
+    }
+  };
+
   // 에러가 있지만 폴백 데이터가 있으면 토스트로 알림만 표시
   useEffect(() => {
     if (error && trip) {
@@ -501,11 +548,20 @@ export default function TripDetailPage() {
               </div>
             )}
           </div>
-          <div className={`absolute -bottom-2 -right-2 border-[3px] border-slate-900 rounded-lg px-2 py-1 text-[10px] font-bold uppercase tracking-widest z-20 ${
-            isCompleted ? 'bg-[#0d9488] text-white' : trip.status === 'wishlist' ? 'bg-[#6366f1] text-white' : 'bg-[#eab308] text-slate-900'
-          }`}>
+          <button
+            type="button"
+            onClick={cycleStatus}
+            disabled={statusSaving}
+            title="클릭하여 상태 전환"
+            className={`absolute -bottom-2 -right-2 border-[3px] border-slate-900 rounded-lg px-2 py-1 text-[10px] font-bold uppercase tracking-widest z-20 cursor-pointer transition-all hover:scale-110 active:scale-95 disabled:opacity-50 ${
+              isCompleted ? 'bg-[#0d9488] text-white' : trip.status === 'wishlist' ? 'bg-[#6366f1] text-white' : 'bg-[#eab308] text-slate-900'
+            }`}
+          >
             {isCompleted ? 'Visited' : trip.status === 'wishlist' ? 'Wish' : 'Planned'}
-          </div>
+            <svg className="inline-block w-2.5 h-2.5 ml-1 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
         </div>
 
         <div className="space-y-1">
@@ -661,12 +717,12 @@ export default function TripDetailPage() {
                   onChange={(e) => setInviteEmail(e.target.value)}
                   placeholder="이메일 주소 입력"
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleInvite(); } }}
-                  className="flex-1 min-w-0 px-3 py-2.5 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
+                  className="flex-1 min-w-0 px-3 py-2.5 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 dark:border-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
                 />
                 <select
                   value={invitePermission}
                   onChange={(e) => setInvitePermission(e.target.value as SharePermission)}
-                  className="w-20 shrink-0 px-2 py-2.5 rounded-xl border-2 border-slate-900 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
+                  className="w-20 shrink-0 px-2 py-2.5 rounded-xl border-2 border-slate-900 text-xs font-bold bg-white dark:bg-[#2a1f15] dark:text-slate-100 dark:border-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
                 >
                   <option value="read">읽기</option>
                   <option value="edit">편집</option>
@@ -838,7 +894,7 @@ export default function TripDetailPage() {
                 onChange={(e) => setDraftMemo(e.target.value)}
                 placeholder="이 여행 어땠어요?"
                 rows={3}
-                className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25] resize-none"
+                className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 dark:border-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25] resize-none"
               />
               <SaveCancelButtons onSave={saveMemoInline} onCancel={() => setEditingMemo(false)} saving={saving} />
             </>
@@ -874,7 +930,7 @@ export default function TripDetailPage() {
             <div className="absolute top-5 right-5 z-10">
               <EditButton onClick={startEditPhotos} />
             </div>
-            <PhotoGallery photos={trip.photos} />
+            <PhotoGallery photos={trip.photos} captions={trip.photoCaptions} onCaptionChange={handleCaptionChange} />
           </div>
         ) : (
           <div
@@ -1032,7 +1088,7 @@ export default function TripDetailPage() {
                     <select
                       value={expense.category}
                       onChange={(e) => updateDraftExpense(i, 'category', e.target.value)}
-                      className="w-24 shrink-0 px-2 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
+                      className="w-24 shrink-0 px-2 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 dark:border-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
                     >
                       {EXPENSE_CATEGORIES.map((cat) => (
                         <option key={cat} value={cat}>{expenseCategoryLabel(cat)}</option>
@@ -1044,14 +1100,14 @@ export default function TripDetailPage() {
                       onChange={(e) => updateDraftExpense(i, 'amount', Number(e.target.value))}
                       placeholder="금액"
                       min={0}
-                      className="w-24 shrink-0 px-3 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
+                      className="w-24 shrink-0 px-3 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 dark:border-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
                     />
                     <input
                       type="text"
                       value={expense.label}
                       onChange={(e) => updateDraftExpense(i, 'label', e.target.value)}
                       placeholder="설명"
-                      className="flex-1 min-w-0 px-3 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
+                      className="flex-1 min-w-0 px-3 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 dark:border-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
                     />
                     <button
                       type="button"
@@ -1111,7 +1167,7 @@ export default function TripDetailPage() {
                       value={item.text}
                       onChange={(e) => updateDraftChecklistText(i, e.target.value)}
                       placeholder="예: 항공편 예약"
-                      className="flex-1 min-w-0 px-3 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
+                      className="flex-1 min-w-0 px-3 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 dark:border-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
                     />
                     <button
                       type="button"
@@ -1154,7 +1210,7 @@ export default function TripDetailPage() {
                   onChange={(e) => setDraftMemo(e.target.value)}
                   placeholder="여행에 대한 메모를 남겨보세요..."
                   rows={3}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25] resize-none"
+                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 dark:border-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25] resize-none"
                 />
                 <SaveCancelButtons onSave={saveMemoInline} onCancel={() => setEditingMemo(false)} saving={saving} />
               </>

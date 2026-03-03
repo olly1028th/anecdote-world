@@ -45,6 +45,8 @@ export interface Trip {
   expenses: Expense[];
   itinerary: ItineraryItem[];
   photos: string[];
+  /** 사진별 캡션 (URL → 캡션 텍스트) */
+  photoCaptions?: Record<string, string>;
   places: Place[];
   checklist: ChecklistItem[];
   createdAt: string;

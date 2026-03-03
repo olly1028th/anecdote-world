@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
-import type { Trip } from '../types/trip';
+import type { Trip, TripStatus } from '../types/trip';
 import { formatCurrency, totalExpenses } from '../utils/format';
 import { getCountryFlagUrl } from '../utils/countryFlag';
 
 interface Props {
   trip: Trip;
   colorIndex?: number;
+  onStatusChange?: (tripId: string, newStatus: TripStatus) => void;
 }
 
 // Colored shadow themes matching code(main).html Stitch design
@@ -15,10 +16,20 @@ const CARD_THEMES = [
   { shadow: 'shadow-[8px_8px_0px_0px_rgba(244,63,94,1)]', badge: 'bg-[#f43f5e] text-white', label: 'Deep Space' },
 ];
 
-export default function TripCard({ trip, colorIndex = 0 }: Props) {
+export default function TripCard({ trip, colorIndex = 0, onStatusChange }: Props) {
   const theme = CARD_THEMES[colorIndex % CARD_THEMES.length];
   const total = totalExpenses(trip.expenses);
   const coverSrc = trip.coverImage || getCountryFlagUrl(trip.destination, 640);
+
+  const handleStatusClick = (e: React.MouseEvent) => {
+    if (!onStatusChange) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const order: TripStatus[] = ['planned', 'completed', 'wishlist'];
+    const currentIdx = order.indexOf(trip.status);
+    const nextStatus = order[(currentIdx + 1) % order.length];
+    onStatusChange(trip.id, nextStatus);
+  };
 
   return (
     <Link
@@ -39,9 +50,14 @@ export default function TripCard({ trip, colorIndex = 0 }: Props) {
           </div>
         )}
         <div className="absolute top-4 left-4">
-          <span className={`text-[10px] font-bold px-3 py-1 rounded-full border-2 border-slate-900 uppercase ${theme.badge}`}>
+          <button
+            type="button"
+            onClick={handleStatusClick}
+            title={onStatusChange ? '클릭하여 상태 전환' : undefined}
+            className={`text-[10px] font-bold px-3 py-1 rounded-full border-2 border-slate-900 uppercase ${theme.badge} ${onStatusChange ? 'cursor-pointer hover:scale-110 active:scale-95 transition-transform' : 'cursor-default'}`}
+          >
             {trip.status === 'completed' ? 'Visited' : trip.status === 'wishlist' ? 'Wish' : 'Planned'}
-          </span>
+          </button>
         </div>
       </div>
 

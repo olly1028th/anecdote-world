@@ -117,7 +117,7 @@ export default function ProfilePage() {
               /* ── 편집 모드 ── */
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs text-gray-400 dark:text-slate-500 mb-1">
+                  <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-1">
                     닉네임
                   </label>
                   <input
@@ -125,12 +125,12 @@ export default function ProfilePage() {
                     value={nickname}
                     onChange={(e) => setNickname(e.target.value)}
                     maxLength={20}
-                    className="w-full border border-[#F0EEE6] dark:border-[#4a3f35] rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/50 bg-white dark:bg-[#1a1208] dark:text-slate-100"
+                    className="w-full border-[3px] border-slate-900 dark:border-slate-100 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25] bg-white dark:bg-[#1a1208] dark:text-slate-100"
                     placeholder="닉네임을 입력하세요"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 dark:text-slate-500 mb-1">
+                  <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-1">
                     소개
                   </label>
                   <textarea
@@ -138,7 +138,7 @@ export default function ProfilePage() {
                     onChange={(e) => setBio(e.target.value)}
                     maxLength={200}
                     rows={3}
-                    className="w-full border border-[#F0EEE6] dark:border-[#4a3f35] rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/50 resize-none bg-white dark:bg-[#1a1208] dark:text-slate-100"
+                    className="w-full border-[3px] border-slate-900 dark:border-slate-100 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25] resize-none bg-white dark:bg-[#1a1208] dark:text-slate-100"
                     placeholder="간단한 소개를 적어주세요"
                   />
                 </div>

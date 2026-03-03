@@ -90,6 +90,9 @@ function mapDbTripToUi(
     .map((pp) => pp.url);
   const photos = [...new Set([...storagePhotos, ...pinPhotoUrls])];
 
+  // photoCaptions: DB에 photo_captions JSONB 컬럼이 있으면 사용
+  const photoCaptions = (db as unknown as Record<string, unknown>).photo_captions as Record<string, string> | undefined;
+
   return {
     id: db.id,
     title: db.title,
@@ -107,6 +110,7 @@ function mapDbTripToUi(
     })),
     itinerary,
     photos,
+    photoCaptions: photoCaptions && Object.keys(photoCaptions).length > 0 ? photoCaptions : undefined,
     places,
     checklist: checklist.map((c) => ({
       id: c.id,
@@ -124,10 +128,12 @@ export function useTrips() {
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
 
+  const fetchIdRef = useRef(0);
   const fetchTrips = useCallback(async () => {
+    const currentFetchId = ++fetchIdRef.current;
     // Supabase 미설정 → 데모 모드 (로컬 추가 여행 포함)
     if (!isSupabaseConfigured) {
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || currentFetchId !== fetchIdRef.current) return;
       setTrips(getMergedDemoTrips());
       setLoading(false);
       return;
@@ -139,6 +145,7 @@ export function useTrips() {
 
       // 현재 로그인한 사용자 확인
       const { data: { session } } = await supabase.auth.getSession();
+      if (currentFetchId !== fetchIdRef.current) return;
       const userId = session?.user?.id;
       const userEmail = session?.user?.email;
       if (!userId) {
@@ -340,18 +347,38 @@ export async function saveExpenses(
   const userId = user?.id;
   if (!userId) throw new Error('인증이 필요합니다');
 
-  // 기존 경비 삭제 (소유자 여행만)
-  const { error: delErr } = await supabase
+  // 기존 경비 조회 (삭제 대상 파악)
+  const { data: existing } = await supabase
     .from('expenses')
-    .delete()
+    .select('id')
     .eq('trip_id', tripId)
     .eq('user_id', userId);
-  if (delErr) throw delErr;
+  const existingIds = new Set((existing ?? []).map((e: { id: string }) => e.id));
 
-  // 새 경비 삽입
-  if (expenses.length > 0) {
+  // 새 경비 중 기존 ID가 있으면 업데이트, 없으면 삽입
+  const toUpsert = expenses.map((e) => ({
+    ...(e as { id?: string; category: string; amount: number; label: string }),
+    trip_id: tripId,
+    user_id: userId,
+  }));
+  const keepIds = new Set(toUpsert.filter((e) => e.id).map((e) => e.id!));
+  const toDelete = [...existingIds].filter((id) => !keepIds.has(id));
+
+  // 삭제
+  if (toDelete.length > 0) {
+    const { error: delErr } = await supabase
+      .from('expenses')
+      .delete()
+      .in('id', toDelete)
+      .eq('user_id', userId);
+    if (delErr) throw delErr;
+  }
+
+  // 삽입 (ID 없는 새 항목만)
+  const newItems = toUpsert.filter((e) => !e.id);
+  if (newItems.length > 0) {
     const { error: insErr } = await supabase.from('expenses').insert(
-      expenses.map((e) => ({
+      newItems.map((e) => ({
         trip_id: tripId,
         user_id: userId,
         category: e.category,
@@ -360,6 +387,17 @@ export async function saveExpenses(
       })),
     );
     if (insErr) throw insErr;
+  }
+
+  // 업데이트 (기존 항목)
+  const existingItems = toUpsert.filter((e) => e.id && existingIds.has(e.id));
+  for (const e of existingItems) {
+    const { error: updErr } = await supabase
+      .from('expenses')
+      .update({ category: e.category, amount: e.amount, label: e.label })
+      .eq('id', e.id!)
+      .eq('user_id', userId);
+    if (updErr) throw updErr;
   }
 }
 
@@ -373,26 +411,54 @@ export async function saveChecklistItems(
   const userId = user?.id;
   if (!userId) throw new Error('인증이 필요합니다');
 
-  // 기존 항목 삭제 (소유자 데이터만)
-  const { error: delErr } = await supabase
+  // 기존 항목 조회 (삭제 대상 파악)
+  const { data: existing } = await supabase
     .from('checklist_items')
-    .delete()
+    .select('id')
     .eq('trip_id', tripId)
     .eq('user_id', userId);
-  if (delErr) throw delErr;
+  const existingIds = new Set((existing ?? []).map((c: { id: string }) => c.id));
 
-  // 새 항목 삽입
-  if (items.length > 0) {
+  const typedItems = items as { id?: string; text: string; checked: boolean }[];
+  const keepIds = new Set(typedItems.filter((c) => c.id).map((c) => c.id!));
+  const toDelete = [...existingIds].filter((id) => !keepIds.has(id));
+
+  // 삭제 (제거된 항목만)
+  if (toDelete.length > 0) {
+    const { error: delErr } = await supabase
+      .from('checklist_items')
+      .delete()
+      .in('id', toDelete)
+      .eq('user_id', userId);
+    if (delErr) throw delErr;
+  }
+
+  // 삽입 (ID 없는 새 항목만)
+  const newItems = typedItems.filter((c) => !c.id);
+  if (newItems.length > 0) {
+    const startOrder = typedItems.indexOf(newItems[0]);
     const { error: insErr } = await supabase.from('checklist_items').insert(
-      items.map((item, i) => ({
+      newItems.map((item, i) => ({
         trip_id: tripId,
         user_id: userId,
         text: item.text,
         checked: item.checked,
-        sort_order: i,
+        sort_order: startOrder + i,
       })),
     );
     if (insErr) throw insErr;
+  }
+
+  // 업데이트 (기존 항목)
+  const existingItems = typedItems.filter((c) => c.id && existingIds.has(c.id));
+  for (let i = 0; i < existingItems.length; i++) {
+    const c = existingItems[i];
+    const { error: updErr } = await supabase
+      .from('checklist_items')
+      .update({ text: c.text, checked: c.checked, sort_order: typedItems.indexOf(c) })
+      .eq('id', c.id!)
+      .eq('user_id', userId);
+    if (updErr) throw updErr;
   }
 }
 
