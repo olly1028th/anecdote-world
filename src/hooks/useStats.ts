@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useTrips } from './useTrips';
 import { usePins } from './usePins';
+import { getMapDisplayPins } from '../utils/mapPins';
 
 // ---- Return types ----
 
@@ -97,8 +98,8 @@ export function useStats(): Stats {
     }
 
     // ---- Pin 기반 통계 ----
-    // 세부 일정 핀(day_number != null)과 좌표 없는 핀(lat=0, lng=0)은 지도/홈과 동일하게 제외
-    const mapPins = pins.filter((p) => p.day_number == null && !(p.lat === 0 && p.lng === 0));
+    // 세계지도와 동일한 필터: 메인 핀 + day-number만 있는 여행의 대표 핀 포함
+    const mapPins = getMapDisplayPins(pins);
     const visitedPins = mapPins.filter((p) => p.visit_status === 'visited');
 
     // 방문한 국가 (unique)
