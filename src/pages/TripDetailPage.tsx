@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTrip, deleteTrip, updateTrip, toggleChecklistItem, saveExpenses, saveChecklistItems, savePlaces, updateDemoTrip, deleteDemoTrip } from '../hooks/useTrips';
 import { supabase } from '../lib/supabase';
+import { savePhotoCaptions } from '../lib/localStore';
 import { uploadTripPhoto, deleteTripPhoto } from '../lib/storage';
 import { useSharesForTrip, createShare, removeShare, updateSharePermission } from '../hooks/useShares';
 import { useExchangeRate } from '../hooks/useExchangeRate';
@@ -460,22 +461,24 @@ export default function TripDetailPage() {
   // --- 사진 캡션 저장 ---
   const handleCaptionChange = async (url: string, caption: string) => {
     if (!trip || !id) return;
-    const updated = { ...trip.photoCaptions, [url]: caption };
+    const updated = { ...(trip.photoCaptions ?? {}), [url]: caption };
     // 빈 캡션은 삭제
     if (!caption) delete updated[url];
-    try {
-      if (isDemo) {
-        updateDemoTrip(id, { photoCaptions: updated });
-      } else {
-        await supabase.from('trips').update({ photo_captions: updated }).eq('id', id).eq('user_id', user?.id ?? '');
+
+    // 1. localStorage에 즉시 저장 (DB 컬럼 유무와 무관하게 항상 동작)
+    savePhotoCaptions(id, updated);
+
+    // 2. Supabase에도 저장 시도 (photo_captions 컬럼이 있으면 DB에도 반영)
+    if (!isDemo && user) {
+      try {
+        await supabase.from('trips').update({ photo_captions: updated }).eq('id', id).eq('user_id', user.id);
+      } catch {
+        // DB 컬럼 미존재 시 무시 — localStorage에 이미 저장됨
       }
-      refetch();
-    } catch (err) {
-      console.error('[handleCaptionChange] 캡션 저장 실패:', err);
-      // fallback: 로컬에 저장
-      updateDemoTrip(id, { photoCaptions: updated });
-      refetch();
     }
+
+    // 3. refetch하여 UI 갱신 (mapDbTripToUi에서 localStorage 캡션 병합)
+    refetch();
   };
 
   // 에러가 있지만 폴백 데이터가 있으면 토스트로 알림만 표시

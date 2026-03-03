@@ -5,6 +5,7 @@ import {
   getLocalTrips,
   getDeletedTripIds,
   getMergedDemoTrips,
+  loadPhotoCaptions,
 } from '../lib/localStore';
 import type { Trip, Place, PlacePriority } from '../types/trip';
 import type {
@@ -90,8 +91,12 @@ function mapDbTripToUi(
     .map((pp) => pp.url);
   const photos = [...new Set([...storagePhotos, ...pinPhotoUrls])];
 
-  // photoCaptions: DB에 photo_captions JSONB 컬럼이 있으면 사용
-  const photoCaptions = (db as unknown as Record<string, unknown>).photo_captions as Record<string, string> | undefined;
+  // photoCaptions: DB photo_captions JSONB + localStorage 병합
+  const dbCaptions = (db as unknown as Record<string, unknown>).photo_captions as Record<string, string> | undefined;
+  const localCaptions = loadPhotoCaptions(db.id);
+  const photoCaptions = (dbCaptions || localCaptions)
+    ? { ...dbCaptions, ...localCaptions }
+    : undefined;
 
   return {
     id: db.id,
@@ -553,7 +558,13 @@ export function useTrip(id: string | undefined) {
     // 데모 모드 (로컬 추가 여행 포함)
     if (!isSupabaseConfigured) {
       if (!mountedRef.current) return;
-      setTrip(getMergedDemoTrips().find((t) => t.id === id) ?? null);
+      const found = getMergedDemoTrips().find((t) => t.id === id) ?? null;
+      // localStorage 캡션 병합
+      if (found) {
+        const localCaps = loadPhotoCaptions(found.id);
+        if (localCaps) found.photoCaptions = { ...found.photoCaptions, ...localCaps };
+      }
+      setTrip(found);
       setIsDemo(true);
       setLoading(false);
       return;
@@ -570,7 +581,12 @@ export function useTrip(id: string | undefined) {
       const userEmail = session?.user?.email;
       if (!userId) {
         // 미로그인 → 데모 데이터에서 찾기
-        setTrip(getMergedDemoTrips().find((t) => t.id === id) ?? null);
+        const found = getMergedDemoTrips().find((t) => t.id === id) ?? null;
+        if (found) {
+          const localCaps = loadPhotoCaptions(found.id);
+          if (localCaps) found.photoCaptions = { ...found.photoCaptions, ...localCaps };
+        }
+        setTrip(found);
         setIsDemo(true);
         setLoading(false);
         return;
@@ -613,6 +629,8 @@ export function useTrip(id: string | undefined) {
           // (Supabase INSERT 실패 시 localStorage에 저장된 여행)
           const localFallback = getMergedDemoTrips().find((t) => t.id === id);
           if (localFallback) {
+            const lc = loadPhotoCaptions(localFallback.id);
+            if (lc) localFallback.photoCaptions = { ...localFallback.photoCaptions, ...lc };
             setTrip(localFallback);
             setIsDemo(true);
             return;
@@ -691,6 +709,8 @@ export function useTrip(id: string | undefined) {
       // Supabase 조회 실패 시 데모 데이터에서 fallback 시도
       const demoFallback = getMergedDemoTrips().find((t) => t.id === id) ?? null;
       if (demoFallback) {
+        const lc = loadPhotoCaptions(demoFallback.id);
+        if (lc) demoFallback.photoCaptions = { ...demoFallback.photoCaptions, ...lc };
         setTrip(demoFallback);
         setIsDemo(true);
       } else {
