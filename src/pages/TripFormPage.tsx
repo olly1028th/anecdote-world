@@ -29,7 +29,7 @@ export default function TripFormPage() {
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { trip: existing } = useTrip(isEdit ? id : undefined);
+  const { trip: existing, isDemo: existingIsDemo } = useTrip(isEdit ? id : undefined);
 
   const [title, setTitle] = useState('');
   const [status, setStatus] = useState<TripStatus>('planned');
@@ -126,8 +126,8 @@ export default function TripFormPage() {
         } catch { /* 지오코딩 실패해도 진행 */ }
       }
 
-      // 데모 모드: localStorage에 저장
-      if (!isSupabaseConfigured) {
+      // 데모 모드 또는 로컬 저장 여행 편집: localStorage에 저장
+      if (!isSupabaseConfigured || (isEdit && existingIsDemo)) {
         const now = new Date().toISOString();
         const validExpenses = expenses.filter((e) => e.amount > 0);
         const validChecklist = checklist.filter((c) => c.text.trim());
