@@ -173,6 +173,17 @@ export function updateLocalPinsByTripId(tripId: string, updates: Partial<Pin>) {
   localStorage.setItem(LOCAL_PINS_KEY, JSON.stringify(localPins));
 }
 
+/** 특정 여행의 planned/wishlist 로컬 핀 교체 (savePlaces 로컬 버전) */
+export function replaceLocalPinsForTrip(tripId: string, newPins: Pin[]) {
+  // 기존 planned/wishlist 핀 제거 (visited 핀은 유지)
+  localPins = localPins.filter(
+    (p) => p.trip_id !== tripId || p.visit_status === 'visited',
+  );
+  // 새 핀 추가
+  localPins = [...newPins, ...localPins];
+  localStorage.setItem(LOCAL_PINS_KEY, JSON.stringify(localPins));
+}
+
 /** 핀 로컬 삭제 (삭제 기록에 추가 — 다른 기기에서 부활 방지) */
 export function deleteLocalPin(id: string) {
   localPins = localPins.filter((p) => p.id !== id);

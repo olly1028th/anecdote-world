@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTrip, deleteTrip, updateTrip, toggleChecklistItem, saveExpenses, saveChecklistItems, savePlaces, updateDemoTrip, deleteDemoTrip } from '../hooks/useTrips';
 import { supabase } from '../lib/supabase';
-import { savePhotoCaptions } from '../lib/localStore';
+import { savePhotoCaptions, replaceLocalPinsForTrip } from '../lib/localStore';
 import { uploadTripPhoto, deleteTripPhoto } from '../lib/storage';
 import { useSharesForTrip, createShare, removeShare, updateSharePermission } from '../hooks/useShares';
 import { useExchangeRate } from '../hooks/useExchangeRate';
@@ -408,11 +408,40 @@ export default function TripDetailPage() {
     if (!trip || !id) return;
     // day가 유효한 장소만 저장 (미배정 장소 제거)
     const valid = draftPlaces.filter((p) => p.name.trim() && p.day && p.day > 0);
+
+    // 장소 → 로컬 Pin 레코드 변환 헬퍼
+    const buildLocalPins = () => {
+      const now = new Date().toISOString();
+      const pinStatus = trip.status === 'completed' ? 'visited' as const : trip.status === 'wishlist' ? 'wishlist' as const : 'planned' as const;
+      return valid.map((p, i) => ({
+        id: `pin-local-${id}-${i}-${Date.now()}`,
+        user_id: user?.id ?? 'demo-user-001',
+        trip_id: id,
+        name: p.name,
+        address: p.priority,
+        lat: p.lat ?? 0,
+        lng: p.lng ?? 0,
+        country: '',
+        city: '',
+        visit_status: p.priority === 'maybe' ? 'wishlist' as const : pinStatus,
+        visited_at: trip.status === 'completed' ? (trip.startDate || null) : null,
+        category: 'other' as const,
+        rating: null,
+        note: p.time ? `[${p.time}] ${p.note || ''}` : (p.note || ''),
+        day_number: p.day ?? null,
+        sort_order: i,
+        created_at: now,
+        updated_at: now,
+      }));
+    };
+
     try {
       setSaving(true);
       let plOk = true;
       if (isDemo) {
         updateDemoTrip(id, { places: valid });
+        // 데모모드: 로컬 핀 레코드도 생성 (세계지도에 반영)
+        replaceLocalPinsForTrip(id, buildLocalPins());
       } else {
         try {
           await savePlaces(id, valid);
@@ -420,6 +449,8 @@ export default function TripDetailPage() {
           plOk = false;
           console.error('[savePlaces] Supabase 실패, 로컬 저장 fallback:', err);
           updateDemoTrip(id, { places: valid });
+          // Supabase 실패 시에도 로컬 핀 생성 (세계지도에 반영)
+          replaceLocalPinsForTrip(id, buildLocalPins());
         }
       }
       setEditingPlaces(false);
