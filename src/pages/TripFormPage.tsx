@@ -214,12 +214,81 @@ export default function TripFormPage() {
         memo: memo.trim() || undefined,
       };
 
+      const validExpenses = expenses.filter((e) => e.amount > 0);
+      const validChecklist = checklist.filter((c) => c.text.trim());
+
       let tripId: string;
-      if (isEdit && id) {
-        await updateTrip(id, input);
-        tripId = id;
-      } else {
-        tripId = await createTrip(input);
+      try {
+        if (isEdit && id) {
+          await updateTrip(id, input);
+          tripId = id;
+        } else {
+          tripId = await createTrip(input);
+        }
+      } catch (err) {
+        // Supabase 저장 실패 → localStorage fallback
+        console.warn('[TripFormPage] Supabase 저장 실패, 로컬 fallback:', err);
+        const now = new Date().toISOString();
+        const tripIdLocal = isEdit && id ? id : `demo-${Date.now()}`;
+        if (isEdit && id) {
+          updateDemoTrip(id, {
+            title: title.trim(),
+            status,
+            destination: finalDest.name,
+            startDate: startDate || '',
+            endDate: endDate || '',
+            coverImage: coverImage.trim(),
+            memo: memo.trim(),
+            photos,
+            expenses: validExpenses,
+            checklist: validChecklist,
+          });
+        } else {
+          addDemoTrip({
+            id: tripIdLocal,
+            title: title.trim(),
+            destination: finalDest.name,
+            status,
+            startDate: startDate || '',
+            endDate: endDate || '',
+            coverImage: coverImage.trim(),
+            memo: memo.trim(),
+            expenses: validExpenses,
+            itinerary: [],
+            photos,
+            places: [],
+            checklist: validChecklist,
+            createdAt: now,
+            updatedAt: now,
+          });
+        }
+        if (finalDest.lat != null && finalDest.lng != null) {
+          addDemoPin({
+            id: `pin-demo-${Date.now()}`,
+            user_id: 'demo-user-001',
+            trip_id: tripIdLocal,
+            name: finalDest.name || finalDest.city || '여행지',
+            address: '',
+            lat: finalDest.lat,
+            lng: finalDest.lng,
+            country: finalDest.country,
+            city: finalDest.city,
+            visit_status: status === 'completed' ? 'visited' : status === 'wishlist' ? 'wishlist' : 'planned',
+            visited_at: status === 'completed' ? (startDate || null) : null,
+            category: 'landmark',
+            rating: null,
+            note: '',
+            day_number: null,
+            sort_order: 0,
+            created_at: now,
+            updated_at: now,
+          });
+          window.dispatchEvent(new CustomEvent('pin-added'));
+        }
+        window.dispatchEvent(new CustomEvent('trip-added'));
+        navigate(`/trip/${tripIdLocal}`);
+        toast('서버 저장 실패 — 로컬에 임시 저장되었습니다', 'error');
+        return;
       }
 
       if (!isEdit && finalDest.lat != null && finalDest.lng != null) {
@@ -237,7 +306,32 @@ export default function TripFormPage() {
             trip_id: tripId,
           });
           window.dispatchEvent(new CustomEvent('pin-added'));
-        } catch { /* 핀 생성 실패해도 여행은 저장됨 */ }
+        } catch (pinErr) {
+          // 핀 Supabase 저장 실패 → localStorage에 fallback 저장
+          console.warn('[TripFormPage] 핀 Supabase 저장 실패, 로컬 fallback:', pinErr);
+          const now = new Date().toISOString();
+          addDemoPin({
+            id: `pin-demo-${Date.now()}`,
+            user_id: 'demo-user-001',
+            trip_id: tripId,
+            name: finalDest.name || finalDest.city || '여행지',
+            address: '',
+            lat: finalDest.lat,
+            lng: finalDest.lng,
+            country: finalDest.country,
+            city: finalDest.city,
+            visit_status: status === 'completed' ? 'visited' : status === 'wishlist' ? 'wishlist' : 'planned',
+            visited_at: status === 'completed' ? (startDate || null) : null,
+            category: 'landmark',
+            rating: null,
+            note: '',
+            day_number: null,
+            sort_order: 0,
+            created_at: now,
+            updated_at: now,
+          });
+          window.dispatchEvent(new CustomEvent('pin-added'));
+        }
       }
 
       const base64Photos = photos.filter((p) => p.startsWith('data:'));
@@ -253,7 +347,7 @@ export default function TripFormPage() {
             uploadedUrls.push(url);
             uploadCount++;
             setSaveStatus(`사진 업로드 중... (${uploadCount}/${base64Photos.length})`);
-          } catch { console.warn('사진 업로드 건너뜀'); }
+          } catch (uploadErr) { console.warn('사진 업로드 건너뜀:', uploadErr); }
         } else {
           uploadedUrls.push(photo);
         }
@@ -265,12 +359,20 @@ export default function TripFormPage() {
       }
 
       setSaveStatus('경비 저장 중...');
-      const validExpenses = expenses.filter((e) => e.amount > 0);
-      await saveExpenses(tripId, validExpenses);
+      try {
+        await saveExpenses(tripId, validExpenses);
+      } catch (expErr) {
+        console.warn('[TripFormPage] 경비 Supabase 저장 실패, 로컬 fallback:', expErr);
+        updateDemoTrip(tripId, { expenses: validExpenses });
+      }
 
       setSaveStatus('체크리스트 저장 중...');
-      const validChecklist = checklist.filter((c) => c.text.trim());
-      await saveChecklistItems(tripId, validChecklist);
+      try {
+        await saveChecklistItems(tripId, validChecklist);
+      } catch (clErr) {
+        console.warn('[TripFormPage] 체크리스트 Supabase 저장 실패, 로컬 fallback:', clErr);
+        updateDemoTrip(tripId, { checklist: validChecklist });
+      }
 
       navigate(`/trip/${tripId}`);
       toast(isEdit ? '여행이 수정되었습니다' : '여행이 저장되었습니다');

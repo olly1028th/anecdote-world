@@ -65,10 +65,35 @@ export function addLocalTrip(trip: Trip) {
   }
 }
 
-/** 여행 로컬 수정 */
+/** 여행 로컬 수정 (로컬에 없으면 자동 추가 후 수정 — Supabase fallback 대응) */
 export function updateLocalTrip(id: string, updates: Partial<Trip>) {
   const idx = localTrips.findIndex((t) => t.id === id);
-  if (idx === -1) return;
+  if (idx === -1) {
+    // Supabase에 있는 trip의 하위 데이터 저장 실패 시 fallback:
+    // 최소한의 trip 껍데기를 로컬에 추가하여 데이터 유실 방지
+    const now = new Date().toISOString();
+    const fallbackTrip: Trip = {
+      id,
+      title: updates.title ?? '',
+      destination: updates.destination ?? '',
+      status: updates.status ?? 'planned',
+      startDate: updates.startDate ?? '',
+      endDate: updates.endDate ?? '',
+      coverImage: updates.coverImage ?? '',
+      memo: updates.memo ?? '',
+      expenses: updates.expenses ?? [],
+      itinerary: updates.itinerary ?? [],
+      photos: updates.photos ?? [],
+      places: updates.places ?? [],
+      checklist: updates.checklist ?? [],
+      createdAt: now,
+      updatedAt: now,
+    };
+    localTrips = [fallbackTrip, ...localTrips];
+    localStorage.setItem(LOCAL_TRIPS_KEY, JSON.stringify(localTrips));
+    console.warn(`[localStore] trip ${id} not found locally, created fallback entry`);
+    return;
+  }
   const next = localTrips.map((t) =>
     t.id === id ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t,
   );
