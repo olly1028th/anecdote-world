@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { formatDate } from '../utils/format';
 import { getCountryFlagUrl } from '../utils/countryFlag';
+import { getMapDisplayPins } from '../utils/mapPins';
 import ConfirmModal from '../components/ConfirmModal';
 import { HomePageSkeleton } from '../components/Skeleton';
 import EmptyState from '../components/EmptyState';
@@ -113,8 +114,8 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<TripStatus | 'all'>('all');
 
-  // 세부 일정 장소(day_number가 있는 핀)와 좌표 없는 핀(lat=0,lng=0)은 메인 지도에서 제외
-  const mapPins = pins.filter((p) => p.day_number == null && !(p.lat === 0 && p.lng === 0));
+  // 세계지도에 표시할 핀: 메인 핀 + day-number만 있는 여행의 대표 핀 포함
+  const mapPins = useMemo(() => getMapDisplayPins(pins), [pins]);
   const filteredPins =
     pinFilter === 'all' ? mapPins : mapPins.filter((p) => p.visit_status === pinFilter);
 
