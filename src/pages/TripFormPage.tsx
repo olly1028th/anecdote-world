@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import type { TripStatus, ExpenseCategory, Expense, ChecklistItem } from '../types/trip';
 import { createTrip, updateTrip, saveExpenses, saveChecklistItems, useTrip, addDemoTrip, updateDemoTrip } from '../hooks/useTrips';
 import { createPin, addDemoPin } from '../hooks/usePins';
+import { updateLocalPinsByTripId } from '../lib/localStore';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { uploadTripPhoto } from '../lib/storage';
 import { useToast } from '../contexts/ToastContext';
@@ -145,7 +146,14 @@ export default function TripFormPage() {
             expenses: validExpenses,
             checklist: validChecklist,
           });
+          // 여행 상태 변경 시 해당 여행의 핀 visit_status도 동기화
+          const pinStatus = status === 'completed' ? 'visited' : status === 'wishlist' ? 'wishlist' : 'planned';
+          updateLocalPinsByTripId(id, {
+            visit_status: pinStatus,
+            visited_at: status === 'completed' ? (startDate || null) : null,
+          });
           window.dispatchEvent(new CustomEvent('trip-added'));
+          window.dispatchEvent(new CustomEvent('pin-added'));
           navigate(`/trip/${id}`);
         } else {
           const tripId = `demo-${Date.now()}`;

@@ -117,6 +117,14 @@ export function addLocalPin(pin: Pin) {
   localStorage.setItem(LOCAL_PINS_KEY, JSON.stringify(localPins));
 }
 
+/** 핀 로컬 수정 (trip_id 기준 일괄 수정 지원) */
+export function updateLocalPinsByTripId(tripId: string, updates: Partial<Pin>) {
+  localPins = localPins.map((p) =>
+    p.trip_id === tripId ? { ...p, ...updates, updated_at: new Date().toISOString() } : p,
+  );
+  localStorage.setItem(LOCAL_PINS_KEY, JSON.stringify(localPins));
+}
+
 /** 로컬 핀 제거 (동기화 성공 후 정리용) */
 export function removeLocalPin(id: string) {
   localPins = localPins.filter((p) => p.id !== id);

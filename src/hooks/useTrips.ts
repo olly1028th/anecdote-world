@@ -293,6 +293,20 @@ export async function updateTrip(id: string, input: Partial<TripInput>): Promise
   if (!user) throw new Error('인증이 필요합니다');
   const { error } = await supabase.from('trips').update(input).eq('id', id).eq('user_id', user.id);
   if (error) throw error;
+
+  // 여행 상태 변경 시 해당 여행의 핀 visit_status도 동기화
+  if (input.status) {
+    const pinStatus = input.status === 'completed' ? 'visited' : input.status === 'wishlist' ? 'wishlist' : 'planned';
+    await supabase
+      .from('pins')
+      .update({
+        visit_status: pinStatus,
+        visited_at: input.status === 'completed' ? (input.start_date || new Date().toISOString()) : null,
+      })
+      .eq('trip_id', id)
+      .eq('user_id', user.id);
+    window.dispatchEvent(new CustomEvent('pin-added'));
+  }
 }
 
 export async function deleteTrip(id: string): Promise<void> {
