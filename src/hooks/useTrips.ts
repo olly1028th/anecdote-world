@@ -504,6 +504,14 @@ export function useTrip(id: string | undefined) {
           .or(`invited_user_id.eq.${userId},invited_email.eq.${userEmail ?? ''}`)
           .maybeSingle();
         if (!share) {
+          // Supabase에 없는 여행 → 로컬 데이터 fallback 시도
+          // (Supabase INSERT 실패 시 localStorage에 저장된 여행)
+          const localFallback = getMergedDemoTrips().find((t) => t.id === id);
+          if (localFallback) {
+            setTrip(localFallback);
+            setIsDemo(true);
+            return;
+          }
           setTrip(null);
           setIsDemo(false);
           setError('접근 권한이 없습니다');
