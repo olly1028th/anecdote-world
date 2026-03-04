@@ -266,15 +266,14 @@ export default function TripDetailPage() {
     const count = Math.max(1, draftTravelerCount);
     try {
       setSaving(true);
-      // 항상 localStorage에 저장 (DB 컬럼 유무와 무관하게 동작)
+      // localStorage에 항상 저장 (fallback)
       saveTravelerCountLocal(id, count);
       if (isDemo) {
         updateDemoTrip(id, { travelerCount: count });
       } else {
-        // DB에도 시도 (컬럼 없으면 무시)
-        try {
-          await supabase.from('trips').update({ traveler_count: count }).eq('id', id).eq('user_id', user?.id ?? '');
-        } catch { /* DB 컬럼 미존재 시 무시 — localStorage에 이미 저장됨 */ }
+        // Supabase에 저장 (cross-device 동기화)
+        const { error: dbErr } = await supabase.from('trips').update({ traveler_count: count }).eq('id', id).eq('user_id', user?.id ?? '');
+        if (dbErr) console.warn('[saveTravelerCount] DB 저장 실패:', dbErr.message);
       }
       setEditingTravelerCount(false);
       refetch();
