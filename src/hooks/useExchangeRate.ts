@@ -85,7 +85,7 @@ export function detectCurrency(destination: string): string | null {
 
 /** 환율 API 호출 (내부 헬퍼) */
 function fetchRate(currency: string): Promise<ExchangeRateInfo> {
-  return fetchWithTimeout(`https://api.frankfurter.app/latest?from=KRW&to=${currency}`)
+  return fetchWithTimeout(`https://api.frankfurter.dev/v1/latest?base=KRW&symbols=${currency}`)
     .then((res) => {
       if (!res.ok) throw new Error('환율 조회 실패');
       return res.json();

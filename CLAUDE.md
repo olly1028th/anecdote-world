@@ -337,7 +337,7 @@ usePins() → allPins[]
 
 ### API
 
-- **Frankfurter API** (`https://api.frankfurter.app/latest?from=KRW&to={currency}`)
+- **Frankfurter API** (`https://api.frankfurter.dev/v1/latest?base=KRW&symbols={currency}`)
 - ECB(유럽중앙은행) 데이터 기반 무료 오픈소스 API, 인증 불필요
 - `fetchWithTimeout` 래퍼로 타임아웃 처리
 - 응답: `{ rates: { JPY: 0.09 }, date: "2026-03-04" }`
