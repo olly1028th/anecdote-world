@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
+import { fetchWithTimeout } from '../lib/fetchWithTimeout';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -94,7 +96,7 @@ export default function PlaceSearchModal({ initialQuery, onSelect, onClose }: Pr
 
       // 1차: Photon API (한국어/다국어 검색 우수)
       try {
-        const photonRes = await fetch(
+        const photonRes = await fetchWithTimeout(
           `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lang=ko&limit=5`,
         );
         const photonData = await photonRes.json();
@@ -118,7 +120,7 @@ export default function PlaceSearchModal({ initialQuery, onSelect, onClose }: Pr
       // 2차: Nominatim fallback (Photon 결과 부족 시)
       if (mapped.length < 3) {
         try {
-          const res = await fetch(
+          const res = await fetchWithTimeout(
             `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&accept-language=ko`,
           );
           const data = await res.json();
@@ -178,9 +180,16 @@ export default function PlaceSearchModal({ initialQuery, onSelect, onClose }: Pr
     }
   };
 
+  const dialogRef = useFocusTrap(onClose);
+
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center" onClick={onClose}>
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="장소 검색"
+        tabIndex={-1}
         className="bg-white dark:bg-slate-800 w-full max-w-md rounded-t-2xl sm:rounded-2xl border-[3px] border-slate-900 retro-shadow overflow-hidden flex flex-col max-h-[85dvh]"
         onClick={(e) => e.stopPropagation()}
       >
@@ -203,6 +212,7 @@ export default function PlaceSearchModal({ initialQuery, onSelect, onClose }: Pr
             <input
               ref={inputRef}
               type="text"
+              aria-label="장소명 검색"
               value={query}
               onChange={(e) => handleInputChange(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearch(); } }}

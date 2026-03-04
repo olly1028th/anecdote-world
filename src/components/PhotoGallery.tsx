@@ -157,7 +157,7 @@ function AlbumView({
   }, [handleKeyDown]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#1a1208]/95 dark:bg-black/95">
+    <div role="dialog" aria-modal="true" aria-label="사진 앨범" className="fixed inset-0 z-50 bg-[#1a1208]/95 dark:bg-black/95">
       {/* 상단 헤더 (고정) */}
       <div className="sticky top-0 z-10 bg-[#1a1208]/80 dark:bg-black/80 backdrop-blur-sm border-b border-white/10 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">

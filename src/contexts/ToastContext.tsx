@@ -39,7 +39,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ toast }}>
       {children}
       {/* Toast container */}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 pointer-events-none w-[90vw] max-w-sm">
+      <div role="status" aria-live="polite" className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 pointer-events-none w-[90vw] max-w-sm">
         {toasts.map((t) => (
           <ToastItem key={t.id} toast={t} onDone={() => remove(t.id)} />
         ))}
@@ -86,6 +86,7 @@ function ToastItem({ toast, onDone }: { toast: Toast; onDone: () => void }) {
 
   return (
     <div
+      role="alert"
       className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-slate-900 text-white text-sm font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] transition-all duration-300 ${bg} ${
         visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
       }`}

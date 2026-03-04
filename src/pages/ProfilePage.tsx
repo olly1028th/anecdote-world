@@ -8,6 +8,7 @@ import { useReceivedShares, useSharedUsers, usePendingInvitations, acceptSharesF
 import { formatCurrency, formatDate } from '../utils/format';
 import { getCountryFlagUrl } from '../utils/countryFlag';
 import ConfirmModal from '../components/ConfirmModal';
+import { useConfirmModal } from '../hooks/useConfirmModal';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -38,14 +39,7 @@ export default function ProfilePage() {
   };
 
   // Confirm modal for leave share
-  const [confirmModal, setConfirmModal] = useState<{
-    open: boolean;
-    title: string;
-    message: string;
-    confirmLabel?: string;
-    danger?: boolean;
-    onConfirm: () => void;
-  }>({ open: false, title: '', message: '', onConfirm: () => {} });
+  const { confirmModal, setConfirmModal } = useConfirmModal();
 
   const handleLeaveShare = (ownerId: string, ownerNickname: string) => {
     setConfirmModal({

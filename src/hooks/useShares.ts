@@ -2,6 +2,15 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { sendShareInvitationEmail } from '../lib/email';
 import type { SharePermission, ShareStatus, TripShare } from '../types/database';
+import { DEMO_USER_ID } from '../contexts/AuthContext';
+
+/** 이메일 형식 검증 */
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function validateEmail(email: string): void {
+  if (!email || !EMAIL_REGEX.test(email)) {
+    throw new Error('올바른 이메일 형식이 아닙니다.');
+  }
+}
 
 // ---- 데모 모드 로컬 저장소 ----
 
@@ -55,10 +64,18 @@ export function useSharesForTrip(tripId: string | undefined) {
 
     try {
       setLoading(true);
+      // 소유자 검증: 현재 사용자가 소유한 여행의 공유만 조회
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setShares([]);
+        setLoading(false);
+        return;
+      }
       const { data, error } = await supabase
         .from('trip_shares')
         .select('*')
         .eq('trip_id', tripId)
+        .eq('owner_id', user.id)
         .order('created_at', { ascending: false });
       if (error) throw new Error(error.message);
       setShares((data as TripShare[]) ?? []);
@@ -193,7 +210,7 @@ export async function acceptSharesFromOwner(shareIds: string[], userId?: string)
     const idSet = new Set(shareIds);
     const updated = all.map((s) =>
       idSet.has(s.id)
-        ? { ...s, status: 'accepted' as ShareStatus, invited_user_id: userId ?? 'demo-user-001', updated_at: new Date().toISOString() }
+        ? { ...s, status: 'accepted' as ShareStatus, invited_user_id: userId ?? DEMO_USER_ID, updated_at: new Date().toISOString() }
         : s,
     );
     saveDemoShares(updated);
@@ -274,6 +291,7 @@ export function createDemoShareDirect(
   permission: SharePermission,
   tripTitle?: string,
 ): void {
+  validateEmail(invitedEmail);
   const all = loadDemoShares();
   const exists = all.find(
     (s) => s.trip_id === tripId && s.invited_email === invitedEmail && s.status !== 'declined',
@@ -321,6 +339,7 @@ export async function createShare(
   permission: SharePermission,
   tripTitle?: string,
 ): Promise<void> {
+  validateEmail(invitedEmail);
   if (!isSupabaseConfigured) {
     const all = loadDemoShares();
     // 중복 체크
@@ -418,7 +437,7 @@ export async function acceptShare(shareId: string, userId?: string): Promise<voi
     const all = loadDemoShares();
     const updated = all.map((s) =>
       s.id === shareId
-        ? { ...s, status: 'accepted' as ShareStatus, invited_user_id: userId ?? 'demo-user-001', updated_at: new Date().toISOString() }
+        ? { ...s, status: 'accepted' as ShareStatus, invited_user_id: userId ?? DEMO_USER_ID, updated_at: new Date().toISOString() }
         : s,
     );
     saveDemoShares(updated);
@@ -519,7 +538,7 @@ export async function removeShare(shareId: string): Promise<void> {
 export async function leaveShare(ownerId: string): Promise<void> {
   if (!isSupabaseConfigured) {
     const all = loadDemoShares();
-    const { data: { user } } = { data: { user: { id: 'demo-user-001', email: '' } } };
+    const { data: { user } } = { data: { user: { id: DEMO_USER_ID, email: '' } } };
     saveDemoShares(all.filter((s) => !(s.owner_id === ownerId && (s.invited_user_id === user.id || s.status === 'accepted'))));
     window.dispatchEvent(new CustomEvent('share-updated'));
     window.dispatchEvent(new CustomEvent('trip-added'));
@@ -591,6 +610,7 @@ export async function shareAllTrips(
   tripTitles?: Map<string, string>,
 ): Promise<number> {
   if (tripIds.length === 0) return 0;
+  validateEmail(invitedEmail);
 
   if (!isSupabaseConfigured) {
     const all = loadDemoShares();
@@ -722,14 +742,20 @@ export async function revokeAllShares(ownerId: string, invitedEmail: string): Pr
     return;
   }
 
+  // 소유자 본인만 공유 취소 가능
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('인증이 필요합니다');
+  if (user.id !== ownerId) throw new Error('소유자만 공유를 취소할 수 있습니다');
+
   try {
     const { error } = await supabase
       .from('trip_shares')
       .delete()
-      .eq('owner_id', ownerId)
+      .eq('owner_id', user.id)
       .eq('invited_email', invitedEmail);
     if (error) throw new Error(error.message);
   } catch (err) {
+    if (err instanceof Error && (err.message === '인증이 필요합니다' || err.message === '소유자만 공유를 취소할 수 있습니다')) throw err;
     console.error('[revokeAllShares] Supabase 실패, 로컬 fallback:', err);
     const all = loadDemoShares();
     saveDemoShares(all.filter((s) => !(s.owner_id === ownerId && s.invited_email === invitedEmail)));

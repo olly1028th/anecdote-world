@@ -6,8 +6,10 @@ import {
   getDeletedTripIds,
   getMergedDemoTrips,
   loadPhotoCaptions,
+  deleteLocalTrip,
 } from '../lib/localStore';
 import type { Trip, Place, PlacePriority } from '../types/trip';
+import { tripStatusToPinStatus } from '../utils/statusConvert';
 import type {
   Trip as DbTrip,
   Expense as DbExpense,
@@ -92,7 +94,7 @@ function mapDbTripToUi(
   const photos = [...new Set([...storagePhotos, ...pinPhotoUrls])];
 
   // photoCaptions: DB photo_captions JSONB + localStorage 병합
-  const dbCaptions = (db as unknown as Record<string, unknown>).photo_captions as Record<string, string> | undefined;
+  const dbCaptions = db.photo_captions;
   const localCaptions = loadPhotoCaptions(db.id);
   const photoCaptions = (dbCaptions || localCaptions)
     ? { ...dbCaptions, ...localCaptions }
@@ -199,19 +201,23 @@ export function useTrips() {
       let mapped: Trip[] = [];
       if (allDbTrips.length > 0) {
         const tripIds = allDbTrips.map((t: DbTrip) => t.id);
+        // 허용된 user_id: 자기 자신 + 공유 여행 소유자 (데이터 격리)
+        const validUserIds = [...new Set(allDbTrips.map((t: DbTrip) => t.user_id))];
 
-        // 관련 데이터 병렬 조회 (핀 + 핀사진 포함)
+        // 관련 데이터 병렬 조회 (핀 + 핀사진 포함, user_id 필터 적용)
         const [expensesRes, checklistRes, pinsRes] = await Promise.all([
-          supabase.from('expenses').select('*').in('trip_id', tripIds),
+          supabase.from('expenses').select('*').in('trip_id', tripIds).in('user_id', validUserIds),
           supabase
             .from('checklist_items')
             .select('*')
             .in('trip_id', tripIds)
+            .in('user_id', validUserIds)
             .order('sort_order'),
           supabase
             .from('pins')
             .select('*')
             .in('trip_id', tripIds)
+            .in('user_id', validUserIds)
             .order('sort_order'),
         ]);
 
@@ -330,7 +336,7 @@ export async function updateTrip(id: string, input: Partial<TripInput>): Promise
 
   // 여행 상태 변경 시 해당 여행의 핀 visit_status도 동기화
   if (input.status) {
-    const pinStatus = input.status === 'completed' ? 'visited' : input.status === 'wishlist' ? 'wishlist' : 'planned';
+    const pinStatus = tripStatusToPinStatus(input.status);
     await supabase
       .from('pins')
       .update({
@@ -349,6 +355,8 @@ export async function deleteTrip(id: string): Promise<void> {
   // 소유자만 삭제 가능
   const { error } = await supabase.from('trips').delete().eq('id', id).eq('user_id', user.id);
   if (error) throw error;
+  // 로컬 데이터도 정리 (Supabase INSERT 실패 시 저장된 fallback 여행 제거)
+  deleteLocalTrip(id);
 }
 
 // ---- 경비 저장 ----
@@ -664,17 +672,21 @@ export function useTrip(id: string | undefined) {
         return;
       }
 
+      // 여행 소유자의 user_id로 하위 데이터 필터 (데이터 격리)
+      const tripOwnerId = (dbTrip as DbTrip).user_id;
       const [expensesRes, checklistRes, pinsRes] = await Promise.all([
-        supabase.from('expenses').select('*').eq('trip_id', id),
+        supabase.from('expenses').select('*').eq('trip_id', id).eq('user_id', tripOwnerId),
         supabase
           .from('checklist_items')
           .select('*')
           .eq('trip_id', id)
+          .eq('user_id', tripOwnerId)
           .order('sort_order'),
         supabase
           .from('pins')
           .select('*')
           .eq('trip_id', id)
+          .eq('user_id', tripOwnerId)
           .order('sort_order'),
       ]);
 

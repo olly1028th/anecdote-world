@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { fetchWithTimeout } from '../lib/fetchWithTimeout';
 
 /** 국가명(한국어) → ISO 통화 코드 매핑 */
 const COUNTRY_TO_CURRENCY: Record<string, string> = {
@@ -69,7 +70,7 @@ export function useExchangeRate(destination: string | undefined) {
     let cancelled = false;
     setLoading(true);
 
-    fetch(`https://api.frankfurter.app/latest?from=KRW&to=${currency}`)
+    fetchWithTimeout(`https://api.frankfurter.app/latest?from=KRW&to=${currency}`)
       .then((res) => {
         if (!res.ok) throw new Error('환율 조회 실패');
         return res.json();

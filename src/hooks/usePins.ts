@@ -52,20 +52,22 @@ export function usePins() {
       if (err) throw err;
       const myPins = (myPinsData as Pin[]) ?? [];
 
-      // 2) 공유받은 여행의 핀 조회
+      // 2) 공유받은 여행의 핀 조회 (owner_id로 user_id 필터 적용)
       let sharedPins: Pin[] = [];
       if (userEmail) {
         const { data: shares } = await supabase
           .from('trip_shares')
-          .select('trip_id')
+          .select('trip_id, owner_id')
           .eq('status', 'accepted')
           .or(`invited_user_id.eq.${userId},invited_email.eq.${userEmail}`);
         const sharedTripIds = (shares ?? []).map((s: { trip_id: string }) => s.trip_id);
-        if (sharedTripIds.length > 0) {
+        const sharedOwnerIds = [...new Set((shares ?? []).map((s: { owner_id: string }) => s.owner_id))];
+        if (sharedTripIds.length > 0 && sharedOwnerIds.length > 0) {
           const { data } = await supabase
             .from('pins')
             .select('*')
             .in('trip_id', sharedTripIds)
+            .in('user_id', sharedOwnerIds)
             .order('created_at', { ascending: false });
           sharedPins = (data as Pin[]) ?? [];
         }
