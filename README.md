@@ -15,7 +15,9 @@
 - **핀 관리** — 지도 클릭으로 장소 등록, 카테고리·별점·메모 관리, 여행 연결
 - **인라인 편집** — 상세 페이지에서 항목별(사진, 경비, 체크리스트, 장소, 메모) 카드를 클릭하여 바로 편집
 - **사진 갤러리** — URL/파일 업로드 (Supabase Storage), 라이트박스 뷰어 (이전/다음 네비게이션), 대표 이미지 설정, 인라인 사진 편집
-- **경비 추적** — 항공, 숙박, 식비, 교통 등 7개 카테고리별 비용 기록 (인라인 추가/삭제)
+- **경비 추적** — 항공, 숙박, 식비, 교통 등 7개 카테고리별 비용 기록 (인라인 추가/삭제), **다중 통화 지원** (원화/현지통화 선택, 실시간 KRW 환산), **일자별 그룹핑** (Day별 소계)
+- **실시간 환율** — Frankfurter API (ECB 기반) 자동 환율 조회, 여행 목적지 기반 현지 통화 감지, 경비 입력 시 KRW 환산액 실시간 표시
+- **정복 완료 전환** — 계획 여행의 D-Day 경과 시 자동 배너 표시 + 원클릭 완료 전환
 - **여행 타임라인** — 일자별 일정 표시
 - **준비 체크리스트** — 여행 준비 사항 관리 및 진행률 표시 (인라인 추가/삭제/토글)
 - **추천 장소** — must / want / maybe 우선순위 태그 (인라인 추가/삭제), 완료된 여행에서는 비고란으로 전환
@@ -81,6 +83,7 @@ src/
 │   ├── useFavoritePhotos.ts # 즐겨찾기 사진
 │   ├── useProfile.ts        # 사용자 프로필
 │   ├── useStats.ts          # 통계 집계
+│   ├── useExchangeRate.ts   # 실시간 환율 조회 (Frankfurter API)
 │   └── useDarkMode.ts       # 다크모드 토글
 ├── types/
 │   ├── trip.ts              # UI 모델
@@ -180,6 +183,7 @@ npm run preview
 | Phase 11 | Supabase Storage 사진 업로드, Storage RLS 정책, 권한 분리 강화 | Done |
 | Phase 12 | 버그 수정 (React #310, 사진 업로드, 공유 에러, 데이터 격리), 프로필 공유 섹션, 비고란 | Done |
 | **Review** | **5인 전문가 코드 리뷰 + Phase 1·2 수정 + 샘플 데이터 제거** | **Done** |
+| Phase 13 | 정복 완료 빠른 전환, 다중 통화 경비 (환율 API), 일자별 경비 그룹핑 | Done |
 
 ## Database Schema
 
@@ -191,7 +195,7 @@ Supabase (PostgreSQL) 테이블 구성:
 | `trips` | 여행 기록 (상태: planned/completed/wishlist, 날짜, 커버 이미지, 메모) |
 | `pins` | 장소 핀 (좌표, 카테고리, 별점, 방문 상태) |
 | `pin_photos` | 핀 관련 사진 |
-| `expenses` | 경비 내역 (카테고리, 금액) |
+| `expenses` | 경비 내역 (카테고리, 금액, 통화, 지출일) |
 | `checklist_items` | 준비 체크리스트 |
 | `trip_shares` | 여행 공유/초대 (권한: read/edit, 상태: pending/accepted/declined) |
 
@@ -208,6 +212,27 @@ Supabase (PostgreSQL) 테이블 구성:
 - **OAuth 인증**: Google/Kakao 소셜 로그인으로 비밀번호 저장 없음
 
 ## Recent Changes
+
+### Phase 13 — 정복 완료 전환 + 다중 통화 경비 + 일자별 그룹핑
+
+**정복 완료 빠른 전환**
+- 계획(planned) 여행에 "정복 완료!" 버튼 상시 표시 — 상태 순환 없이 바로 completed로 전환
+- 여행 종료일이 지나면 "여행 다녀오셨나요?" D-Day 배너 자동 표시
+- 전환 시 세계지도 핀 및 스탯 즉시 반영 (`trip-added` + `pin-added` 이벤트)
+
+**다중 통화 경비 입력**
+- `Expense` 타입에 `currency` (통화 코드) + `spentAt` (지출일) 필드 추가
+- 여행 목적지에서 현지 통화 자동 감지 (30+ 국가 매핑: 일본→JPY, 미국→USD 등)
+- 경비 입력 시 KRW/현지통화 드롭다운 선택 — 현지통화 입력 시 실시간 KRW 환산액 표시
+- Frankfurter API (`api.frankfurter.app`, ECB 기반 무료 오픈소스) 실시간 환율 조회
+- `totalExpensesInKRW()` 함수로 다중 통화 경비 KRW 환산 합계 계산
+
+**일자별 경비 그룹핑**
+- 경비 항목에 날짜 선택 (date picker) 추가
+- `ExpenseTable`에서 `spentAt` 기준 일자별 자동 그룹핑 — Day N 헤더 + 일별 소계
+- 날짜 미지정 항목은 별도 "날짜 미지정" 그룹으로 표시
+- 카테고리별 비율 차트 및 총합 모두 KRW 환산 기준
+- 수정 파일: `trip.ts`, `format.ts`, `useExchangeRate.ts`, `useTrips.ts`, `InlineExpenseEditor.tsx`, `ExpenseTable.tsx`, `TripDetailPage.tsx`
 
 ### Code Review — 5인 전문가 코드 리뷰 & 개선
 
