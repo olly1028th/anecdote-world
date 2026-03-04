@@ -1,3 +1,5 @@
+import { useFocusTrap } from '../hooks/useFocusTrap';
+
 interface Props {
   open: boolean;
   title: string;
@@ -26,7 +28,37 @@ export default function ConfirmModal({
       className="fixed inset-0 z-[90] bg-black/50 flex items-center justify-center px-4"
       onClick={onCancel}
     >
+      <ConfirmModalInner
+        title={title}
+        message={message}
+        confirmLabel={confirmLabel}
+        cancelLabel={cancelLabel}
+        danger={danger}
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      />
+    </div>
+  );
+}
+
+function ConfirmModalInner({
+  title,
+  message,
+  confirmLabel,
+  cancelLabel,
+  danger,
+  onConfirm,
+  onCancel,
+}: Omit<Props, 'open'>) {
+  const dialogRef = useFocusTrap(onCancel);
+
+  return (
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        tabIndex={-1}
         className="bg-white dark:bg-[#2a1f15] w-full max-w-sm max-h-[85dvh] overflow-y-auto rounded-2xl border-[3px] border-slate-900 dark:border-[#4a3f35] retro-shadow p-6 space-y-4"
         onClick={(e) => e.stopPropagation()}
       >
@@ -73,6 +105,5 @@ export default function ConfirmModal({
           </button>
         </div>
       </div>
-    </div>
   );
 }

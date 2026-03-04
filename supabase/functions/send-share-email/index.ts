@@ -6,12 +6,27 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
+// 허용된 오리진 목록
+const ALLOWED_ORIGINS = [
+  "https://anecdote-world.vercel.app",
+  "http://localhost:5173",
+  "http://localhost:4173",
+];
+
+/** 요청 Origin이 허용 목록에 있으면 해당 Origin 반환, 아니면 첫 번째 허용 오리진 */
+function getCorsOrigin(req: Request): string {
+  const origin = req.headers.get("Origin") ?? "";
+  return ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+}
+
 // CORS 헤더
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+function corsHeaders(req: Request) {
+  return {
+    "Access-Control-Allow-Origin": getCorsOrigin(req),
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type",
+  };
+}
 
 interface RequestBody {
   invited_email: string;
@@ -44,24 +59,24 @@ function sanitizeUrl(url: string): string {
 Deno.serve(async (req: Request) => {
   // CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders(req) });
   }
 
   try {
     if (!RESEND_API_KEY) {
       return new Response(
         JSON.stringify({ error: "RESEND_API_KEY is not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 500, headers: { ...corsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
     const { invited_email, trip_title, owner_nickname, app_url } =
       (await req.json()) as RequestBody;
 
-    if (!invited_email) {
+    if (!invited_email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(invited_email)) {
       return new Response(
-        JSON.stringify({ error: "invited_email is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "valid invited_email is required" }),
+        { status: 400, headers: { ...corsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
@@ -120,19 +135,19 @@ Deno.serve(async (req: Request) => {
       console.error("Resend API error:", data);
       return new Response(
         JSON.stringify({ error: "Email send failed", details: data }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 500, headers: { ...corsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
     return new Response(
       JSON.stringify({ success: true, id: data.id }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...corsHeaders(req), "Content-Type": "application/json" } }
     );
   } catch (err) {
     console.error("Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...corsHeaders(req), "Content-Type": "application/json" } }
     );
   }
 });

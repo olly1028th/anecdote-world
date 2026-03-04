@@ -118,6 +118,17 @@ export default function PhotoUpload({ photos, onChange, coverImage, onCoverChang
   const addUrl = () => {
     const url = urlInput.trim();
     if (!url) return;
+    // URL 검증: http:// 또는 https://로 시작해야 함
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+        toast('https:// 또는 http://로 시작하는 URL만 허용됩니다', 'error');
+        return;
+      }
+    } catch {
+      toast('올바른 URL 형식이 아닙니다', 'error');
+      return;
+    }
     onChange([...photos, url]);
     setUrlInput('');
     if (!coverImage && photos.length === 0) onCoverChange(url);
@@ -210,11 +221,12 @@ export default function PhotoUpload({ photos, onChange, coverImage, onCoverChang
       {/* 추가 방법 */}
       <div className="flex gap-2 mb-3">
         <input
-          type="text"
+          type="url"
           value={urlInput}
           onChange={(e) => setUrlInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addUrl(); } }}
           placeholder="이미지 URL 붙여넣기"
+          aria-label="이미지 URL"
           className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-[#4a3f35] text-sm focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-transparent bg-white dark:bg-[#1a1208] dark:text-slate-100"
         />
         <button

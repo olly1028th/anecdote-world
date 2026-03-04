@@ -58,6 +58,7 @@ export default function SearchFilter({ onSearch, onFilterChange, activeFilter, t
           value={query}
           onChange={(e) => handleChange(e.target.value)}
           placeholder="Search missions..."
+          aria-label="여행 검색"
           className="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-slate-900 text-xs font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25] placeholder:text-slate-300"
         />
         {query && (

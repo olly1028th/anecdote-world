@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import type { TripStatus } from '../types/trip';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { createTrip } from '../hooks/useTrips';
@@ -187,6 +188,8 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
     }
   };
 
+  const dialogRef = useFocusTrap(saving ? undefined : onClose);
+
   return (
     <div
       className={`fixed inset-0 z-[100] flex items-end sm:items-center justify-center transition-all duration-300 ${
@@ -195,6 +198,11 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
       onClick={handleBackdropClick}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="New Planet"
+        tabIndex={-1}
         className={`bg-[#F9F4E8] dark:bg-[#1a1208] w-full sm:max-w-lg sm:rounded-xl rounded-t-xl max-h-[85dvh] overflow-y-auto border-[3px] border-slate-900 dark:border-[#4a3f35] sm:retro-shadow transition-all duration-300 ${
           visible ? 'translate-y-0 opacity-100' : 'translate-y-full sm:translate-y-8 opacity-0'
         }`}
@@ -265,10 +273,11 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
 
           {/* 여행 제목 */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-[#1c140d]/60 dark:text-slate-400 mb-2">
+            <label htmlFor="trip-title" className="block text-xs font-bold uppercase tracking-widest text-[#1c140d]/60 dark:text-slate-400 mb-2">
               Title <span className="text-[#f48c25]">*</span>
             </label>
             <input
+              id="trip-title"
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -285,8 +294,9 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
           {/* 날짜 */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest text-[#1c140d]/60 dark:text-slate-400 mb-2">Start</label>
+              <label htmlFor="trip-start-date" className="block text-xs font-bold uppercase tracking-widest text-[#1c140d]/60 dark:text-slate-400 mb-2">Start</label>
               <input
+                id="trip-start-date"
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
@@ -294,8 +304,9 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
               />
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest text-[#1c140d]/60 dark:text-slate-400 mb-2">End</label>
+              <label htmlFor="trip-end-date" className="block text-xs font-bold uppercase tracking-widest text-[#1c140d]/60 dark:text-slate-400 mb-2">End</label>
               <input
+                id="trip-end-date"
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
@@ -306,10 +317,11 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
 
           {/* 메모 */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-[#1c140d]/60 dark:text-slate-400 mb-2">
+            <label htmlFor="trip-memo" className="block text-xs font-bold uppercase tracking-widest text-[#1c140d]/60 dark:text-slate-400 mb-2">
               {status === 'completed' ? 'Review' : 'Memo'}
             </label>
             <textarea
+              id="trip-memo"
               value={memo}
               onChange={(e) => setMemo(e.target.value)}
               placeholder={status === 'completed' ? '이 여행 어땠어요?' : '여행에 대한 메모...'}

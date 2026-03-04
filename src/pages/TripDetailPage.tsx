@@ -726,6 +726,9 @@ export default function TripDetailPage() {
       {shareModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center" onClick={() => setShareModalOpen(false)}>
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Share Mission"
             className="bg-white dark:bg-slate-800 w-full max-w-md rounded-t-2xl sm:rounded-2xl border-[3px] border-slate-900 retro-shadow p-6 space-y-5 max-h-[85dvh] overflow-y-auto"
             style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
             onClick={(e) => e.stopPropagation()}
@@ -747,16 +750,20 @@ export default function TripDetailPage() {
               <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Invite</p>
               <div className="flex gap-2">
                 <input
+                  id="share-trip-email"
                   type="email"
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
                   placeholder="이메일 주소 입력"
+                  aria-label="초대할 이메일 주소"
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleInvite(); } }}
                   className="flex-1 min-w-0 px-3 py-2.5 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 dark:border-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
                 />
                 <select
+                  id="share-trip-permission"
                   value={invitePermission}
                   onChange={(e) => setInvitePermission(e.target.value as SharePermission)}
+                  aria-label="공유 권한"
                   className="w-20 shrink-0 px-2 py-2.5 rounded-xl border-2 border-slate-900 text-xs font-bold bg-white dark:bg-[#2a1f15] dark:text-slate-100 dark:border-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
                 >
                   <option value="read">읽기</option>
