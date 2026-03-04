@@ -106,27 +106,24 @@ function fetchRate(currency: string): Promise<ExchangeRateInfo> {
 
 /** 실시간 환율 조회 훅 (자동 조회) */
 export function useExchangeRate(destination: string | undefined) {
-  const [rate, setRate] = useState<ExchangeRateInfo | null>(null);
-  const [loading, setLoading] = useState(false);
+  // fetchedFor tracks which currency we've completed fetching for (null = pending/failed)
+  const [result, setResult] = useState<{ rate: ExchangeRateInfo | null; fetchedFor: string | null }>({ rate: null, fetchedFor: null });
+  const currency = destination ? detectCurrency(destination) : null;
 
   useEffect(() => {
-    if (!destination) return;
-
-    const currency = detectCurrency(destination);
     if (!currency) return;
 
     let cancelled = false;
-    setLoading(true);
 
     fetchRate(currency)
-      .then((info) => { if (!cancelled) setRate(info); })
-      .catch(() => { if (!cancelled) setRate(null); })
-      .finally(() => { if (!cancelled) setLoading(false); });
+      .then((info) => { if (!cancelled) setResult({ rate: info, fetchedFor: currency }); })
+      .catch(() => { if (!cancelled) setResult({ rate: null, fetchedFor: currency }); });
 
     return () => { cancelled = true; };
-  }, [destination]);
+  }, [currency]);
 
-  return { rate, loading };
+  const loading = !!currency && result.fetchedFor !== currency;
+  return { rate: result.rate, loading };
 }
 
 /** 실시간 환율 조회 훅 (수동 — 버튼 클릭 시 조회) */

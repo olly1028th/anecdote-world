@@ -19,7 +19,7 @@ export default function SearchFilter({ onSearch, onFilterChange, activeFilter, t
   const [query, setQuery] = useState('');
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onSearchRef = useRef(onSearch);
-  onSearchRef.current = onSearch;
+  useEffect(() => { onSearchRef.current = onSearch; });
 
   const debouncedSearch = useCallback((value: string) => {
     if (timerRef.current) clearTimeout(timerRef.current);
