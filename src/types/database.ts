@@ -28,6 +28,7 @@ export interface Trip {
   cover_image: string;
   memo: string;
   photo_captions?: Record<string, string>;
+  traveler_count?: number;
   created_at: string;
   updated_at: string;
 }

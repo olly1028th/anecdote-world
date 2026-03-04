@@ -86,6 +86,7 @@ export function updateLocalTrip(id: string, updates: Partial<Trip>) {
       photos: updates.photos ?? [],
       places: updates.places ?? [],
       checklist: updates.checklist ?? [],
+      travelerCount: updates.travelerCount ?? 1,
       createdAt: now,
       updatedAt: now,
     };

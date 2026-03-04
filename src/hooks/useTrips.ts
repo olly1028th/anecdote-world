@@ -126,6 +126,7 @@ function mapDbTripToUi(
       text: c.text,
       checked: c.checked,
     })),
+    travelerCount: db.traveler_count ?? 1,
     createdAt: db.created_at,
     updatedAt: db.updated_at,
   };
@@ -310,6 +311,7 @@ export interface TripInput {
   end_date?: string;
   cover_image?: string;
   memo?: string;
+  traveler_count?: number;
   user_id?: string;
 }
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { fetchWithTimeout } from '../lib/fetchWithTimeout';
 
 /** 국가명(한국어) → ISO 통화 코드 매핑 */
@@ -66,7 +66,28 @@ export function detectCurrency(destination: string): string | null {
   return null;
 }
 
-/** 실시간 환율 조회 훅 */
+/** 환율 API 호출 (내부 헬퍼) */
+function fetchRate(currency: string): Promise<ExchangeRateInfo> {
+  return fetchWithTimeout(`https://api.frankfurter.app/latest?from=KRW&to=${currency}`)
+    .then((res) => {
+      if (!res.ok) throw new Error('환율 조회 실패');
+      return res.json();
+    })
+    .then((data) => {
+      const rateValue = data.rates?.[currency];
+      if (!rateValue) throw new Error('환율 데이터 없음');
+      return {
+        fromCurrency: 'KRW',
+        toCurrency: currency,
+        rate: rateValue,
+        symbol: CURRENCY_SYMBOLS[currency] || currency,
+        currencyName: CURRENCY_NAMES[currency] || currency,
+        updatedAt: data.date || new Date().toISOString().split('T')[0],
+      };
+    });
+}
+
+/** 실시간 환율 조회 훅 (자동 조회) */
 export function useExchangeRate(destination: string | undefined) {
   const [rate, setRate] = useState<ExchangeRateInfo | null>(null);
   const [loading, setLoading] = useState(false);
@@ -80,34 +101,36 @@ export function useExchangeRate(destination: string | undefined) {
     let cancelled = false;
     setLoading(true);
 
-    fetchWithTimeout(`https://api.frankfurter.app/latest?from=KRW&to=${currency}`)
-      .then((res) => {
-        if (!res.ok) throw new Error('환율 조회 실패');
-        return res.json();
-      })
-      .then((data) => {
-        if (cancelled) return;
-        const rateValue = data.rates?.[currency];
-        if (rateValue) {
-          setRate({
-            fromCurrency: 'KRW',
-            toCurrency: currency,
-            rate: rateValue,
-            symbol: CURRENCY_SYMBOLS[currency] || currency,
-            currencyName: CURRENCY_NAMES[currency] || currency,
-            updatedAt: data.date || new Date().toISOString().split('T')[0],
-          });
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setRate(null);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    fetchRate(currency)
+      .then((info) => { if (!cancelled) setRate(info); })
+      .catch(() => { if (!cancelled) setRate(null); })
+      .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
   }, [destination]);
 
   return { rate, loading };
+}
+
+/** 실시간 환율 조회 훅 (수동 — 버튼 클릭 시 조회) */
+export function useLazyExchangeRate(destination: string | undefined) {
+  const [rate, setRate] = useState<ExchangeRateInfo | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+
+  const fetch = useCallback(() => {
+    if (!destination) return;
+    const currency = detectCurrency(destination);
+    if (!currency) return;
+
+    setLoading(true);
+    setError(false);
+
+    fetchRate(currency)
+      .then((info) => setRate(info))
+      .catch(() => { setRate(null); setError(true); })
+      .finally(() => setLoading(false));
+  }, [destination]);
+
+  return { rate, loading, error, fetch };
 }

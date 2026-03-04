@@ -51,6 +51,7 @@ export interface Trip {
   photoCaptions?: Record<string, string>;
   places: Place[];
   checklist: ChecklistItem[];
+  travelerCount: number;
   createdAt: string;
   updatedAt: string;
 }
