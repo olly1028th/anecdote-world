@@ -21,7 +21,7 @@ import InlinePlacesEditor from '../components/InlinePlacesEditor';
 import InlineExpenseEditor from '../components/InlineExpenseEditor';
 import { EditButton, SaveCancelButtons } from '../components/InlineEditButtons';
 import { TripDetailSkeleton } from '../components/Skeleton';
-import { formatDate, calcDuration, totalExpenses, formatCurrency } from '../utils/format';
+import { formatDate, calcDuration, totalExpensesInKRW, formatCurrency } from '../utils/format';
 import type { ChecklistItem, TripStatus } from '../types/trip';
 
 export default function TripDetailPage() {
@@ -32,9 +32,7 @@ export default function TripDetailPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { shares, loading: sharesLoading } = useSharesForTrip(id);
-  const { rate: exchangeRate, loading: rateLoading } = useExchangeRate(
-    trip?.status === 'planned' ? trip?.destination : undefined,
-  );
+  const { rate: exchangeRate, loading: rateLoading } = useExchangeRate(trip?.destination);
   const printRef = useRef<HTMLDivElement>(null);
 
   // Share modal state
@@ -157,6 +155,28 @@ export default function TripDetailPage() {
 
   // --- 여행 상태 원클릭 전환 ---
   const [statusSaving, setStatusSaving] = useState(false);
+
+  // 정복 완료 — 바로 completed로 전환
+  const markAsCompleted = async () => {
+    if (!trip || !id || statusSaving) return;
+    try {
+      setStatusSaving(true);
+      if (isDemo) {
+        updateDemoTrip(id, { status: 'completed' });
+      } else {
+        await updateTrip(id, { status: 'completed' });
+      }
+      window.dispatchEvent(new CustomEvent('trip-added'));
+      window.dispatchEvent(new CustomEvent('pin-added'));
+      refetch();
+      toast('정복 완료! 축하합니다!');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : '상태 변경 실패', 'error');
+    } finally {
+      setStatusSaving(false);
+    }
+  };
+
   const cycleStatus = async () => {
     if (!trip || !id || statusSaving) return;
     const order: TripStatus[] = ['planned', 'completed', 'wishlist'];
@@ -402,6 +422,36 @@ export default function TripDetailPage() {
           <div className="w-full h-14 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />
         )}
 
+        {/* 정복 완료 배너 — 계획 여행의 종료일이 지났을 때 */}
+        {trip.status === 'planned' && trip.endDate && new Date(trip.endDate) < new Date(new Date().toDateString()) && (
+          <div className="w-full bg-gradient-to-r from-[#0d9488]/15 to-[#eab308]/15 border-[3px] border-[#0d9488] rounded-xl p-4 text-center space-y-2.5">
+            <p className="text-sm font-bold text-slate-900 dark:text-slate-100">여행 다녀오셨나요?</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              여행 종료일({formatDate(trip.endDate)})이 지났습니다
+            </p>
+            <button
+              type="button"
+              onClick={markAsCompleted}
+              disabled={statusSaving}
+              className="px-6 py-2.5 rounded-xl text-sm font-bold uppercase tracking-tight text-white bg-[#0d9488] border-2 border-slate-900 retro-shadow hover:bg-[#0d9488]/90 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer disabled:opacity-50"
+            >
+              {statusSaving ? '변경 중...' : '정복 완료!'}
+            </button>
+          </div>
+        )}
+
+        {/* 정복 완료 버튼 — 모든 계획 여행에 표시 (종료일 미경과 포함) */}
+        {trip.status === 'planned' && !(trip.endDate && new Date(trip.endDate) < new Date(new Date().toDateString())) && (
+          <button
+            type="button"
+            onClick={markAsCompleted}
+            disabled={statusSaving}
+            className="w-full py-2.5 rounded-xl text-sm font-bold uppercase tracking-tight text-white bg-[#0d9488] border-2 border-slate-900 retro-shadow hover:bg-[#0d9488]/90 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer disabled:opacity-50"
+          >
+            {statusSaving ? '변경 중...' : '정복 완료!'}
+          </button>
+        )}
+
         {/* 수정/공유/삭제/PDF 버튼 */}
         <div className="flex gap-3 w-full">
           <Link
@@ -523,7 +573,7 @@ export default function TripDetailPage() {
           </div>
           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Budget</p>
           <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
-            {trip.expenses.length > 0 ? formatCurrency(totalExpenses(trip.expenses)) : '-'}
+            {trip.expenses.length > 0 ? formatCurrency(totalExpensesInKRW(trip.expenses, exchangeRate?.rate)) : '-'}
           </p>
         </div>
 
@@ -679,13 +729,22 @@ export default function TripDetailPage() {
             initialExpenses={trip.expenses}
             onDone={() => setEditingExpenses(false)}
             refetch={refetch}
+            destination={trip.destination}
+            startDate={trip.startDate}
           />
         ) : trip.expenses.length > 0 ? (
           <div className="relative">
             <div className="absolute top-5 right-5 z-10">
               <EditButton onClick={startEditExpenses} />
             </div>
-            <ExpenseTable expenses={trip.expenses} isEstimate={!isCompleted} />
+            <ExpenseTable
+              expenses={trip.expenses}
+              isEstimate={!isCompleted}
+              startDate={trip.startDate}
+              exchangeRate={exchangeRate?.rate}
+              currencySymbol={exchangeRate?.symbol}
+              localCurrency={exchangeRate?.toCurrency}
+            />
           </div>
         ) : (
           <div

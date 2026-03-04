@@ -45,6 +45,16 @@ export interface ExchangeRateInfo {
   updatedAt: string;
 }
 
+/** 통화 코드 → 기호 */
+export function getCurrencySymbol(code: string): string {
+  return CURRENCY_SYMBOLS[code] || code;
+}
+
+/** 통화 코드 → 한국어 이름 */
+export function getCurrencyName(code: string): string {
+  return CURRENCY_NAMES[code] || code;
+}
+
 /** 여행지 destination 문자열에서 국가/통화 추출 */
 export function detectCurrency(destination: string): string | null {
   if (!destination) return null;

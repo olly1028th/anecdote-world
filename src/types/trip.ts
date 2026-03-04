@@ -8,7 +8,9 @@ export interface Expense {
   id?: string;
   category: ExpenseCategory;
   amount: number;
+  currency?: string;   // 'KRW' | 'USD' | 'JPY' etc. Default: 'KRW'
   label: string;
+  spentAt?: string;    // 'YYYY-MM-DD'
 }
 
 export interface ItineraryItem {

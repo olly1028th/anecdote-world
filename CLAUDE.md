@@ -333,7 +333,117 @@ usePins() → allPins[]
 - `acceptShare`/`declineShare`: `invited_email` === 현재 사용자 이메일 검증 필수
 - 공유 여행 조회: `.or(`invited_user_id.eq.${userId},invited_email.eq.${userEmail}`)` 패턴
 
+## 환율 시스템 (`useExchangeRate`)
+
+### API
+
+- **Frankfurter API** (`https://api.frankfurter.app/latest?from=KRW&to={currency}`)
+- ECB(유럽중앙은행) 데이터 기반 무료 오픈소스 API, 인증 불필요
+- `fetchWithTimeout` 래퍼로 타임아웃 처리
+- 응답: `{ rates: { JPY: 0.09 }, date: "2026-03-04" }`
+
+### 통화 감지 흐름
+
+```
+trip.destination ("일본 도쿄")
+       │
+       ▼
+  detectCurrency(destination)  ← COUNTRY_TO_CURRENCY 매핑 (30+ 국가)
+       │
+       ▼
+  currency code ("JPY")
+       │
+       ▼
+  useExchangeRate(destination)
+       ├─ Frankfurter API 호출 (KRW→JPY)
+       └─ ExchangeRateInfo { rate, symbol, currencyName, updatedAt }
+```
+
+### 환율 사용처
+
+| 위치 | 용도 |
+|------|------|
+| `TripDetailPage` 헤더 | 계획 여행에 환율 정보 패널 표시 |
+| `InlineExpenseEditor` | 현지 통화 입력 시 KRW 환산액 실시간 표시 |
+| `ExpenseTable` | 현지 통화 경비의 KRW 환산 표시 + 총합 KRW 환산 |
+| Budget 스탯 카드 | `totalExpensesInKRW()` 로 다중 통화 총합 표시 |
+
+### 환산 공식
+
+- KRW→LOCAL rate = `exchangeRate.rate` (예: KRW→JPY = 0.09)
+- **LOCAL→KRW**: `localAmount / rate` (예: ¥1,000 / 0.09 ≈ ₩11,111)
+- **KRW→LOCAL**: `krwAmount * rate`
+
+## 경비 시스템 (다중 통화 + 일자별)
+
+### Expense 데이터 모델
+
+```typescript
+interface Expense {
+  id?: string;
+  category: ExpenseCategory;  // 'flight' | 'hotel' | 'food' | 'transport' | 'activity' | 'shopping' | 'other'
+  amount: number;             // 입력한 통화 기준 금액
+  currency?: string;          // 'KRW' (기본) | 'USD' | 'JPY' 등
+  label: string;              // 설명
+  spentAt?: string;           // 'YYYY-MM-DD' 지출 날짜
+}
+```
+
+- DB: `expenses` 테이블의 `currency`, `spent_at` 컬럼에 저장
+- `mapDbTripToUi()`에서 `currency` → `currency`, `spent_at` → `spentAt` 변환
+- `saveExpenses()`에서 `currency`, `spentAt` → DB `currency`, `spent_at` 저장
+- `amount`는 **입력한 통화 기준** 저장 (KRW가 아닌 원래 통화 금액)
+
+### 총합 계산
+
+- `totalExpenses()`: 단순 합산 (단일 통화용, 기존 호환)
+- `totalExpensesInKRW(expenses, exchangeRate)`: 다중 통화 KRW 환산 합계
+  - currency === 'KRW' → 그대로 합산
+  - currency !== 'KRW' → `amount / exchangeRate` 변환 후 합산
+  - exchangeRate 없으면 → 그대로 합산 (fallback)
+
+### 일자별 그룹핑 (ExpenseTable)
+
+- `spentAt`가 하나라도 있으면 자동 그룹핑 활성화
+- Day 번호 = `(spentAt - trip.startDate) / 1일 + 1`
+- 날짜 미지정 항목 → "날짜 미지정" 별도 그룹
+- 그룹별 소계 (KRW 환산) 표시
+- 모든 경비에 날짜가 없으면 기존 플랫 리스트 유지
+
+## 여행 상태 전환
+
+### cycleStatus (기존)
+
+`planned → completed → wishlist → planned` 순환. 상태 뱃지 클릭 시 동작.
+
+### markAsCompleted (신규)
+
+planned 여행을 **바로 completed로** 전환. 순환 없이 직접 설정.
+
+- **D-Day 배너**: `trip.status === 'planned'` + `trip.endDate < 오늘` → "여행 다녀오셨나요?" 배너 + "정복 완료!" 버튼
+- **상시 버튼**: D-Day 미경과 planned 여행에도 "정복 완료!" 버튼 표시
+- 전환 후 `trip-added` + `pin-added` 이벤트 dispatch → 홈 세계지도 즉시 반영
+
 ## 최근 변경 이력
+
+### 정복 완료 전환 + 다중 통화 경비 + 일자별 그룹핑
+
+**Phase 1 — 정복 완료 빠른 전환**
+- `TripDetailPage`에 `markAsCompleted()` 함수 추가 (바로 completed 전환)
+- D-Day 경과 시 "여행 다녀오셨나요?" 배너 자동 표시
+- 모든 planned 여행에 "정복 완료!" 버튼 상시 표시
+
+**Phase 2 — 다중 통화 경비 입력**
+- `Expense` 타입에 `currency`, `spentAt` 필드 추가
+- `InlineExpenseEditor`: 목적지 기반 현지 통화 자동 감지 + 통화 선택 드롭다운
+- 현지 통화 입력 시 실시간 KRW 환산액 표시 (= ₩XX,XXX)
+- `useExchangeRate` 훅으로 Frankfurter API 환율 조회
+- `mapDbTripToUi`/`saveExpenses`에 currency, spent_at 매핑 추가
+
+**Phase 3 — 일자별 경비 그룹핑**
+- `ExpenseTable`: spentAt 날짜 기준 자동 그룹핑 + Day N 헤더 + 일별 소계
+- `totalExpensesInKRW()` 함수로 다중 통화 총합 KRW 환산
+- 카테고리별 비율 차트도 KRW 환산 기준
 
 ### 위시리스트 추가 시 메인페이지 미반영 수정
 
