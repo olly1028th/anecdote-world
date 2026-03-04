@@ -52,7 +52,7 @@ export default function ConfirmModal({
           </div>
         </div>
 
-        <div className="flex gap-3 pt-2">
+        <div className="flex gap-3 pt-2" style={{ paddingBottom: 'max(0px, env(safe-area-inset-bottom))' }}>
           <button
             type="button"
             onClick={onCancel}

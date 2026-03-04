@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useProfile } from '../hooks/useProfile';
 import { useStats } from '../hooks/useStats';
-import { useReceivedShares, useSharedUsers, usePendingInvitations, acceptSharesFromOwner, declineSharesFromOwner, leaveShare } from '../hooks/useShares';
+import { useReceivedShares, useSharedUsers, usePendingInvitations, acceptSharesFromOwner, declineSharesFromOwner, leaveShare, revokeAllShares } from '../hooks/useShares';
 import { formatCurrency, formatDate } from '../utils/format';
 import { getCountryFlagUrl } from '../utils/countryFlag';
 import ConfirmModal from '../components/ConfirmModal';
@@ -61,6 +61,25 @@ export default function ProfilePage() {
           toast('공유가 해제되었습니다');
         } catch (err) {
           toast(err instanceof Error ? err.message : '공유 해제 실패', 'error');
+        }
+      },
+    });
+  };
+
+  const handleRevokeShare = (email: string) => {
+    setConfirmModal({
+      open: true,
+      title: '공유 취소',
+      message: `${email}에게 보낸 공유를 철회하시겠습니까? 해당 사용자는 더 이상 여행을 볼 수 없게 됩니다.`,
+      confirmLabel: '공유 취소',
+      danger: true,
+      onConfirm: async () => {
+        setConfirmModal((p) => ({ ...p, open: false }));
+        try {
+          await revokeAllShares(user?.id ?? '', email);
+          toast('공유가 취소되었습니다');
+        } catch (err) {
+          toast(err instanceof Error ? err.message : '공유 취소 실패', 'error');
         }
       },
     });
@@ -387,30 +406,35 @@ export default function ProfilePage() {
                   <div key={ownerId} className="space-y-2">
                     {/* 소유자 헤더 — 클릭하면 공유 뷰 페이지로 이동 */}
                     <div className="flex items-center justify-between">
-                      <Link
-                        to={`/shared/${ownerId}`}
-                        className="flex items-center gap-2 no-underline hover:opacity-80 transition-opacity"
-                      >
-                        <div className="w-7 h-7 rounded-full bg-[#0d9488] flex items-center justify-center">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-7 h-7 rounded-full bg-[#0d9488] flex items-center justify-center shrink-0">
                           <span className="text-white text-[10px] font-bold">{ownerNickname[0].toUpperCase()}</span>
                         </div>
-                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{ownerNickname}</span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">{ownerNickname}</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
                           permission === 'edit'
                             ? 'bg-[#f48c25]/15 text-[#f48c25]'
                             : 'bg-[#0d9488]/15 text-[#0d9488]'
                         }`}>
                           {permission === 'edit' ? '편집' : '읽기'}
                         </span>
-                        <span className="text-[10px] font-bold text-slate-300 dark:text-slate-500 ml-1">{ownerShares.length}개 ›</span>
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => handleLeaveShare(ownerId, ownerNickname)}
-                        className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-[#f43f5e] cursor-pointer border-2 border-slate-300 dark:border-slate-600 hover:border-[#f43f5e] px-2.5 py-1 rounded-full transition-colors bg-transparent"
-                      >
-                        공유 해제
-                      </button>
+                        <span className="text-[10px] font-bold text-slate-300 dark:text-slate-500 shrink-0">{ownerShares.length}개</span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Link
+                          to={`/shared/${ownerId}`}
+                          className="text-[10px] font-bold uppercase tracking-widest text-[#0d9488] hover:text-[#f48c25] cursor-pointer border-2 border-[#0d9488] hover:border-[#f48c25] px-2.5 py-1 rounded-full transition-colors no-underline"
+                        >
+                          보기
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => handleLeaveShare(ownerId, ownerNickname)}
+                          className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-[#f43f5e] cursor-pointer border-2 border-slate-300 dark:border-slate-600 hover:border-[#f43f5e] px-2.5 py-1 rounded-full transition-colors bg-transparent"
+                        >
+                          해제
+                        </button>
+                      </div>
                     </div>
                     {/* 해당 소유자의 최근 2개 여행 미리보기 */}
                     {ownerShares.slice(0, 2).map((share) => {
@@ -492,13 +516,25 @@ export default function ProfilePage() {
                     {su.status === 'pending' && ' · 수락 대기중'}
                   </p>
                 </div>
-                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0 ${
-                  su.status === 'accepted'
-                    ? 'bg-[#0d9488]/15 text-[#0d9488]'
-                    : 'bg-[#eab308]/15 text-[#eab308]'
-                }`}>
-                  {su.status === 'accepted' ? '수락됨' : '대기중'}
-                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                    su.status === 'accepted'
+                      ? 'bg-[#0d9488]/15 text-[#0d9488]'
+                      : 'bg-[#eab308]/15 text-[#eab308]'
+                  }`}>
+                    {su.status === 'accepted' ? '수락됨' : '대기중'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleRevokeShare(su.email)}
+                    className="text-slate-300 hover:text-[#f43f5e] transition-colors cursor-pointer bg-transparent border-0 p-1"
+                    title="공유 취소"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             ))}
           </div>
