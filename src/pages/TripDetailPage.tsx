@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import { savePhotoCaptions } from '../lib/localStore';
 import { uploadTripPhoto, deleteTripPhoto } from '../lib/storage';
 import { useSharesForTrip } from '../hooks/useShares';
-import { useExchangeRate } from '../hooks/useExchangeRate';
+import { useLazyExchangeRate } from '../hooks/useExchangeRate';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import ExpenseTable from '../components/ExpenseTable';
@@ -33,7 +33,7 @@ export default function TripDetailPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { shares, loading: sharesLoading } = useSharesForTrip(id);
-  const { rate: exchangeRate, loading: rateLoading } = useExchangeRate(trip?.destination);
+  const { rate: exchangeRate, loading: rateLoading, error: rateError, fetch: fetchRate } = useLazyExchangeRate(trip?.destination);
   const printRef = useRef<HTMLDivElement>(null);
 
   // Share modal state
@@ -400,8 +400,8 @@ export default function TripDetailPage() {
           </p>
         </div>
 
-        {/* 실시간 환율 정보 (계획 중인 여행에만 표시) */}
-        {trip.status === 'planned' && exchangeRate && (
+        {/* 환율 정보 — 버튼 클릭 시 조회 */}
+        {exchangeRate ? (
           <div className="w-full bg-gradient-to-r from-[#0d9488]/10 to-[#eab308]/10 border-2 border-[#0d9488]/30 rounded-xl px-4 py-2.5 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full bg-[#0d9488]/20 flex items-center justify-center">
@@ -419,9 +419,19 @@ export default function TripDetailPage() {
               <p className="text-[10px] text-slate-400 font-medium">= 10,000원 ({exchangeRate.updatedAt})</p>
             </div>
           </div>
-        )}
-        {trip.status === 'planned' && rateLoading && (
+        ) : rateLoading ? (
           <div className="w-full h-14 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />
+        ) : (
+          <button
+            type="button"
+            onClick={fetchRate}
+            className="w-full py-2.5 rounded-xl text-sm font-bold tracking-tight text-[#0d9488] bg-[#0d9488]/10 border-2 border-[#0d9488]/30 hover:bg-[#0d9488]/20 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {rateError ? '환율 조회 실패 — 다시 시도' : '환율 확인하기'}
+          </button>
         )}
 
         {/* 정복 완료 배너 — 계획 여행의 종료일이 지났을 때 */}
