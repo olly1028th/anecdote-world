@@ -113,7 +113,9 @@ function mapDbTripToUi(
       id: e.id,
       category: e.category,
       amount: e.amount,
+      currency: e.currency || 'KRW',
       label: e.label,
+      spentAt: e.spent_at ?? undefined,
     })),
     itinerary,
     photos,
@@ -363,7 +365,7 @@ export async function deleteTrip(id: string): Promise<void> {
 
 export async function saveExpenses(
   tripId: string,
-  expenses: { category: string; amount: number; label: string }[],
+  expenses: { category: string; amount: number; label: string; currency?: string; spentAt?: string }[],
 ): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   const userId = user?.id;
@@ -379,7 +381,7 @@ export async function saveExpenses(
 
   // 새 경비 중 기존 ID가 있으면 업데이트, 없으면 삽입
   const toUpsert = expenses.map((e) => ({
-    ...(e as { id?: string; category: string; amount: number; label: string }),
+    ...(e as { id?: string; category: string; amount: number; label: string; currency?: string; spentAt?: string }),
     trip_id: tripId,
     user_id: userId,
   }));
@@ -405,6 +407,8 @@ export async function saveExpenses(
         user_id: userId,
         category: e.category,
         amount: e.amount,
+        currency: e.currency || 'KRW',
+        spent_at: e.spentAt || null,
         label: e.label,
       })),
     );
@@ -416,7 +420,7 @@ export async function saveExpenses(
   for (const e of existingItems) {
     const { error: updErr } = await supabase
       .from('expenses')
-      .update({ category: e.category, amount: e.amount, label: e.label })
+      .update({ category: e.category, amount: e.amount, label: e.label, currency: e.currency || 'KRW', spent_at: e.spentAt || null })
       .eq('id', e.id!)
       .eq('user_id', userId);
     if (updErr) throw updErr;

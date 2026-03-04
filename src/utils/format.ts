@@ -22,6 +22,27 @@ export function totalExpenses(expenses: { amount: number }[]): number {
   return expenses.reduce((sum, e) => sum + e.amount, 0);
 }
 
+/** 통화 기호 포함 금액 포맷 */
+export function formatAmount(amount: number, currency?: string, symbol?: string): string {
+  if (!currency || currency === 'KRW') {
+    return amount.toLocaleString('ko-KR') + '원';
+  }
+  const s = symbol || currency;
+  return s + amount.toLocaleString('ko-KR');
+}
+
+/** 다중 통화 경비 합계 (KRW 환산, exchangeRate = KRW→LOCAL rate) */
+export function totalExpensesInKRW(
+  expenses: { amount: number; currency?: string }[],
+  exchangeRate?: number,
+): number {
+  return expenses.reduce((sum, e) => {
+    if (!e.currency || e.currency === 'KRW') return sum + e.amount;
+    if (!exchangeRate || exchangeRate === 0) return sum + e.amount;
+    return sum + Math.round(e.amount / exchangeRate);
+  }, 0);
+}
+
 export function expenseCategoryLabel(category: string): string {
   const labels: Record<string, string> = {
     flight: '항공',
