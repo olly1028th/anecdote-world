@@ -181,8 +181,7 @@ export default function PlaceSearchModal({ initialQuery, onSelect, onClose }: Pr
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center" onClick={onClose}>
       <div
-        className="bg-white dark:bg-slate-800 w-full max-w-md rounded-t-2xl sm:rounded-2xl border-[3px] border-slate-900 retro-shadow overflow-hidden flex flex-col"
-        style={{ maxHeight: '85dvh' }}
+        className="bg-white dark:bg-slate-800 w-full max-w-md rounded-t-2xl sm:rounded-2xl border-[3px] border-slate-900 retro-shadow overflow-hidden flex flex-col max-h-[85dvh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 헤더 */}

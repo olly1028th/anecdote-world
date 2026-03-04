@@ -94,7 +94,7 @@ export default function Header() {
 
             {/* 알림 드롭다운 */}
             {bellOpen && (
-              <div className="absolute right-0 top-12 w-80 max-h-[70vh] overflow-y-auto bg-[#F9F4E8] dark:bg-[#1a1208] border-[3px] border-slate-900 dark:border-slate-600 rounded-xl shadow-[6px_6px_0px_0px_rgba(0,0,0,0.15)] z-50">
+              <div className="absolute right-0 top-12 w-[calc(100vw-2rem)] max-w-80 max-h-[70dvh] overflow-y-auto bg-[#F9F4E8] dark:bg-[#1a1208] border-[3px] border-slate-900 dark:border-slate-600 rounded-xl shadow-[6px_6px_0px_0px_rgba(0,0,0,0.15)] z-50">
                 <div className="p-3 border-b-2 border-slate-200 dark:border-slate-700">
                   <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Incoming Transmissions</p>
                 </div>

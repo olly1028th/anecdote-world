@@ -179,7 +179,7 @@ function AlbumView({
       {/* 스크롤 가능한 사진 피드 */}
       <div
         ref={containerRef}
-        className="h-[calc(100vh-56px)] overflow-y-auto scroll-smooth"
+        className="h-[calc(100dvh-56px)] overflow-y-auto scroll-smooth"
       >
         <div className="max-w-2xl mx-auto px-4 py-6 space-y-8">
           {photos.map((url, i) => {
