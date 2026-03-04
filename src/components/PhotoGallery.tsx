@@ -258,7 +258,7 @@ function AlbumView({
                         onStartEdit ? 'cursor-pointer hover:text-white transition-colors' : ''
                       }`}
                     >
-                      "{caption}"
+                      {caption}
                     </p>
                   ) : onStartEdit ? (
                     <button

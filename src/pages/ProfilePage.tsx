@@ -109,11 +109,7 @@ export default function ProfilePage() {
   // 이니셜 생성
   const initials = (profile?.nickname ?? '?').slice(0, 2).toUpperCase();
 
-  // pinsByStatus 합계
-  const totalPins =
-    stats.pinsByStatus.visited +
-    stats.pinsByStatus.planned +
-    stats.pinsByStatus.wishlist;
+  const totalPins = stats.totalPins;
 
   // 로딩 상태
   if (stats.loading) {

@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTrip, deleteTrip, updateTrip, toggleChecklistItem, saveChecklistItems, updateDemoTrip, deleteDemoTrip } from '../hooks/useTrips';
 import { supabase } from '../lib/supabase';
-import { savePhotoCaptions, saveTravelerCount as saveTravelerCountLocal } from '../lib/localStore';
+import { savePhotoCaptions, saveTravelerCount as saveTravelerCountLocal, updateLocalPinsByTripId } from '../lib/localStore';
+import { tripStatusToPinStatus } from '../utils/statusConvert';
 import { uploadTripPhoto, deleteTripPhoto } from '../lib/storage';
 import { useSharesForTrip } from '../hooks/useShares';
 import { useLazyExchangeRate } from '../hooks/useExchangeRate';
@@ -167,6 +168,7 @@ export default function TripDetailPage() {
       setStatusSaving(true);
       if (isDemo) {
         updateDemoTrip(id, { status: 'completed' });
+        updateLocalPinsByTripId(id, { visit_status: 'visited' });
       } else {
         await updateTrip(id, { status: 'completed' });
       }
@@ -190,6 +192,7 @@ export default function TripDetailPage() {
       setStatusSaving(true);
       if (isDemo) {
         updateDemoTrip(id, { status: nextStatus });
+        updateLocalPinsByTripId(id, { visit_status: tripStatusToPinStatus(nextStatus) });
       } else {
         await updateTrip(id, { status: nextStatus });
       }

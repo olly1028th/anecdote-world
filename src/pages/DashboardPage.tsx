@@ -25,8 +25,7 @@ export default function DashboardPage() {
 
   const maxExpense = Math.max(...stats.expenseByCategory.map((e) => e.amount), 1);
   const maxPinCategory = Math.max(...stats.pinsByCategory.map((p) => p.count), 1);
-  const totalPins =
-    stats.pinsByStatus.visited + stats.pinsByStatus.planned + stats.pinsByStatus.wishlist;
+  const totalPins = stats.totalPins;
 
   return (
     <div className="px-4 sm:px-6 space-y-6 sm:space-y-8 pb-24">

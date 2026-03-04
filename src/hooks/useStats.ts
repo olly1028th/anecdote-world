@@ -37,6 +37,8 @@ export interface Stats {
   citiesVisited: string[];
   pinsByCategory: PinByCategoryItem[];
   pinsByStatus: PinsByStatus;
+  /** 전체 등록 핀 수 (좌표/day_number 필터 무관) */
+  totalPins: number;
   totalPhotos: number;
   checklistProgress: ChecklistProgress;
   loading: boolean;
@@ -142,6 +144,7 @@ export function useStats(): Stats {
       citiesVisited,
       pinsByCategory,
       pinsByStatus,
+      totalPins: pins.length,
       totalPhotos,
       checklistProgress,
     };
