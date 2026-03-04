@@ -21,8 +21,10 @@ interface AuthState {
 
 // ---- 데모 유저 (Supabase 미설정 시) ----
 
+export const DEMO_USER_ID = 'demo-user-001';
+
 const DEMO_USER: User = {
-  id: 'demo-user-001',
+  id: DEMO_USER_ID,
   email: 'demo@anecdote.world',
   app_metadata: {},
   user_metadata: { full_name: '여행자' },
@@ -31,7 +33,7 @@ const DEMO_USER: User = {
 } as User;
 
 const DEMO_PROFILE: Profile = {
-  id: 'demo-user-001',
+  id: DEMO_USER_ID,
   nickname: '여행자',
   avatar_url: '',
   bio: '',

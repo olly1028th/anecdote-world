@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { sendShareInvitationEmail } from '../lib/email';
 import type { SharePermission, ShareStatus, TripShare } from '../types/database';
+import { DEMO_USER_ID } from '../contexts/AuthContext';
 
 /** 이메일 형식 검증 */
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -209,7 +210,7 @@ export async function acceptSharesFromOwner(shareIds: string[], userId?: string)
     const idSet = new Set(shareIds);
     const updated = all.map((s) =>
       idSet.has(s.id)
-        ? { ...s, status: 'accepted' as ShareStatus, invited_user_id: userId ?? 'demo-user-001', updated_at: new Date().toISOString() }
+        ? { ...s, status: 'accepted' as ShareStatus, invited_user_id: userId ?? DEMO_USER_ID, updated_at: new Date().toISOString() }
         : s,
     );
     saveDemoShares(updated);
@@ -436,7 +437,7 @@ export async function acceptShare(shareId: string, userId?: string): Promise<voi
     const all = loadDemoShares();
     const updated = all.map((s) =>
       s.id === shareId
-        ? { ...s, status: 'accepted' as ShareStatus, invited_user_id: userId ?? 'demo-user-001', updated_at: new Date().toISOString() }
+        ? { ...s, status: 'accepted' as ShareStatus, invited_user_id: userId ?? DEMO_USER_ID, updated_at: new Date().toISOString() }
         : s,
     );
     saveDemoShares(updated);
@@ -537,7 +538,7 @@ export async function removeShare(shareId: string): Promise<void> {
 export async function leaveShare(ownerId: string): Promise<void> {
   if (!isSupabaseConfigured) {
     const all = loadDemoShares();
-    const { data: { user } } = { data: { user: { id: 'demo-user-001', email: '' } } };
+    const { data: { user } } = { data: { user: { id: DEMO_USER_ID, email: '' } } };
     saveDemoShares(all.filter((s) => !(s.owner_id === ownerId && (s.invited_user_id === user.id || s.status === 'accepted'))));
     window.dispatchEvent(new CustomEvent('share-updated'));
     window.dispatchEvent(new CustomEvent('trip-added'));

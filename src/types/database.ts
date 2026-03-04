@@ -27,6 +27,7 @@ export interface Trip {
   end_date: string | null;
   cover_image: string;
   memo: string;
+  photo_captions?: Record<string, string>;
   created_at: string;
   updated_at: string;
 }

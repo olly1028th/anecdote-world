@@ -6,6 +6,8 @@ import { createTrip } from '../hooks/useTrips';
 import { addDemoTrip } from '../hooks/useTrips';
 import { createPin, addDemoPin } from '../hooks/usePins';
 import { useToast } from '../contexts/ToastContext';
+import { DEMO_USER_ID } from '../contexts/AuthContext';
+import { tripStatusToPinStatus } from '../utils/statusConvert';
 import DestinationPicker from './DestinationPicker';
 import { EMPTY_DESTINATION } from '../types/destination';
 import type { DestinationInfo } from '../types/destination';
@@ -87,7 +89,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
         if (finalDest.lat != null && finalDest.lng != null) {
           addDemoPin({
             id: `pin-demo-${Date.now()}`,
-            user_id: 'demo-user-001',
+            user_id: DEMO_USER_ID,
             trip_id: tripId,
             name: finalDest.name || finalDest.city || '여행지',
             address: '',
@@ -95,7 +97,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
             lng: finalDest.lng,
             country: finalDest.country,
             city: finalDest.city,
-            visit_status: status === 'completed' ? 'visited' : status === 'wishlist' ? 'wishlist' : 'planned',
+            visit_status: tripStatusToPinStatus(status),
             visited_at: status === 'completed' ? (startDate || null) : null,
             category: 'landmark',
             rating: null,
@@ -128,7 +130,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
                 lng: finalDest.lng,
                 country: finalDest.country,
                 city: finalDest.city,
-                visit_status: status === 'completed' ? 'visited' : status === 'wishlist' ? 'wishlist' : 'planned',
+                visit_status: tripStatusToPinStatus(status),
                 visited_at: status === 'completed' ? (startDate || undefined) : undefined,
                 category: 'landmark',
                 trip_id: tripId,
@@ -139,7 +141,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
               const now = new Date().toISOString();
               addDemoPin({
                 id: `pin-demo-${Date.now()}`,
-                user_id: 'demo-user-001',
+                user_id: DEMO_USER_ID,
                 trip_id: tripId,
                 name: finalDest.name || finalDest.city || '여행지',
                 address: '',
@@ -147,7 +149,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
                 lng: finalDest.lng,
                 country: finalDest.country,
                 city: finalDest.city,
-                visit_status: status === 'completed' ? 'visited' : status === 'wishlist' ? 'wishlist' : 'planned',
+                visit_status: tripStatusToPinStatus(status),
                 visited_at: status === 'completed' ? (startDate || null) : null,
                 category: 'landmark',
                 rating: null,

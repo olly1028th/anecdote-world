@@ -1,18 +1,12 @@
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import type { Pin } from '../../types/database';
+import { STATUS_COLORS } from '../../constants/mapConstants';
 
 interface Props {
   pin: Pin;
   onClick?: (pin: Pin) => void;
 }
-
-/** visit_status별 마커 색상 */
-const STATUS_COLORS: Record<string, string> = {
-  visited: '#059669',   // emerald-600
-  planned: '#d97706',   // amber-600
-  wishlist: '#6366f1',  // indigo-500
-};
 
 const STATUS_LABELS: Record<string, string> = {
   visited: '방문',

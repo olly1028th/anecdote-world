@@ -7,6 +7,7 @@ import { createPin, updatePin, addDemoPin, usePins } from '../hooks/usePins';
 import { useTrips } from '../hooks/useTrips';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { useToast } from '../contexts/ToastContext';
+import { DEMO_USER_ID } from '../contexts/AuthContext';
 import 'leaflet/dist/leaflet.css';
 
 const VISIT_OPTIONS: { value: VisitStatus; label: string; color: string }[] = [
@@ -125,7 +126,7 @@ export default function PinFormPage() {
         const now = new Date().toISOString();
         addDemoPin({
           id: `demo-pin-${Date.now()}`,
-          user_id: 'demo-user-001',
+          user_id: DEMO_USER_ID,
           name: input.name,
           lat: input.lat,
           lng: input.lng,

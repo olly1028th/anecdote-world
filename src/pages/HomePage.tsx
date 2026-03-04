@@ -11,6 +11,7 @@ import { formatDate } from '../utils/format';
 import { getCountryFlagUrl } from '../utils/countryFlag';
 import { getMapDisplayPins } from '../utils/mapPins';
 import ConfirmModal from '../components/ConfirmModal';
+import { useConfirmModal } from '../hooks/useConfirmModal';
 import { HomePageSkeleton } from '../components/Skeleton';
 import EmptyState from '../components/EmptyState';
 import SearchFilter from '../components/SearchFilter';
@@ -41,14 +42,7 @@ export default function HomePage() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [invitePermission, setInvitePermission] = useState<SharePermission>('read');
   const [inviting, setInviting] = useState(false);
-  const [confirmModal, setConfirmModal] = useState<{
-    open: boolean;
-    title: string;
-    message: string;
-    confirmLabel?: string;
-    danger?: boolean;
-    onConfirm: () => void;
-  }>({ open: false, title: '', message: '', onConfirm: () => {} });
+  const { confirmModal, setConfirmModal } = useConfirmModal();
 
   // Supabase 연결 실패 시 사용자에게 알림
   useEffect(() => {

@@ -78,72 +78,79 @@ body {
   color-scheme: dark;
 }
 
-/* 배경색 */
-.dark .bg-white { background-color: #2a1f15 !important; }
-.dark .bg-\[\#F9F4E8\] { background-color: #221910 !important; }
-.dark .bg-\[\#f8f7f5\] { background-color: #221910 !important; }
-.dark .bg-gray-50 { background-color: #1a1208 !important; }
-.dark .bg-gray-100 { background-color: #2a1f15 !important; }
+/*
+ * 다크모드 기본값 — @layer base에 배치하여
+ * Tailwind dark: 유틸리티 클래스(utilities 레이어)가 우선 적용되도록 함.
+ * 컴포넌트에 dark: 클래스가 없는 요소에만 기본 다크 스타일 제공.
+ */
+@layer base {
+  /* 배경색 */
+  .dark .bg-white { background-color: #2a1f15; }
+  .dark .bg-\[\#F9F4E8\] { background-color: #221910; }
+  .dark .bg-\[\#f8f7f5\] { background-color: #221910; }
+  .dark .bg-gray-50 { background-color: #1a1208; }
+  .dark .bg-gray-100 { background-color: #2a1f15; }
 
-/* 텍스트 색상 */
-.dark .text-gray-900,
-.dark .text-\[\#1c140d\] { color: #f1f5f9 !important; }
-.dark .text-slate-900 { color: #f1f5f9 !important; }
-.dark .text-gray-800 { color: #e2e8f0 !important; }
-.dark .text-gray-700 { color: #cbd5e1 !important; }
-.dark .text-gray-600 { color: #94a3b8 !important; }
-.dark .text-gray-500,
-.dark .text-slate-500 { color: #94a3b8 !important; }
-.dark .text-gray-400,
-.dark .text-slate-400 { color: #64748b !important; }
+  /* 텍스트 색상 */
+  .dark .text-gray-900,
+  .dark .text-\[\#1c140d\] { color: #f1f5f9; }
+  .dark .text-slate-900 { color: #f1f5f9; }
+  .dark .text-gray-800 { color: #e2e8f0; }
+  .dark .text-gray-700 { color: #cbd5e1; }
+  .dark .text-gray-600 { color: #94a3b8; }
+  .dark .text-gray-500,
+  .dark .text-slate-500 { color: #94a3b8; }
+  .dark .text-gray-400,
+  .dark .text-slate-400 { color: #64748b; }
 
-/* 테두리 */
-.dark .border-gray-200 { border-color: #4a3f35 !important; }
-.dark .border-gray-100 { border-color: #2a1f15 !important; }
-.dark .border-gray-300 { border-color: #5a4f45 !important; }
-.dark .border-slate-900 { border-color: #4a3f35 !important; }
-.dark .border-\[\#1c140d\] { border-color: #4a3f35 !important; }
+  /* 테두리 */
+  .dark .border-gray-200 { border-color: #4a3f35; }
+  .dark .border-gray-100 { border-color: #2a1f15; }
+  .dark .border-gray-300 { border-color: #5a4f45; }
+  .dark .border-slate-900 { border-color: #4a3f35; }
+  .dark .border-\[\#1c140d\] { border-color: #4a3f35; }
 
-/* 입력 필드 */
-.dark input,
-.dark textarea,
-.dark select {
-  background-color: #1a1208 !important;
-  color: #f1f5f9 !important;
-  border-color: #4a3f35 !important;
+  /* 입력 필드 */
+  .dark input,
+  .dark textarea,
+  .dark select {
+    background-color: #1a1208;
+    color: #f1f5f9;
+    border-color: #4a3f35;
+  }
+  .dark input::placeholder,
+  .dark textarea::placeholder {
+    color: #64748b;
+  }
+
+  /* 호버 상태 */
+  .dark .hover\:bg-gray-50:hover { background-color: #4a3f35; }
+  .dark .hover\:bg-gray-100:hover { background-color: #4a3f35; }
+  .dark .hover\:bg-white:hover { background-color: #3a2f25; }
+
+  /* 링크 */
+  .dark a { color: inherit; }
+
+  /* 그림자 (다크 모드에서 약하게) */
+  .dark .shadow-sm { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); }
+  .dark .shadow-md,
+  .dark .hover\:shadow-md:hover { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4); }
+
+  /* 글래스모피즘 다크 모드 */
+  .dark .bg-white\/80 { background-color: rgba(42, 31, 21, 0.85); }
+
+  /* 레트로 — 다크모드 보더/섀도 */
+  .dark .retro-border { border-color: #4a3f35; box-shadow: 4px 4px 0px rgba(0,0,0,0.4); }
+  .dark .retro-shadow { box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.4); }
+
+  /* 컬러 섀도 다크모드 */
+  .dark .shadow-\[8px_8px_0px_0px_rgba\(234\2c 179\2c 8\2c 1\)\] { box-shadow: 8px 8px 0px 0px rgba(234,179,8,0.4); }
+  .dark .shadow-\[8px_8px_0px_0px_rgba\(13\2c 148\2c 136\2c 1\)\] { box-shadow: 8px 8px 0px 0px rgba(13,148,136,0.4); }
+  .dark .shadow-\[8px_8px_0px_0px_rgba\(244\2c 63\2c 94\2c 1\)\] { box-shadow: 8px 8px 0px 0px rgba(244,63,94,0.4); }
+  .dark .shadow-\[4px_4px_0px_0px_\#1c140d\] { box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.4); }
+  .dark .shadow-\[4px_4px_0px_0px_rgba\(0\2c 0\2c 0\2c 1\)\] { box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.4); }
+  .dark .shadow-\[0_6px_0_0_\#925417\] { box-shadow: 0 6px 0 0 rgba(0,0,0,0.4); }
 }
-.dark input::placeholder,
-.dark textarea::placeholder {
-  color: #64748b !important;
-}
-
-/* 호버 상태 */
-.dark .hover\:bg-gray-50:hover { background-color: #4a3f35 !important; }
-.dark .hover\:bg-gray-100:hover { background-color: #4a3f35 !important; }
-.dark .hover\:bg-white:hover { background-color: #3a2f25 !important; }
-
-/* 링크 */
-.dark a { color: inherit; }
-
-/* 그림자 (다크 모드에서 약하게) */
-.dark .shadow-sm { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important; }
-.dark .shadow-md,
-.dark .hover\:shadow-md:hover { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4) !important; }
-
-/* 글래스모피즘 다크 모드 */
-.dark .bg-white\/80 { background-color: rgba(42, 31, 21, 0.85) !important; }
-
-/* 레트로 — 다크모드 보더/섀도 */
-.dark .retro-border { border-color: #4a3f35 !important; box-shadow: 4px 4px 0px rgba(0,0,0,0.4) !important; }
-.dark .retro-shadow { box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.4) !important; }
-
-/* 컬러 섀도 다크모드 */
-.dark .shadow-\[8px_8px_0px_0px_rgba\(234\2c 179\2c 8\2c 1\)\] { box-shadow: 8px 8px 0px 0px rgba(234,179,8,0.4) !important; }
-.dark .shadow-\[8px_8px_0px_0px_rgba\(13\2c 148\2c 136\2c 1\)\] { box-shadow: 8px 8px 0px 0px rgba(13,148,136,0.4) !important; }
-.dark .shadow-\[8px_8px_0px_0px_rgba\(244\2c 63\2c 94\2c 1\)\] { box-shadow: 8px 8px 0px 0px rgba(244,63,94,0.4) !important; }
-.dark .shadow-\[4px_4px_0px_0px_\#1c140d\] { box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.4) !important; }
-.dark .shadow-\[4px_4px_0px_0px_rgba\(0\2c 0\2c 0\2c 1\)\] { box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.4) !important; }
-.dark .shadow-\[0_6px_0_0_\#925417\] { box-shadow: 0 6px 0 0 rgba(0,0,0,0.4) !important; }
 
 /* Leaflet 다크 모드 */
 .dark .leaflet-container {

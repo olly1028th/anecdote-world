@@ -1,4 +1,5 @@
 import { useState, useCallback, lazy, Suspense } from 'react';
+import { fetchWithTimeout } from '../lib/fetchWithTimeout';
 import type { DestinationInfo } from '../types/destination';
 import { EMPTY_DESTINATION } from '../types/destination';
 
@@ -19,7 +20,7 @@ export default function DestinationPicker({ value, onChange }: Props) {
       let city = '';
       let finalName = name || '';
       try {
-        const res = await fetch(
+        const res = await fetchWithTimeout(
           `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ko`,
         );
         const data = await res.json();

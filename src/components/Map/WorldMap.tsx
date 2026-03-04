@@ -8,6 +8,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import 'leaflet.markercluster';
 import type { Pin } from '../../types/database';
 import PinMarker from './PinMarker';
+import { STATUS_COLORS } from '../../constants/mapConstants';
 
 /** HTML 특수문자를 이스케이프하여 XSS 방지 */
 function escapeHtml(str: string): string {
@@ -23,13 +24,6 @@ interface Props {
   pins: Pin[];
   onPinClick?: (pin: Pin) => void;
 }
-
-/** visit_status별 마커 색상 */
-const STATUS_COLORS: Record<string, string> = {
-  visited: '#059669',
-  planned: '#d97706',
-  wishlist: '#6366f1',
-};
 
 /** 핀들의 좌표로 지도 범위를 자동 조정 (핀 변경 시에만) */
 function FitBounds({ pins }: { pins: Pin[] }) {

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { fetchWithTimeout } from '../lib/fetchWithTimeout';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -95,7 +96,7 @@ export default function PlaceSearchModal({ initialQuery, onSelect, onClose }: Pr
 
       // 1차: Photon API (한국어/다국어 검색 우수)
       try {
-        const photonRes = await fetch(
+        const photonRes = await fetchWithTimeout(
           `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lang=ko&limit=5`,
         );
         const photonData = await photonRes.json();
@@ -119,7 +120,7 @@ export default function PlaceSearchModal({ initialQuery, onSelect, onClose }: Pr
       // 2차: Nominatim fallback (Photon 결과 부족 시)
       if (mapped.length < 3) {
         try {
-          const res = await fetch(
+          const res = await fetchWithTimeout(
             `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&accept-language=ko`,
           );
           const data = await res.json();

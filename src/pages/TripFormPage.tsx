@@ -1,21 +1,21 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import type { TripStatus, ExpenseCategory, Expense, ChecklistItem } from '../types/trip';
+import type { TripStatus, Expense, ChecklistItem } from '../types/trip';
 import { createTrip, updateTrip, saveExpenses, saveChecklistItems, useTrip, addDemoTrip, updateDemoTrip } from '../hooks/useTrips';
 import { createPin, addDemoPin } from '../hooks/usePins';
 import { updateLocalPinsByTripId } from '../lib/localStore';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { uploadTripPhoto } from '../lib/storage';
 import { useToast } from '../contexts/ToastContext';
+import { DEMO_USER_ID } from '../contexts/AuthContext';
+import { tripStatusToPinStatus } from '../utils/statusConvert';
+import { fetchWithTimeout } from '../lib/fetchWithTimeout';
 import { expenseCategoryLabel } from '../utils/format';
 import PhotoUpload from '../components/PhotoUpload';
 import DestinationPicker from '../components/DestinationPicker';
 import { EMPTY_DESTINATION } from '../types/destination';
 import type { DestinationInfo } from '../types/destination';
-
-const EXPENSE_CATEGORIES: ExpenseCategory[] = [
-  'flight', 'hotel', 'food', 'transport', 'activity', 'shopping', 'other',
-];
+import { EXPENSE_CATEGORIES } from '../constants/tripConstants';
 
 function emptyExpense(): Expense {
   return { category: 'other', amount: 0, label: '' };
@@ -99,7 +99,7 @@ export default function TripFormPage() {
       if (finalDest.name.trim() && finalDest.lat == null) {
         try {
           setSaveStatus('여행지 검색 중...');
-          const photonRes = await fetch(
+          const photonRes = await fetchWithTimeout(
             `https://photon.komoot.io/api/?q=${encodeURIComponent(finalDest.name.trim())}&lang=ko&limit=1`,
           );
           const photonData = await photonRes.json();
@@ -111,7 +111,7 @@ export default function TripFormPage() {
             const name = [p.name || city, country].filter(Boolean).join(', ') || finalDest.name;
             finalDest = { name, lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0], country, city };
           } else {
-            const geoRes = await fetch(
+            const geoRes = await fetchWithTimeout(
               `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(finalDest.name.trim())}&format=json&accept-language=ko&limit=1&addressdetails=1`,
             );
             const geoResults = await geoRes.json();
@@ -147,7 +147,7 @@ export default function TripFormPage() {
             checklist: validChecklist,
           });
           // 여행 상태 변경 시 해당 여행의 핀 visit_status도 동기화
-          const pinStatus = status === 'completed' ? 'visited' : status === 'wishlist' ? 'wishlist' : 'planned';
+          const pinStatus = tripStatusToPinStatus(status);
           updateLocalPinsByTripId(id, {
             visit_status: pinStatus,
             visited_at: status === 'completed' ? (startDate || null) : null,
@@ -178,7 +178,7 @@ export default function TripFormPage() {
           if (finalDest.lat != null && finalDest.lng != null) {
             addDemoPin({
               id: `pin-demo-${Date.now()}`,
-              user_id: 'demo-user-001',
+              user_id: DEMO_USER_ID,
               trip_id: tripId,
               name: finalDest.name || finalDest.city || '여행지',
               address: '',
@@ -186,7 +186,7 @@ export default function TripFormPage() {
               lng: finalDest.lng,
               country: finalDest.country,
               city: finalDest.city,
-              visit_status: status === 'completed' ? 'visited' : status === 'wishlist' ? 'wishlist' : 'planned',
+              visit_status: tripStatusToPinStatus(status),
               visited_at: status === 'completed' ? (startDate || null) : null,
               category: 'landmark',
               rating: null,
@@ -265,7 +265,7 @@ export default function TripFormPage() {
         if (finalDest.lat != null && finalDest.lng != null) {
           addDemoPin({
             id: `pin-demo-${Date.now()}`,
-            user_id: 'demo-user-001',
+            user_id: DEMO_USER_ID,
             trip_id: tripIdLocal,
             name: finalDest.name || finalDest.city || '여행지',
             address: '',
@@ -273,7 +273,7 @@ export default function TripFormPage() {
             lng: finalDest.lng,
             country: finalDest.country,
             city: finalDest.city,
-            visit_status: status === 'completed' ? 'visited' : status === 'wishlist' ? 'wishlist' : 'planned',
+            visit_status: tripStatusToPinStatus(status),
             visited_at: status === 'completed' ? (startDate || null) : null,
             category: 'landmark',
             rating: null,
@@ -300,7 +300,7 @@ export default function TripFormPage() {
             lng: finalDest.lng,
             country: finalDest.country,
             city: finalDest.city,
-            visit_status: status === 'completed' ? 'visited' : status === 'wishlist' ? 'wishlist' : 'planned',
+            visit_status: tripStatusToPinStatus(status),
             visited_at: status === 'completed' ? (startDate || undefined) : undefined,
             category: 'landmark',
             trip_id: tripId,
@@ -312,7 +312,7 @@ export default function TripFormPage() {
           const now = new Date().toISOString();
           addDemoPin({
             id: `pin-demo-${Date.now()}`,
-            user_id: 'demo-user-001',
+            user_id: DEMO_USER_ID,
             trip_id: tripId,
             name: finalDest.name || finalDest.city || '여행지',
             address: '',
@@ -320,7 +320,7 @@ export default function TripFormPage() {
             lng: finalDest.lng,
             country: finalDest.country,
             city: finalDest.city,
-            visit_status: status === 'completed' ? 'visited' : status === 'wishlist' ? 'wishlist' : 'planned',
+            visit_status: tripStatusToPinStatus(status),
             visited_at: status === 'completed' ? (startDate || null) : null,
             category: 'landmark',
             rating: null,
