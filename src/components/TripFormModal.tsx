@@ -55,6 +55,8 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
     }
   }, [open]);
 
+  const dialogRef = useFocusTrap(open && !saving ? onClose : undefined);
+
   if (!open) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -190,8 +192,6 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
       onClose();
     }
   };
-
-  const dialogRef = useFocusTrap(saving ? undefined : onClose);
 
   return (
     <div

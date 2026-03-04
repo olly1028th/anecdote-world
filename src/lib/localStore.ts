@@ -229,3 +229,30 @@ export function loadPhotoCaptions(tripId: string): Record<string, string> | unde
     return undefined;
   }
 }
+
+// ============================================================
+// 여행 인원 수 로컬 저장소 (DB 컬럼 유무와 무관하게 동작)
+// ============================================================
+
+const TRAVELER_COUNT_KEY = 'anecdote-traveler-counts';
+
+function loadTravelerCounts(): Record<string, number> {
+  try {
+    const raw = localStorage.getItem(TRAVELER_COUNT_KEY);
+    return raw ? (JSON.parse(raw) as Record<string, number>) : {};
+  } catch {
+    return {};
+  }
+}
+
+/** 여행 인원 수 저장 */
+export function saveTravelerCount(tripId: string, count: number) {
+  const counts = loadTravelerCounts();
+  counts[tripId] = count;
+  localStorage.setItem(TRAVELER_COUNT_KEY, JSON.stringify(counts));
+}
+
+/** 여행 인원 수 로드 (기본값 1) */
+export function loadTravelerCount(tripId: string): number {
+  return loadTravelerCounts()[tripId] ?? 1;
+}

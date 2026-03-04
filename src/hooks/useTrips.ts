@@ -6,6 +6,7 @@ import {
   getDeletedTripIds,
   getMergedDemoTrips,
   loadPhotoCaptions,
+  loadTravelerCount,
   deleteLocalTrip,
 } from '../lib/localStore';
 import type { Trip, Place, PlacePriority } from '../types/trip';
@@ -126,7 +127,7 @@ function mapDbTripToUi(
       text: c.text,
       checked: c.checked,
     })),
-    travelerCount: db.traveler_count ?? 1,
+    travelerCount: db.traveler_count ?? loadTravelerCount(db.id),
     createdAt: db.created_at,
     updatedAt: db.updated_at,
   };
@@ -581,10 +582,11 @@ export function useTrip(id: string | undefined) {
     if (!isSupabaseConfigured) {
       if (!mountedRef.current) return;
       const found = getMergedDemoTrips().find((t) => t.id === id) ?? null;
-      // localStorage 캡션 병합
+      // localStorage 캡션 + 인원 수 병합
       if (found) {
         const localCaps = loadPhotoCaptions(found.id);
         if (localCaps) found.photoCaptions = { ...found.photoCaptions, ...localCaps };
+        found.travelerCount = found.travelerCount || loadTravelerCount(found.id);
       }
       setTrip(found);
       setIsDemo(true);
@@ -607,6 +609,7 @@ export function useTrip(id: string | undefined) {
         if (found) {
           const localCaps = loadPhotoCaptions(found.id);
           if (localCaps) found.photoCaptions = { ...found.photoCaptions, ...localCaps };
+          found.travelerCount = found.travelerCount || loadTravelerCount(found.id);
         }
         setTrip(found);
         setIsDemo(true);
@@ -653,6 +656,7 @@ export function useTrip(id: string | undefined) {
           if (localFallback) {
             const lc = loadPhotoCaptions(localFallback.id);
             if (lc) localFallback.photoCaptions = { ...localFallback.photoCaptions, ...lc };
+            localFallback.travelerCount = localFallback.travelerCount || loadTravelerCount(localFallback.id);
             setTrip(localFallback);
             setIsDemo(true);
             return;
@@ -737,6 +741,7 @@ export function useTrip(id: string | undefined) {
       if (demoFallback) {
         const lc = loadPhotoCaptions(demoFallback.id);
         if (lc) demoFallback.photoCaptions = { ...demoFallback.photoCaptions, ...lc };
+        demoFallback.travelerCount = demoFallback.travelerCount || loadTravelerCount(demoFallback.id);
         setTrip(demoFallback);
         setIsDemo(true);
       } else {
