@@ -183,7 +183,7 @@ export default function PlaceSearchModal({ initialQuery, onSelect, onClose }: Pr
   const dialogRef = useFocusTrap(onClose);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-[60] bg-black/50 flex items-end sm:items-center justify-center" onClick={onClose}>
       <div
         ref={dialogRef}
         role="dialog"
