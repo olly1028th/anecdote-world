@@ -12,13 +12,13 @@ interface Props {
   isDemo: boolean;
   isCompleted: boolean;
   initialExpenses: Expense[];
+  otherExpenses?: Expense[];
   onDone: () => void;
   refetch: () => void;
   destination?: string;
-  startDate?: string;
 }
 
-export default function InlineExpenseEditor({ tripId, isDemo, isCompleted, initialExpenses, onDone, refetch, destination }: Props) {
+export default function InlineExpenseEditor({ tripId, isDemo, isCompleted, initialExpenses, otherExpenses = [], onDone, refetch, destination }: Props) {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [draftExpenses, setDraftExpenses] = useState<Expense[]>(
@@ -44,18 +44,19 @@ export default function InlineExpenseEditor({ tripId, isDemo, isCompleted, initi
 
   const handleSave = async () => {
     const valid = draftExpenses.filter((e) => e.amount > 0);
+    const allExpenses = [...valid, ...otherExpenses];
     try {
       setSaving(true);
       let sbOk = true;
       if (isDemo) {
-        updateDemoTrip(tripId, { expenses: valid });
+        updateDemoTrip(tripId, { expenses: allExpenses });
       } else {
         try {
-          await saveExpenses(tripId, valid);
+          await saveExpenses(tripId, allExpenses);
         } catch (err) {
           sbOk = false;
           console.error('[saveExpenses] Supabase 실패, 로컬 저장 fallback:', err);
-          updateDemoTrip(tripId, { expenses: valid });
+          updateDemoTrip(tripId, { expenses: allExpenses });
         }
       }
       onDone();
@@ -147,20 +148,14 @@ export default function InlineExpenseEditor({ tripId, isDemo, isCompleted, initi
                   </svg>
                 </button>
               </div>
-              {/* Row 2: 날짜 + 설명 */}
-              <div className="flex items-start gap-1.5 pl-0">
-                <input
-                  type="date"
-                  value={expense.spentAt || ''}
-                  onChange={(e) => updateDraftExpense(i, 'spentAt', e.target.value)}
-                  className="w-[130px] shrink-0 px-2 py-2 rounded-lg border-2 border-slate-300 dark:border-slate-600 text-[11px] font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-slate-900"
-                />
+              {/* Row 2: 설명 */}
+              <div className="pl-0">
                 <input
                   type="text"
                   value={expense.label}
                   onChange={(e) => updateDraftExpense(i, 'label', e.target.value)}
-                  placeholder="설명"
-                  className="flex-1 min-w-0 px-2 py-2 rounded-lg border-2 border-slate-300 dark:border-slate-600 text-xs font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-slate-900"
+                  placeholder="설명 (선택)"
+                  className="w-full px-2 py-2 rounded-lg border-2 border-slate-300 dark:border-slate-600 text-xs font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-slate-900"
                 />
               </div>
               {/* KRW 환산 표시 (현지 통화 입력 시) */}

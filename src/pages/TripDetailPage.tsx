@@ -19,6 +19,7 @@ import { useConfirmModal } from '../hooks/useConfirmModal';
 import TripShareModal from '../components/TripShareModal';
 import InlinePlacesEditor from '../components/InlinePlacesEditor';
 import InlineExpenseEditor from '../components/InlineExpenseEditor';
+import InlineDailySpendingEditor from '../components/InlineDailySpendingEditor';
 import { EditButton, SaveCancelButtons } from '../components/InlineEditButtons';
 import { TripDetailSkeleton } from '../components/Skeleton';
 import { formatDate, calcDuration, totalExpensesInKRW, formatCurrency } from '../utils/format';
@@ -44,6 +45,7 @@ export default function TripDetailPage() {
   // Inline edit states
   const [editingPhotos, setEditingPhotos] = useState(false);
   const [editingExpenses, setEditingExpenses] = useState(false);
+  const [editingDailySpending, setEditingDailySpending] = useState(false);
   const [editingChecklist, setEditingChecklist] = useState(false);
   const [editingPlaces, setEditingPlaces] = useState(false);
   const [editingMemo, setEditingMemo] = useState(false);
@@ -720,43 +722,87 @@ export default function TripDetailPage() {
           </div>
         )}
 
-        {/* 경비 — 인라인 편집 */}
-        {editingExpenses ? (
-          <InlineExpenseEditor
-            tripId={id!}
-            isDemo={isDemo}
-            isCompleted={isCompleted}
-            initialExpenses={trip.expenses}
-            onDone={() => setEditingExpenses(false)}
-            refetch={refetch}
-            destination={trip.destination}
-            startDate={trip.startDate}
-          />
-        ) : trip.expenses.length > 0 ? (
-          <div className="relative">
-            <div className="absolute top-5 right-5 z-10">
-              <EditButton onClick={startEditExpenses} />
-            </div>
-            <ExpenseTable
-              expenses={trip.expenses}
-              isEstimate={!isCompleted}
-              startDate={trip.startDate}
-              exchangeRate={exchangeRate?.rate}
-              currencySymbol={exchangeRate?.symbol}
-              localCurrency={exchangeRate?.toCurrency}
+        {/* 예산 경비 — 인라인 편집 (카테고리별) */}
+        {(() => {
+          const budgetExpenses = trip.expenses.filter((e) => !e.spentAt);
+          const dailyExpenses = trip.expenses.filter((e) => !!e.spentAt);
+          return editingExpenses ? (
+            <InlineExpenseEditor
+              tripId={id!}
+              isDemo={isDemo}
+              isCompleted={isCompleted}
+              initialExpenses={budgetExpenses}
+              otherExpenses={dailyExpenses}
+              onDone={() => setEditingExpenses(false)}
+              refetch={refetch}
+              destination={trip.destination}
             />
-          </div>
-        ) : (
-          <div
-            onClick={startEditExpenses}
-            className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-dashed border-slate-300 cursor-pointer hover:border-[#f48c25] transition-colors"
-          >
-            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">
-              {isCompleted ? 'Expenses' : 'Est. Budget'}
-            </h3>
-            <p className="text-xs text-slate-300 font-medium text-center py-4">탭하여 경비를 추가해보세요</p>
-          </div>
-        )}
+          ) : budgetExpenses.length > 0 ? (
+            <div className="relative">
+              <div className="absolute top-5 right-5 z-10">
+                <EditButton onClick={startEditExpenses} />
+              </div>
+              <ExpenseTable
+                expenses={budgetExpenses}
+                isEstimate={!isCompleted}
+                exchangeRate={exchangeRate?.rate}
+                currencySymbol={exchangeRate?.symbol}
+                localCurrency={exchangeRate?.toCurrency}
+              />
+            </div>
+          ) : (
+            <div
+              onClick={startEditExpenses}
+              className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-dashed border-slate-300 cursor-pointer hover:border-[#f48c25] transition-colors"
+            >
+              <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">
+                {isCompleted ? 'Expenses' : 'Est. Budget'}
+              </h3>
+              <p className="text-xs text-slate-300 font-medium text-center py-4">탭하여 경비를 추가해보세요</p>
+            </div>
+          );
+        })()}
+
+        {/* 일일 지출 — 인라인 편집 (Day별) */}
+        {(() => {
+          const budgetExpenses = trip.expenses.filter((e) => !e.spentAt);
+          const dailyExpenses = trip.expenses.filter((e) => !!e.spentAt);
+          return editingDailySpending ? (
+            <InlineDailySpendingEditor
+              tripId={id!}
+              isDemo={isDemo}
+              initialExpenses={dailyExpenses}
+              otherExpenses={budgetExpenses}
+              onDone={() => setEditingDailySpending(false)}
+              refetch={refetch}
+              destination={trip.destination}
+              startDate={trip.startDate}
+              endDate={trip.endDate}
+            />
+          ) : dailyExpenses.length > 0 ? (
+            <div className="relative">
+              <div className="absolute top-5 right-5 z-10">
+                <EditButton onClick={() => setEditingDailySpending(true)} />
+              </div>
+              <ExpenseTable
+                expenses={dailyExpenses}
+                title="Daily Spending"
+                startDate={trip.startDate}
+                exchangeRate={exchangeRate?.rate}
+                currencySymbol={exchangeRate?.symbol}
+                localCurrency={exchangeRate?.toCurrency}
+              />
+            </div>
+          ) : (
+            <div
+              onClick={() => setEditingDailySpending(true)}
+              className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-dashed border-slate-300 cursor-pointer hover:border-[#0d9488] transition-colors"
+            >
+              <h3 className="text-sm font-bold uppercase tracking-widest text-[#0d9488] mb-2">Daily Spending</h3>
+              <p className="text-xs text-slate-300 font-medium text-center py-4">탭하여 일일 지출을 기록해보세요</p>
+            </div>
+          );
+        })()}
 
         {/* 체크리스트 — 인라인 편집 */}
         {editingChecklist ? (
