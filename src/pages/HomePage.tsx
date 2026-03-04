@@ -619,7 +619,7 @@ export default function HomePage() {
 
       {/* 전체 공유 모달 */}
       {shareModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center" onClick={() => setShareModalOpen(false)}>
+        <div className="fixed inset-0 z-[60] bg-black/50 flex items-end sm:items-center justify-center" onClick={() => setShareModalOpen(false)}>
           <div
             role="dialog"
             aria-modal="true"
