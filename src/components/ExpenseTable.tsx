@@ -10,6 +10,7 @@ interface Props {
   localCurrency?: string;
   exchangeRate?: number;    // KRW→localCurrency rate
   currencySymbol?: string;
+  title?: string;
 }
 
 const categoryIcons: Record<string, string> = {
@@ -64,7 +65,7 @@ function groupByDate(expenses: Expense[], startDate?: string) {
   return { groups: result, undated };
 }
 
-export default function ExpenseTable({ expenses, isEstimate = false, budget, startDate, exchangeRate, currencySymbol }: Props) {
+export default function ExpenseTable({ expenses, isEstimate = false, budget, startDate, exchangeRate, currencySymbol, title }: Props) {
   const hasMultiCurrency = expenses.some((e) => e.currency && e.currency !== 'KRW');
   const total = hasMultiCurrency
     ? totalExpensesInKRW(expenses, exchangeRate)
@@ -115,7 +116,7 @@ export default function ExpenseTable({ expenses, isEstimate = false, budget, sta
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-slate-900 retro-shadow">
       <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-4">
-        {isEstimate ? 'Est. Budget' : 'Expenses'}
+        {title || (isEstimate ? 'Est. Budget' : 'Expenses')}
       </h3>
 
       {/* 예산 한도 진행률 */}
