@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import type { ReactNode } from 'react';
 
 interface Props {
   photos: string[];
   captions?: Record<string, string>;
   onSetCover?: (url: string) => void;
   onCaptionChange?: (url: string, caption: string) => void;
+  action?: ReactNode;
 }
 
-export default function PhotoGallery({ photos, captions, onSetCover, onCaptionChange }: Props) {
+export default function PhotoGallery({ photos, captions, onSetCover, onCaptionChange, action }: Props) {
   // albumOpen: 스크롤 앨범 뷰 열림 여부, scrollToIndex: 열 때 스크롤 위치
   const [albumOpen, setAlbumOpen] = useState(false);
   const [scrollToIndex, setScrollToIndex] = useState(0);
@@ -47,13 +49,16 @@ export default function PhotoGallery({ photos, captions, onSetCover, onCaptionCh
           <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">
             Photos ({photos.length})
           </h3>
-          <button
-            type="button"
-            onClick={() => openAlbum(0)}
-            className="text-[10px] font-bold uppercase tracking-widest text-[#f48c25] hover:text-[#d97a1e] cursor-pointer border-2 border-[#f48c25] px-3 py-1 rounded-full hover:bg-[#f48c25]/10 transition-colors bg-transparent"
-          >
-            앨범 보기
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => openAlbum(0)}
+              className="text-[10px] font-bold uppercase tracking-widest text-[#f48c25] hover:text-[#d97a1e] cursor-pointer border-2 border-[#f48c25] px-3 py-1 rounded-full hover:bg-[#f48c25]/10 transition-colors bg-transparent"
+            >
+              앨범 보기
+            </button>
+            {action}
+          </div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-2.5">
           {photos.map((url, i) => {

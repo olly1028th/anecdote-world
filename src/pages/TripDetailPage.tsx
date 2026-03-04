@@ -961,12 +961,12 @@ export default function TripDetailPage() {
             <SaveCancelButtons onSave={savePhotosInline} onCancel={() => setEditingPhotos(false)} saving={saving} />
           </div>
         ) : trip.photos.length > 0 ? (
-          <div className="relative">
-            <div className="absolute top-5 right-5 z-10">
-              <EditButton onClick={startEditPhotos} />
-            </div>
-            <PhotoGallery photos={trip.photos} captions={trip.photoCaptions} onCaptionChange={handleCaptionChange} />
-          </div>
+          <PhotoGallery
+            photos={trip.photos}
+            captions={trip.photoCaptions}
+            onCaptionChange={handleCaptionChange}
+            action={<EditButton onClick={startEditPhotos} />}
+          />
         ) : (
           <div
             onClick={startEditPhotos}
