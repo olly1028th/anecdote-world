@@ -49,6 +49,8 @@ export default function TripDetailPage() {
   const [editingChecklist, setEditingChecklist] = useState(false);
   const [editingPlaces, setEditingPlaces] = useState(false);
   const [editingMemo, setEditingMemo] = useState(false);
+  const [editingTravelerCount, setEditingTravelerCount] = useState(false);
+  const [draftTravelerCount, setDraftTravelerCount] = useState(1);
 
   // Edit form data (photos, checklist, memo — expenses/places are in extracted components)
   const [draftPhotos, setDraftPhotos] = useState<string[]>([]);
@@ -248,6 +250,32 @@ export default function TripDetailPage() {
   const startEditExpenses = () => {
     if (!trip) return;
     setEditingExpenses(true);
+  };
+
+  // --- Traveler count inline edit ---
+  const startEditTravelerCount = () => {
+    if (!trip) return;
+    setDraftTravelerCount(trip.travelerCount || 1);
+    setEditingTravelerCount(true);
+  };
+  const saveTravelerCount = async () => {
+    if (!trip || !id) return;
+    const count = Math.max(1, draftTravelerCount);
+    try {
+      setSaving(true);
+      if (isDemo) {
+        updateDemoTrip(id, { travelerCount: count });
+      } else {
+        await supabase.from('trips').update({ traveler_count: count }).eq('id', id).eq('user_id', user?.id ?? '');
+      }
+      setEditingTravelerCount(false);
+      refetch();
+      toast('인원 수가 저장되었습니다');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : '저장 실패', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   // --- Memo inline edit ---
@@ -562,19 +590,6 @@ export default function TripDetailPage() {
       {/* Stats Grid */}
       <section className="grid grid-cols-2 gap-4">
         <div
-          onClick={startEditPlaces}
-          className="bg-white dark:bg-slate-800 p-4 rounded-xl border-[3px] border-slate-900 retro-shadow flex flex-col gap-2 cursor-pointer hover:border-[#f48c25] transition-colors"
-        >
-          <div className="w-10 h-10 rounded-lg bg-[#0d9488]/20 border-2 border-[#0d9488] flex items-center justify-center">
-            <svg className="w-5 h-5 text-[#0d9488]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            </svg>
-          </div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Schedule</p>
-          <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{trip.places.length}</p>
-        </div>
-
-        <div
           onClick={startEditExpenses}
           className="bg-white dark:bg-slate-800 p-4 rounded-xl border-[3px] border-slate-900 retro-shadow flex flex-col gap-2 cursor-pointer hover:border-[#f48c25] transition-colors"
         >
@@ -588,6 +603,32 @@ export default function TripDetailPage() {
             {trip.expenses.length > 0 ? formatCurrency(totalExpensesInKRW(trip.expenses, exchangeRate?.rate)) : '-'}
           </p>
         </div>
+
+        {/* 인당 경비 카드 */}
+        {(() => {
+          const total = trip.expenses.length > 0 ? totalExpensesInKRW(trip.expenses, exchangeRate?.rate) : 0;
+          const count = trip.travelerCount || 1;
+          const perPerson = count > 0 ? Math.round(total / count) : 0;
+          return (
+            <div
+              onClick={startEditTravelerCount}
+              className="bg-white dark:bg-slate-800 p-4 rounded-xl border-[3px] border-slate-900 retro-shadow flex flex-col gap-2 cursor-pointer hover:border-[#f48c25] transition-colors"
+            >
+              <div className="w-10 h-10 rounded-lg bg-[#0d9488]/20 border-2 border-[#0d9488] flex items-center justify-center">
+                <svg className="w-5 h-5 text-[#0d9488]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                Cost / Person
+                <span className="ml-1 text-[#0d9488]">({count}명)</span>
+              </p>
+              <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                {total > 0 ? formatCurrency(perPerson) : '-'}
+              </p>
+            </div>
+          );
+        })()}
 
         <div
           onClick={startEditPhotos}
@@ -615,6 +656,39 @@ export default function TripDetailPage() {
           <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{checklistDone}/{checklistTotal}</p>
         </div>
       </section>
+
+      {/* 인원 수 인라인 편집 */}
+      {editingTravelerCount && (
+        <section className="bg-white dark:bg-slate-800 p-5 rounded-xl border-[3px] border-[#0d9488] retro-shadow">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-3">함께 가는 인원</h3>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setDraftTravelerCount(Math.max(1, draftTravelerCount - 1))}
+              className="w-10 h-10 rounded-lg border-2 border-slate-900 bg-white dark:bg-slate-700 text-lg font-bold cursor-pointer hover:bg-slate-100 transition-colors flex items-center justify-center"
+            >
+              -
+            </button>
+            <input
+              type="number"
+              min={1}
+              max={99}
+              value={draftTravelerCount}
+              onChange={(e) => setDraftTravelerCount(Math.max(1, Math.min(99, Number(e.target.value) || 1)))}
+              className="w-16 text-center text-2xl font-bold rounded-lg border-2 border-slate-900 py-1.5 bg-white dark:bg-[#2a1f15] dark:text-slate-100 dark:border-slate-100 focus:outline-none focus:ring-2 focus:ring-[#0d9488]/40"
+            />
+            <button
+              type="button"
+              onClick={() => setDraftTravelerCount(Math.min(99, draftTravelerCount + 1))}
+              className="w-10 h-10 rounded-lg border-2 border-slate-900 bg-white dark:bg-slate-700 text-lg font-bold cursor-pointer hover:bg-slate-100 transition-colors flex items-center justify-center"
+            >
+              +
+            </button>
+            <span className="text-sm font-bold text-slate-500">명</span>
+          </div>
+          <SaveCancelButtons onSave={saveTravelerCount} onCancel={() => setEditingTravelerCount(false)} saving={saving} />
+        </section>
+      )}
 
       {/* Progress Bar */}
       {checklistTotal > 0 && (

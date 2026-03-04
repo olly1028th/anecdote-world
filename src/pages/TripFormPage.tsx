@@ -171,6 +171,7 @@ export default function TripFormPage() {
             photos,
             places: [],
             checklist: validChecklist,
+            travelerCount: 1,
             createdAt: now,
             updatedAt: now,
           });
@@ -258,6 +259,7 @@ export default function TripFormPage() {
             photos,
             places: [],
             checklist: validChecklist,
+            travelerCount: 1,
             createdAt: now,
             updatedAt: now,
           });
