@@ -59,6 +59,7 @@ CREATE TABLE public.trips (
   cover_image TEXT DEFAULT '',                  -- 대표 이미지 URL
   memo        TEXT DEFAULT '',                  -- 한줄 후기 / 메모
   photo_captions JSONB DEFAULT '{}'::jsonb,     -- 사진별 캡션 { url: caption }
+  traveler_count INTEGER NOT NULL DEFAULT 1,    -- 여행 인원 수
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );

@@ -83,25 +83,63 @@ export function detectCurrency(destination: string): string | null {
   return null;
 }
 
-/** 환율 API 호출 (내부 헬퍼) */
-function fetchRate(currency: string): Promise<ExchangeRateInfo> {
-  return fetchWithTimeout(`https://api.frankfurter.dev/v1/latest?base=KRW&symbols=${currency}`)
-    .then((res) => {
-      if (!res.ok) throw new Error('환율 조회 실패');
-      return res.json();
-    })
+/** ExchangeRateInfo 결과 생성 헬퍼 */
+function buildResult(currency: string, rate: number, date: string): ExchangeRateInfo {
+  return {
+    fromCurrency: 'KRW',
+    toCurrency: currency,
+    rate,
+    symbol: CURRENCY_SYMBOLS[currency] || currency,
+    currencyName: CURRENCY_NAMES[currency] || currency,
+    updatedAt: date,
+  };
+}
+
+/** Provider 1: Frankfurter API (api.frankfurter.dev) */
+function fetchFromFrankfurterDev(currency: string): Promise<ExchangeRateInfo> {
+  return fetchWithTimeout(`https://api.frankfurter.dev/v1/latest?base=KRW&symbols=${currency}`, undefined, 5000)
+    .then((res) => { if (!res.ok) throw new Error(`frankfurter.dev ${res.status}`); return res.json(); })
     .then((data) => {
-      const rateValue = data.rates?.[currency];
-      if (!rateValue) throw new Error('환율 데이터 없음');
-      return {
-        fromCurrency: 'KRW',
-        toCurrency: currency,
-        rate: rateValue,
-        symbol: CURRENCY_SYMBOLS[currency] || currency,
-        currencyName: CURRENCY_NAMES[currency] || currency,
-        updatedAt: data.date || new Date().toISOString().split('T')[0],
-      };
+      const rate = data.rates?.[currency];
+      if (!rate) throw new Error('no rate');
+      return buildResult(currency, rate, data.date || new Date().toISOString().split('T')[0]);
     });
+}
+
+/** Provider 2: Frankfurter API (api.frankfurter.app — 구 도메인) */
+function fetchFromFrankfurterApp(currency: string): Promise<ExchangeRateInfo> {
+  return fetchWithTimeout(`https://api.frankfurter.app/latest?from=KRW&to=${currency}`, undefined, 5000)
+    .then((res) => { if (!res.ok) throw new Error(`frankfurter.app ${res.status}`); return res.json(); })
+    .then((data) => {
+      const rate = data.rates?.[currency];
+      if (!rate) throw new Error('no rate');
+      return buildResult(currency, rate, data.date || new Date().toISOString().split('T')[0]);
+    });
+}
+
+/** Provider 3: open.er-api.com (무료, 키 불필요) */
+function fetchFromOpenErApi(currency: string): Promise<ExchangeRateInfo> {
+  return fetchWithTimeout(`https://open.er-api.com/v6/latest/KRW`, undefined, 5000)
+    .then((res) => { if (!res.ok) throw new Error(`open.er-api ${res.status}`); return res.json(); })
+    .then((data) => {
+      const rate = data.rates?.[currency];
+      if (!rate) throw new Error('no rate');
+      return buildResult(currency, rate, data.time_last_update_utc?.split(' ')?.slice(1, 4)?.join(' ') || new Date().toISOString().split('T')[0]);
+    });
+}
+
+/** 환율 API 호출 — 3개 provider 순차 fallback */
+async function fetchRate(currency: string): Promise<ExchangeRateInfo> {
+  const providers = [fetchFromFrankfurterDev, fetchFromFrankfurterApp, fetchFromOpenErApi];
+  let lastError: unknown;
+  for (const provider of providers) {
+    try {
+      return await provider(currency);
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError ?? new Error('환율 조회 실패');
 }
 
 /** 실시간 환율 조회 훅 (자동 조회) */
