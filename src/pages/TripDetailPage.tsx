@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTrip, deleteTrip, updateTrip, toggleChecklistItem, saveChecklistItems, updateDemoTrip, deleteDemoTrip } from '../hooks/useTrips';
 import { supabase } from '../lib/supabase';
-import { savePhotoCaptions } from '../lib/localStore';
+import { savePhotoCaptions, saveTravelerCount as saveTravelerCountLocal } from '../lib/localStore';
 import { uploadTripPhoto, deleteTripPhoto } from '../lib/storage';
 import { useSharesForTrip } from '../hooks/useShares';
 import { useLazyExchangeRate } from '../hooks/useExchangeRate';
@@ -263,10 +263,15 @@ export default function TripDetailPage() {
     const count = Math.max(1, draftTravelerCount);
     try {
       setSaving(true);
+      // 항상 localStorage에 저장 (DB 컬럼 유무와 무관하게 동작)
+      saveTravelerCountLocal(id, count);
       if (isDemo) {
         updateDemoTrip(id, { travelerCount: count });
       } else {
-        await supabase.from('trips').update({ traveler_count: count }).eq('id', id).eq('user_id', user?.id ?? '');
+        // DB에도 시도 (컬럼 없으면 무시)
+        try {
+          await supabase.from('trips').update({ traveler_count: count }).eq('id', id).eq('user_id', user?.id ?? '');
+        } catch { /* DB 컬럼 미존재 시 무시 — localStorage에 이미 저장됨 */ }
       }
       setEditingTravelerCount(false);
       refetch();

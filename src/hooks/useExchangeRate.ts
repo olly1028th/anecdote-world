@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchWithTimeout } from '../lib/fetchWithTimeout';
 
-/** 국가명(한국어) → ISO 통화 코드 매핑 */
+/** 국가명(한국어+영어) → ISO 통화 코드 매핑 */
 const COUNTRY_TO_CURRENCY: Record<string, string> = {
+  // 한국어
   '일본': 'JPY', '태국': 'THB', '미국': 'USD', '영국': 'GBP',
   '이탈리아': 'EUR', '프랑스': 'EUR', '독일': 'EUR', '스페인': 'EUR',
   '네덜란드': 'EUR', '포르투갈': 'EUR', '그리스': 'EUR', '오스트리아': 'EUR',
@@ -15,6 +16,21 @@ const COUNTRY_TO_CURRENCY: Record<string, string> = {
   '덴마크': 'DKK', '체코': 'CZK', '폴란드': 'PLN', '헝가리': 'HUF',
   '러시아': 'RUB', '남아공': 'ZAR', '이집트': 'EGP', '제주': 'KRW',
   '한국': 'KRW',
+  // 영어
+  'Japan': 'JPY', 'Thailand': 'THB', 'United States': 'USD', 'USA': 'USD',
+  'United Kingdom': 'GBP', 'UK': 'GBP', 'England': 'GBP',
+  'Italy': 'EUR', 'France': 'EUR', 'Germany': 'EUR', 'Spain': 'EUR',
+  'Netherlands': 'EUR', 'Portugal': 'EUR', 'Greece': 'EUR', 'Austria': 'EUR',
+  'Belgium': 'EUR', 'Ireland': 'EUR', 'Finland': 'EUR',
+  'China': 'CNY', 'Taiwan': 'TWD', 'Hong Kong': 'HKD', 'Singapore': 'SGD',
+  'Malaysia': 'MYR', 'Vietnam': 'VND', 'Indonesia': 'IDR',
+  'Philippines': 'PHP', 'India': 'INR', 'Australia': 'AUD', 'New Zealand': 'NZD',
+  'Canada': 'CAD', 'Mexico': 'MXN', 'Brazil': 'BRL',
+  'Turkey': 'TRY', 'Türkiye': 'TRY', 'Switzerland': 'CHF',
+  'Sweden': 'SEK', 'Norway': 'NOK', 'Denmark': 'DKK',
+  'Czech': 'CZK', 'Czechia': 'CZK', 'Poland': 'PLN', 'Hungary': 'HUF',
+  'Russia': 'RUB', 'South Africa': 'ZAR', 'Egypt': 'EGP',
+  'Korea': 'KRW', 'South Korea': 'KRW', 'Jeju': 'KRW',
 };
 
 /** 통화 코드 → 통화 기호 */
@@ -58,8 +74,9 @@ export function getCurrencyName(code: string): string {
 /** 여행지 destination 문자열에서 국가/통화 추출 */
 export function detectCurrency(destination: string): string | null {
   if (!destination) return null;
+  const lower = destination.toLowerCase();
   for (const [country, currency] of Object.entries(COUNTRY_TO_CURRENCY)) {
-    if (destination.includes(country)) {
+    if (lower.includes(country.toLowerCase())) {
       return currency === 'KRW' ? null : currency;
     }
   }
@@ -119,9 +136,9 @@ export function useLazyExchangeRate(destination: string | undefined) {
   const [error, setError] = useState(false);
 
   const fetch = useCallback(() => {
-    if (!destination) return;
+    if (!destination) { setError(true); return; }
     const currency = detectCurrency(destination);
-    if (!currency) return;
+    if (!currency) { setError(true); return; }
 
     setLoading(true);
     setError(false);
