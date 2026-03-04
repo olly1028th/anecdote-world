@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchWithTimeout } from '../lib/fetchWithTimeout';
 
-/** 국가명(한국어+영어) → ISO 통화 코드 매핑 */
+/** 국가명(한국어+영어) + 주요 도시명 → ISO 통화 코드 매핑 */
 const COUNTRY_TO_CURRENCY: Record<string, string> = {
-  // 한국어
+  // 한국어 — 국가
   '일본': 'JPY', '태국': 'THB', '미국': 'USD', '영국': 'GBP',
   '이탈리아': 'EUR', '프랑스': 'EUR', '독일': 'EUR', '스페인': 'EUR',
   '네덜란드': 'EUR', '포르투갈': 'EUR', '그리스': 'EUR', '오스트리아': 'EUR',
@@ -16,7 +16,30 @@ const COUNTRY_TO_CURRENCY: Record<string, string> = {
   '덴마크': 'DKK', '체코': 'CZK', '폴란드': 'PLN', '헝가리': 'HUF',
   '러시아': 'RUB', '남아공': 'ZAR', '이집트': 'EGP', '제주': 'KRW',
   '한국': 'KRW',
-  // 영어
+  // 한국어 — 주요 도시 (국가명 없이 도시명만 입력하는 경우 대비)
+  '도쿄': 'JPY', '오사카': 'JPY', '교토': 'JPY', '후쿠오카': 'JPY', '삿포로': 'JPY',
+  '나고야': 'JPY', '오키나와': 'JPY', '나라': 'JPY', '요코하마': 'JPY', '고베': 'JPY',
+  '방콕': 'THB', '치앙마이': 'THB', '푸켓': 'THB', '파타야': 'THB',
+  '뉴욕': 'USD', '로스앤젤레스': 'USD', '샌프란시스코': 'USD', '하와이': 'USD',
+  '라스베가스': 'USD', '시카고': 'USD', '워싱턴': 'USD', '시애틀': 'USD', '보스턴': 'USD',
+  '괌': 'USD', '사이판': 'USD',
+  '런던': 'GBP', '에든버러': 'GBP', '맨체스터': 'GBP',
+  '파리': 'EUR', '로마': 'EUR', '바르셀로나': 'EUR', '마드리드': 'EUR',
+  '베를린': 'EUR', '뮌헨': 'EUR', '프라하': 'CZK', '부다페스트': 'HUF',
+  '암스테르담': 'EUR', '브뤼셀': 'EUR', '리스본': 'EUR', '아테네': 'EUR',
+  '비엔나': 'EUR', '헬싱키': 'EUR', '더블린': 'EUR', '밀라노': 'EUR',
+  '베네치아': 'EUR', '피렌체': 'EUR', '나폴리': 'EUR',
+  '상하이': 'CNY', '베이징': 'CNY', '광저우': 'CNY', '선전': 'CNY', '청두': 'CNY',
+  '타이베이': 'TWD', '가오슝': 'TWD',
+  '쿠알라룸푸르': 'MYR', '코타키나발루': 'MYR', '랑카위': 'MYR',
+  '하노이': 'VND', '호치민': 'VND', '다낭': 'VND', '나트랑': 'VND', '달랏': 'VND', '푸꾸옥': 'VND',
+  '발리': 'IDR', '자카르타': 'IDR',
+  '세부': 'PHP', '보라카이': 'PHP', '마닐라': 'PHP',
+  '시드니': 'AUD', '멜버른': 'AUD', '브리즈번': 'AUD', '골드코스트': 'AUD',
+  '오클랜드': 'NZD', '퀸스타운': 'NZD',
+  '밴쿠버': 'CAD', '토론토': 'CAD', '몬트리올': 'CAD',
+  '칸쿤': 'MXN', '이스탄불': 'TRY', '취리히': 'CHF', '카이로': 'EGP',
+  // 영어 — 국가
   'Japan': 'JPY', 'Thailand': 'THB', 'United States': 'USD', 'USA': 'USD',
   'United Kingdom': 'GBP', 'UK': 'GBP', 'England': 'GBP',
   'Italy': 'EUR', 'France': 'EUR', 'Germany': 'EUR', 'Spain': 'EUR',
@@ -31,6 +54,28 @@ const COUNTRY_TO_CURRENCY: Record<string, string> = {
   'Czech': 'CZK', 'Czechia': 'CZK', 'Poland': 'PLN', 'Hungary': 'HUF',
   'Russia': 'RUB', 'South Africa': 'ZAR', 'Egypt': 'EGP',
   'Korea': 'KRW', 'South Korea': 'KRW', 'Jeju': 'KRW',
+  // 영어 — 주요 도시
+  'Tokyo': 'JPY', 'Osaka': 'JPY', 'Kyoto': 'JPY', 'Fukuoka': 'JPY', 'Sapporo': 'JPY',
+  'Okinawa': 'JPY', 'Nagoya': 'JPY', 'Yokohama': 'JPY', 'Kobe': 'JPY', 'Nara': 'JPY',
+  'Bangkok': 'THB', 'Chiang Mai': 'THB', 'Phuket': 'THB', 'Pattaya': 'THB',
+  'New York': 'USD', 'Los Angeles': 'USD', 'San Francisco': 'USD', 'Hawaii': 'USD',
+  'Las Vegas': 'USD', 'Chicago': 'USD', 'Seattle': 'USD', 'Boston': 'USD', 'Guam': 'USD',
+  'London': 'GBP', 'Edinburgh': 'GBP', 'Manchester': 'GBP',
+  'Paris': 'EUR', 'Rome': 'EUR', 'Barcelona': 'EUR', 'Madrid': 'EUR',
+  'Berlin': 'EUR', 'Munich': 'EUR', 'Prague': 'CZK', 'Budapest': 'HUF',
+  'Amsterdam': 'EUR', 'Brussels': 'EUR', 'Lisbon': 'EUR', 'Athens': 'EUR',
+  'Vienna': 'EUR', 'Helsinki': 'EUR', 'Dublin': 'EUR', 'Milan': 'EUR',
+  'Venice': 'EUR', 'Florence': 'EUR', 'Naples': 'EUR',
+  'Shanghai': 'CNY', 'Beijing': 'CNY', 'Guangzhou': 'CNY', 'Shenzhen': 'CNY',
+  'Taipei': 'TWD', 'Kaohsiung': 'TWD',
+  'Kuala Lumpur': 'MYR', 'Kota Kinabalu': 'MYR', 'Langkawi': 'MYR',
+  'Hanoi': 'VND', 'Ho Chi Minh': 'VND', 'Da Nang': 'VND', 'Nha Trang': 'VND',
+  'Bali': 'IDR', 'Jakarta': 'IDR',
+  'Cebu': 'PHP', 'Boracay': 'PHP', 'Manila': 'PHP',
+  'Sydney': 'AUD', 'Melbourne': 'AUD', 'Brisbane': 'AUD', 'Gold Coast': 'AUD',
+  'Auckland': 'NZD', 'Queenstown': 'NZD',
+  'Vancouver': 'CAD', 'Toronto': 'CAD', 'Montreal': 'CAD',
+  'Cancun': 'MXN', 'Istanbul': 'TRY', 'Zurich': 'CHF', 'Cairo': 'EGP',
 };
 
 /** 통화 코드 → 통화 기호 */
@@ -97,49 +142,64 @@ function buildResult(currency: string, rate: number, date: string): ExchangeRate
 
 /** Provider 1: Frankfurter API (api.frankfurter.dev) */
 function fetchFromFrankfurterDev(currency: string): Promise<ExchangeRateInfo> {
-  return fetchWithTimeout(`https://api.frankfurter.dev/v1/latest?base=KRW&symbols=${currency}`, undefined, 5000)
+  return fetchWithTimeout(`https://api.frankfurter.dev/v1/latest?base=KRW&symbols=${currency}`, undefined, 6000)
     .then((res) => { if (!res.ok) throw new Error(`frankfurter.dev ${res.status}`); return res.json(); })
     .then((data) => {
       const rate = data.rates?.[currency];
-      if (!rate) throw new Error('no rate');
+      if (!rate) throw new Error('no rate in response');
       return buildResult(currency, rate, data.date || new Date().toISOString().split('T')[0]);
     });
 }
 
 /** Provider 2: Frankfurter API (api.frankfurter.app — 구 도메인) */
 function fetchFromFrankfurterApp(currency: string): Promise<ExchangeRateInfo> {
-  return fetchWithTimeout(`https://api.frankfurter.app/latest?from=KRW&to=${currency}`, undefined, 5000)
+  return fetchWithTimeout(`https://api.frankfurter.app/latest?from=KRW&to=${currency}`, undefined, 6000)
     .then((res) => { if (!res.ok) throw new Error(`frankfurter.app ${res.status}`); return res.json(); })
     .then((data) => {
       const rate = data.rates?.[currency];
-      if (!rate) throw new Error('no rate');
+      if (!rate) throw new Error('no rate in response');
       return buildResult(currency, rate, data.date || new Date().toISOString().split('T')[0]);
     });
 }
 
 /** Provider 3: open.er-api.com (무료, 키 불필요) */
 function fetchFromOpenErApi(currency: string): Promise<ExchangeRateInfo> {
-  return fetchWithTimeout(`https://open.er-api.com/v6/latest/KRW`, undefined, 5000)
+  return fetchWithTimeout(`https://open.er-api.com/v6/latest/KRW`, undefined, 6000)
     .then((res) => { if (!res.ok) throw new Error(`open.er-api ${res.status}`); return res.json(); })
     .then((data) => {
       const rate = data.rates?.[currency];
-      if (!rate) throw new Error('no rate');
+      if (!rate) throw new Error('no rate in response');
       return buildResult(currency, rate, data.time_last_update_utc?.split(' ')?.slice(1, 4)?.join(' ') || new Date().toISOString().split('T')[0]);
     });
 }
 
-/** 환율 API 호출 — 3개 provider 순차 fallback */
+/** 메모리 캐시 — 같은 통화 반복 조회 방지 (10분 유효) */
+const rateCache = new Map<string, { info: ExchangeRateInfo; cachedAt: number }>();
+const CACHE_TTL = 10 * 60 * 1000; // 10분
+
+/** 환율 API 호출 — 3개 provider 병렬 경쟁 (가장 빠른 성공 사용) */
 async function fetchRate(currency: string): Promise<ExchangeRateInfo> {
-  const providers = [fetchFromFrankfurterDev, fetchFromFrankfurterApp, fetchFromOpenErApi];
-  let lastError: unknown;
-  for (const provider of providers) {
-    try {
-      return await provider(currency);
-    } catch (err) {
-      lastError = err;
-    }
+  // 캐시 확인
+  const cached = rateCache.get(currency);
+  if (cached && Date.now() - cached.cachedAt < CACHE_TTL) {
+    return cached.info;
   }
-  throw lastError ?? new Error('환율 조회 실패');
+
+  const providers = [
+    () => fetchFromFrankfurterDev(currency).catch((err) => { console.warn('[환율] frankfurter.dev 실패:', err.message); throw err; }),
+    () => fetchFromFrankfurterApp(currency).catch((err) => { console.warn('[환율] frankfurter.app 실패:', err.message); throw err; }),
+    () => fetchFromOpenErApi(currency).catch((err) => { console.warn('[환율] open.er-api.com 실패:', err.message); throw err; }),
+  ];
+
+  try {
+    // Promise.any: 3개 동시 호출, 가장 먼저 성공한 결과 반환
+    const info = await Promise.any(providers.map((p) => p()));
+    rateCache.set(currency, { info, cachedAt: Date.now() });
+    return info;
+  } catch (aggregateErr) {
+    console.error('[환율] 모든 provider 실패:', aggregateErr);
+    throw new Error('환율 조회 실패 — 네트워크 연결을 확인해주세요');
+  }
 }
 
 /** 실시간 환율 조회 훅 (자동 조회) */
