@@ -228,7 +228,7 @@ async function fetchRate(currency: string): Promise<ExchangeRateInfo> {
 export function useExchangeRate(destination: string | undefined, country?: string) {
   // fetchedFor tracks which currency we've completed fetching for (null = pending/failed)
   const [result, setResult] = useState<{ rate: ExchangeRateInfo | null; fetchedFor: string | null }>({ rate: null, fetchedFor: null });
-  const currency = destination ? detectCurrency(destination, country) : null;
+  const currency = (destination || country) ? detectCurrency(destination || '', country) : null;
 
   useEffect(() => {
     if (!currency) return;
@@ -256,12 +256,12 @@ export function useLazyExchangeRate(destination: string | undefined, country?: s
   const [error, setError] = useState<ExchangeRateError>(false);
 
   const fetch = useCallback(() => {
-    if (!destination) {
-      console.warn('[환율] destination이 없음 — 조회 불가');
+    if (!destination && !country) {
+      console.warn('[환율] destination과 country 모두 없음 — 조회 불가');
       setError('no_currency');
       return;
     }
-    const currency = detectCurrency(destination, country);
+    const currency = detectCurrency(destination || '', country);
     if (!currency) {
       console.warn('[환율] 통화 감지 실패 — destination:', JSON.stringify(destination), ', country:', JSON.stringify(country));
       setError('no_currency');
