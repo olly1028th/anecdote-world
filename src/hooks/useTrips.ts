@@ -60,10 +60,11 @@ function mapDbTripToUi(
       description: dayPins.map((p) => p.note).filter(Boolean).join(' → '),
     }));
 
-  // places: 계획/위시리스트 핀 → 추천 장소
+  // places: 계획/위시리스트 핀 중 day_number가 있는 것만 → 일정 장소
+  // (day_number=null인 메인 핀은 세계지도/환율 전용이므로 places에 포함하지 않음)
   const placePins = pins
     .filter(
-      (p) => p.visit_status === 'planned' || p.visit_status === 'wishlist',
+      (p) => (p.visit_status === 'planned' || p.visit_status === 'wishlist') && p.day_number != null,
     )
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
   const places: Place[] = placePins.map((p) => {
@@ -513,13 +514,15 @@ export async function savePlaces(
   const userId = user?.id;
   if (!userId) throw new Error('인증이 필요합니다');
 
-  // 기존 planned/wishlist 핀 좌표 보존 (삭제 전에 조회)
+  // 기존 일정 핀(day_number IS NOT NULL) 좌표 보존 (삭제 전에 조회)
+  // 메인 핀(day_number=null)은 세계지도/환율 전용이므로 보존
   const { data: existingPins, error: selErr } = await supabase
     .from('pins')
     .select('name, lat, lng, country, city, category')
     .eq('trip_id', tripId)
     .eq('user_id', userId)
-    .in('visit_status', ['planned', 'wishlist']);
+    .in('visit_status', ['planned', 'wishlist'])
+    .not('day_number', 'is', null);
   if (selErr) {
     console.error('[savePlaces] 기존 핀 조회 실패:', selErr);
     throw new Error(`핀 조회 실패: ${selErr.message}`);
@@ -531,13 +534,14 @@ export async function savePlaces(
     }
   }
 
-  // 기존 planned/wishlist 핀 삭제 (visited 핀은 유지, 소유자 데이터만)
+  // 기존 일정 핀만 삭제 (day_number IS NOT NULL), 메인 핀(day_number=null) 보존
   const { error: delErr } = await supabase
     .from('pins')
     .delete()
     .eq('trip_id', tripId)
     .eq('user_id', userId)
-    .in('visit_status', ['planned', 'wishlist']);
+    .in('visit_status', ['planned', 'wishlist'])
+    .not('day_number', 'is', null);
   if (delErr) {
     console.error('[savePlaces] 핀 삭제 실패:', delErr);
     throw new Error(`핀 삭제 실패: ${delErr.message}`);
