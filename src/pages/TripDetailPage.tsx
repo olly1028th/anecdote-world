@@ -34,7 +34,7 @@ export default function TripDetailPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { shares, loading: sharesLoading } = useSharesForTrip(id);
-  const { rate: exchangeRate, loading: rateLoading, error: rateError, fetch: fetchRate } = useLazyExchangeRate(trip?.destination);
+  const { rate: exchangeRate, loading: rateLoading, error: rateError, fetch: fetchRate } = useLazyExchangeRate(trip?.destination, trip?.country);
   const printRef = useRef<HTMLDivElement>(null);
 
   // Share modal state
@@ -827,6 +827,7 @@ export default function TripDetailPage() {
               onDone={() => setEditingExpenses(false)}
               refetch={refetch}
               destination={trip.destination}
+              country={trip.country}
             />
           ) : budgetExpenses.length > 0 ? (
             <div className="relative">
@@ -867,6 +868,7 @@ export default function TripDetailPage() {
               onDone={() => setEditingDailySpending(false)}
               refetch={refetch}
               destination={trip.destination}
+              country={trip.country}
               startDate={trip.startDate}
               endDate={trip.endDate}
             />

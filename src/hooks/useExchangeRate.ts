@@ -116,12 +116,23 @@ export function getCurrencyName(code: string): string {
   return CURRENCY_NAMES[code] || code;
 }
 
-/** 여행지 destination 문자열에서 국가/통화 추출 */
-export function detectCurrency(destination: string): string | null {
+/** 여행지 destination 문자열에서 국가/통화 추출. country가 있으면 우선 매칭. */
+export function detectCurrency(destination: string, country?: string): string | null {
+  // 1) country 필드가 있으면 우선 매칭 (Nominatim 역지오코딩으로 가져온 정확한 국가명)
+  if (country) {
+    const lowerCountry = country.toLowerCase();
+    for (const [name, currency] of Object.entries(COUNTRY_TO_CURRENCY)) {
+      if (lowerCountry === name.toLowerCase() || lowerCountry.includes(name.toLowerCase())) {
+        return currency === 'KRW' ? null : currency;
+      }
+    }
+  }
+
+  // 2) fallback: destination 문자열에서 매칭
   if (!destination) return null;
   const lower = destination.toLowerCase();
-  for (const [country, currency] of Object.entries(COUNTRY_TO_CURRENCY)) {
-    if (lower.includes(country.toLowerCase())) {
+  for (const [name, currency] of Object.entries(COUNTRY_TO_CURRENCY)) {
+    if (lower.includes(name.toLowerCase())) {
       return currency === 'KRW' ? null : currency;
     }
   }
@@ -203,10 +214,10 @@ async function fetchRate(currency: string): Promise<ExchangeRateInfo> {
 }
 
 /** 실시간 환율 조회 훅 (자동 조회) */
-export function useExchangeRate(destination: string | undefined) {
+export function useExchangeRate(destination: string | undefined, country?: string) {
   // fetchedFor tracks which currency we've completed fetching for (null = pending/failed)
   const [result, setResult] = useState<{ rate: ExchangeRateInfo | null; fetchedFor: string | null }>({ rate: null, fetchedFor: null });
-  const currency = destination ? detectCurrency(destination) : null;
+  const currency = destination ? detectCurrency(destination, country) : null;
 
   useEffect(() => {
     if (!currency) return;
@@ -225,14 +236,14 @@ export function useExchangeRate(destination: string | undefined) {
 }
 
 /** 실시간 환율 조회 훅 (수동 — 버튼 클릭 시 조회) */
-export function useLazyExchangeRate(destination: string | undefined) {
+export function useLazyExchangeRate(destination: string | undefined, country?: string) {
   const [rate, setRate] = useState<ExchangeRateInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
 
   const fetch = useCallback(() => {
     if (!destination) { setError(true); return; }
-    const currency = detectCurrency(destination);
+    const currency = detectCurrency(destination, country);
     if (!currency) { setError(true); return; }
 
     setLoading(true);
@@ -242,7 +253,7 @@ export function useLazyExchangeRate(destination: string | undefined) {
       .then((info) => setRate(info))
       .catch(() => { setRate(null); setError(true); })
       .finally(() => setLoading(false));
-  }, [destination]);
+  }, [destination, country]);
 
   return { rate, loading, error, fetch };
 }
