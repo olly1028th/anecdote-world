@@ -319,6 +319,13 @@ export interface TripInput {
   user_id?: string;
 }
 
+/** TripInput에서 DB에 존재하지 않을 수 있는 필드를 분리 */
+function stripNonDbFields(input: Record<string, unknown>): Record<string, unknown> {
+  const { country, ...rest } = input;
+  // country 컬럼이 DB에 추가되면 이 함수에서 country를 포함시키면 됨
+  return rest;
+}
+
 export async function createTrip(input: TripInput): Promise<string> {
   // user_id가 없으면 현재 인증된 사용자의 ID를 자동으로 가져옴
   let userId = input.user_id;
@@ -327,9 +334,10 @@ export async function createTrip(input: TripInput): Promise<string> {
     userId = user?.id;
   }
   if (!userId) throw new Error('인증이 필요합니다');
+  const dbInput = stripNonDbFields({ ...input, user_id: userId });
   const { data, error } = await supabase
     .from('trips')
-    .insert({ ...input, user_id: userId })
+    .insert(dbInput)
     .select('id')
     .single();
   if (error) throw error;
@@ -339,7 +347,8 @@ export async function createTrip(input: TripInput): Promise<string> {
 export async function updateTrip(id: string, input: Partial<TripInput>): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('인증이 필요합니다');
-  const { error } = await supabase.from('trips').update(input).eq('id', id).eq('user_id', user.id);
+  const dbInput = stripNonDbFields(input as Record<string, unknown>);
+  const { error } = await supabase.from('trips').update(dbInput).eq('id', id).eq('user_id', user.id);
   if (error) throw error;
 
   // 여행 상태 변경 시 해당 여행의 핀 visit_status도 동기화
@@ -505,12 +514,16 @@ export async function savePlaces(
   if (!userId) throw new Error('인증이 필요합니다');
 
   // 기존 planned/wishlist 핀 좌표 보존 (삭제 전에 조회)
-  const { data: existingPins } = await supabase
+  const { data: existingPins, error: selErr } = await supabase
     .from('pins')
     .select('name, lat, lng, country, city, category')
     .eq('trip_id', tripId)
     .eq('user_id', userId)
     .in('visit_status', ['planned', 'wishlist']);
+  if (selErr) {
+    console.error('[savePlaces] 기존 핀 조회 실패:', selErr);
+    throw new Error(`핀 조회 실패: ${selErr.message}`);
+  }
   const coordMap = new Map<string, { lat: number; lng: number; country: string; city: string; category: string }>();
   for (const pin of existingPins ?? []) {
     if (pin.lat !== 0 || pin.lng !== 0) {
@@ -525,7 +538,10 @@ export async function savePlaces(
     .eq('trip_id', tripId)
     .eq('user_id', userId)
     .in('visit_status', ['planned', 'wishlist']);
-  if (delErr) throw new Error(delErr.message);
+  if (delErr) {
+    console.error('[savePlaces] 핀 삭제 실패:', delErr);
+    throw new Error(`핀 삭제 실패: ${delErr.message}`);
+  }
 
   // 새 핀 삽입 (Place의 좌표를 그대로 사용, 없으면 0)
   if (places.length > 0) {
@@ -549,8 +565,12 @@ export async function savePlaces(
         category: existing?.category ?? 'other' as const,
       };
     });
+    console.log('[savePlaces] 삽입할 핀:', pins.length, '개, trip_id:', tripId);
     const { error: insErr } = await supabase.from('pins').insert(pins);
-    if (insErr) throw new Error(insErr.message);
+    if (insErr) {
+      console.error('[savePlaces] 핀 삽입 실패:', insErr);
+      throw new Error(`핀 삽입 실패: ${insErr.message}`);
+    }
   }
 }
 

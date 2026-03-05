@@ -94,7 +94,9 @@ export default function InlinePlacesEditor({ trip, tripId, isDemo, onDone, refet
     try {
       setSaving(true);
       let plOk = true;
-      if (isDemo) {
+      // demo-* ID로 시작하는 로컬 전용 여행이면 isDemo 아니어도 로컬 저장
+      const useLocal = isDemo || tripId.startsWith('demo-');
+      if (useLocal) {
         updateDemoTrip(tripId, { places: valid });
         replaceLocalPinsForTrip(tripId, buildLocalPins());
       } else {
@@ -102,7 +104,8 @@ export default function InlinePlacesEditor({ trip, tripId, isDemo, onDone, refet
           await savePlaces(tripId, valid);
         } catch (err) {
           plOk = false;
-          console.error('[savePlaces] Supabase 실패, 로컬 저장 fallback:', err);
+          const errMsg = err instanceof Error ? err.message : String(err);
+          console.error('[savePlaces] Supabase 실패, 로컬 저장 fallback:', errMsg);
           updateDemoTrip(tripId, { places: valid });
           replaceLocalPinsForTrip(tripId, buildLocalPins());
         }
