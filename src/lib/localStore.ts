@@ -176,9 +176,9 @@ export function updateLocalPinsByTripId(tripId: string, updates: Partial<Pin>) {
 
 /** 특정 여행의 planned/wishlist 로컬 핀 교체 (savePlaces 로컬 버전) */
 export function replaceLocalPinsForTrip(tripId: string, newPins: Pin[]) {
-  // 기존 planned/wishlist 핀 제거 (visited 핀은 유지)
+  // 기존 일정 핀(day_number != null) 제거, 메인 핀(day_number=null) + visited 핀은 유지
   localPins = localPins.filter(
-    (p) => p.trip_id !== tripId || p.visit_status === 'visited',
+    (p) => p.trip_id !== tripId || p.visit_status === 'visited' || p.day_number == null,
   );
   // 새 핀 추가
   localPins = [...newPins, ...localPins];
