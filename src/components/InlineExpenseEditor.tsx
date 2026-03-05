@@ -16,9 +16,10 @@ interface Props {
   onDone: () => void;
   refetch: () => void;
   destination?: string;
+  country?: string;
 }
 
-export default function InlineExpenseEditor({ tripId, isDemo, isCompleted, initialExpenses, otherExpenses = [], onDone, refetch, destination }: Props) {
+export default function InlineExpenseEditor({ tripId, isDemo, isCompleted, initialExpenses, otherExpenses = [], onDone, refetch, destination, country }: Props) {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [draftExpenses, setDraftExpenses] = useState<Expense[]>(
@@ -26,8 +27,8 @@ export default function InlineExpenseEditor({ tripId, isDemo, isCompleted, initi
   );
 
   // 목적지 기반 현지 통화 감지
-  const localCurrency = destination ? detectCurrency(destination) : null;
-  const { rate: exchangeRate } = useExchangeRate(destination);
+  const localCurrency = destination ? detectCurrency(destination, country) : null;
+  const { rate: exchangeRate } = useExchangeRate(destination, country);
   const localSymbol = localCurrency ? getCurrencySymbol(localCurrency) : '';
 
   const addDraftExpense = () => setDraftExpenses([...draftExpenses, { category: 'other', amount: 0, currency: 'KRW', label: '' }]);

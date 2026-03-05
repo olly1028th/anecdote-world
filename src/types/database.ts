@@ -29,6 +29,8 @@ export interface Trip {
   memo: string;
   photo_captions?: Record<string, string>;
   traveler_count?: number;
+  /** 여행지 국가명 (환율 조회용) */
+  country?: string;
   created_at: string;
   updated_at: string;
 }

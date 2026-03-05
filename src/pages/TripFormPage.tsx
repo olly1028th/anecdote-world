@@ -62,7 +62,7 @@ export default function TripFormPage() {
       setTitle(existing.title);
       setStatus(existing.status);
       if (existing.destination) {
-        setDestination({ ...EMPTY_DESTINATION, name: existing.destination });
+        setDestination({ ...EMPTY_DESTINATION, name: existing.destination, country: existing.country || '' });
       }
       setStartDate(existing.startDate);
       setEndDate(existing.endDate);
@@ -138,6 +138,7 @@ export default function TripFormPage() {
             title: title.trim(),
             status,
             destination: finalDest.name,
+            country: finalDest.country || undefined,
             startDate: startDate || '',
             endDate: endDate || '',
             coverImage: coverImage.trim(),
@@ -161,6 +162,7 @@ export default function TripFormPage() {
             id: tripId,
             title: title.trim(),
             destination: finalDest.name,
+            country: finalDest.country || undefined,
             status,
             startDate: startDate || '',
             endDate: endDate || '',
@@ -213,6 +215,7 @@ export default function TripFormPage() {
         end_date: endDate || undefined,
         cover_image: coverImage.trim() || undefined,
         memo: memo.trim() || undefined,
+        country: finalDest.country || undefined,
       };
 
       const validExpenses = expenses.filter((e) => e.amount > 0);
@@ -236,6 +239,7 @@ export default function TripFormPage() {
             title: title.trim(),
             status,
             destination: finalDest.name,
+            country: finalDest.country || undefined,
             startDate: startDate || '',
             endDate: endDate || '',
             coverImage: coverImage.trim(),
@@ -249,6 +253,7 @@ export default function TripFormPage() {
             id: tripIdLocal,
             title: title.trim(),
             destination: finalDest.name,
+            country: finalDest.country || undefined,
             status,
             startDate: startDate || '',
             endDate: endDate || '',

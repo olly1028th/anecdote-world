@@ -39,6 +39,8 @@ export interface Trip {
   id: string;
   title: string;
   destination: string;
+  /** 여행지 국가명 (환율 조회용, DestinationPicker에서 설정) */
+  country?: string;
   status: TripStatus;
   startDate: string;
   endDate: string;

@@ -75,6 +75,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
           id: tripId,
           title: title.trim(),
           destination: finalDest.name,
+          country: finalDest.country || undefined,
           status,
           startDate: startDate || '',
           endDate: endDate || '',
@@ -123,6 +124,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
             start_date: startDate || undefined,
             end_date: endDate || undefined,
             memo: memo.trim() || undefined,
+            country: finalDest.country || undefined,
           });
           supabaseSaved = true;
           if (finalDest.lat != null && finalDest.lng != null) {

@@ -105,6 +105,7 @@ function mapDbTripToUi(
     id: db.id,
     title: db.title,
     destination,
+    country: db.country || undefined,
     status: db.status,
     startDate: db.start_date ?? '',
     endDate: db.end_date ?? '',
@@ -313,6 +314,7 @@ export interface TripInput {
   cover_image?: string;
   memo?: string;
   traveler_count?: number;
+  country?: string;
   user_id?: string;
 }
 
