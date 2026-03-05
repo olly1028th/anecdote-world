@@ -120,12 +120,20 @@ export function getCurrencyName(code: string): string {
 export function detectCurrency(destination: string, country?: string): string | null {
   // 1) country 필드가 있으면 우선 매칭 (Nominatim 역지오코딩으로 가져온 정확한 국가명)
   if (country) {
-    const lowerCountry = country.toLowerCase();
+    const trimmedCountry = country.trim();
     for (const [name, currency] of Object.entries(COUNTRY_TO_CURRENCY)) {
-      if (lowerCountry === name.toLowerCase() || lowerCountry.includes(name.toLowerCase())) {
-        return currency === 'KRW' ? null : currency;
+      // 정확 일치 (대소문자 무시) 또는 포함 매칭
+      if (
+        trimmedCountry.toLowerCase() === name.toLowerCase() ||
+        trimmedCountry.includes(name) ||
+        name.toLowerCase().includes(trimmedCountry.toLowerCase())
+      ) {
+        if (currency === 'KRW') return null;
+        console.debug('[환율] country 매칭:', trimmedCountry, '→', name, '→', currency);
+        return currency;
       }
     }
+    console.warn('[환율] country 매칭 실패:', trimmedCountry);
   }
 
   // 2) fallback: destination 문자열에서 매칭
@@ -133,9 +141,12 @@ export function detectCurrency(destination: string, country?: string): string | 
   const lower = destination.toLowerCase();
   for (const [name, currency] of Object.entries(COUNTRY_TO_CURRENCY)) {
     if (lower.includes(name.toLowerCase())) {
-      return currency === 'KRW' ? null : currency;
+      if (currency === 'KRW') return null;
+      console.debug('[환율] destination 매칭:', destination, '→', name, '→', currency);
+      return currency;
     }
   }
+  console.warn('[환율] 통화 감지 실패 — destination:', destination, ', country:', country);
   return null;
 }
 
@@ -173,9 +184,9 @@ function fetchFromFrankfurterApp(currency: string): Promise<ExchangeRateInfo> {
     });
 }
 
-/** Provider 3: open.er-api.com (무료, 키 불필요) */
+/** Provider 3: open.er-api.com (무료, 키 불필요, VND/TWD 등 Frankfurter 미지원 통화도 가능) */
 function fetchFromOpenErApi(currency: string): Promise<ExchangeRateInfo> {
-  return fetchWithTimeout(`https://open.er-api.com/v6/latest/KRW`, undefined, 6000)
+  return fetchWithTimeout(`https://open.er-api.com/v6/latest/KRW`, undefined, 10000)
     .then((res) => { if (!res.ok) throw new Error(`open.er-api ${res.status}`); return res.json(); })
     .then((data) => {
       const rate = data.rates?.[currency];
@@ -235,23 +246,42 @@ export function useExchangeRate(destination: string | undefined, country?: strin
   return { rate: result.rate, loading };
 }
 
+/** 에러 유형: 'no_currency' = 통화 감지 실패, 'api_fail' = API 호출 실패 */
+export type ExchangeRateError = false | 'no_currency' | 'api_fail';
+
 /** 실시간 환율 조회 훅 (수동 — 버튼 클릭 시 조회) */
 export function useLazyExchangeRate(destination: string | undefined, country?: string) {
   const [rate, setRate] = useState<ExchangeRateInfo | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<ExchangeRateError>(false);
 
   const fetch = useCallback(() => {
-    if (!destination) { setError(true); return; }
+    if (!destination) {
+      console.warn('[환율] destination이 없음 — 조회 불가');
+      setError('no_currency');
+      return;
+    }
     const currency = detectCurrency(destination, country);
-    if (!currency) { setError(true); return; }
+    if (!currency) {
+      console.warn('[환율] 통화 감지 실패 — destination:', JSON.stringify(destination), ', country:', JSON.stringify(country));
+      setError('no_currency');
+      return;
+    }
 
+    console.log('[환율] 조회 시작:', currency, '(destination:', destination, ', country:', country, ')');
     setLoading(true);
     setError(false);
 
     fetchRate(currency)
-      .then((info) => setRate(info))
-      .catch(() => { setRate(null); setError(true); })
+      .then((info) => {
+        console.log('[환율] 조회 성공:', info);
+        setRate(info);
+      })
+      .catch((err) => {
+        console.error('[환율] API 조회 실패:', err);
+        setRate(null);
+        setError('api_fail');
+      })
       .finally(() => setLoading(false));
   }, [destination, country]);
 
