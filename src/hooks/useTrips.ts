@@ -105,7 +105,8 @@ function mapDbTripToUi(
     id: db.id,
     title: db.title,
     destination,
-    country: db.country || undefined,
+    // DB에 country 저장된 값 우선, 없으면 핀의 country에서 추출 (기존 여행 호환)
+    country: db.country || pins.find((p) => p.country)?.country || undefined,
     status: db.status,
     startDate: db.start_date ?? '',
     endDate: db.end_date ?? '',
