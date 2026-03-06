@@ -65,6 +65,7 @@ export default function SearchFilter({ onSearch, onFilterChange, activeFilter, t
           <button
             type="button"
             onClick={() => handleChange('')}
+            aria-label="검색어 지우기"
             className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 cursor-pointer bg-transparent border-0 p-0"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

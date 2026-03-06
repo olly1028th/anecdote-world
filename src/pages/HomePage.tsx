@@ -163,6 +163,7 @@ export default function HomePage() {
         <button
           type="button"
           onClick={() => setShareModalOpen(true)}
+          aria-label="여행 공유"
           className="shrink-0 w-11 h-11 rounded-xl bg-[#0d9488] hover:bg-[#0d9488]/90 text-white border-[3px] border-slate-900 retro-shadow flex items-center justify-center cursor-pointer transition-all active:translate-y-0.5 active:translate-x-0.5 relative"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -714,6 +715,7 @@ export default function HomePage() {
                 <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 uppercase tracking-tight">Share My Journey</h3>
                 <button
                   onClick={() => setShareModalOpen(false)}
+                  aria-label="닫기"
                   className="text-slate-400 hover:text-slate-600 cursor-pointer bg-transparent border-0 p-1"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

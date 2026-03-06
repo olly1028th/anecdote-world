@@ -142,6 +142,7 @@ export default function InlineExpenseEditor({ tripId, isDemo, isCompleted, initi
                 <button
                   type="button"
                   onClick={() => removeDraftExpense(i)}
+                  aria-label="경비 항목 삭제"
                   className="shrink-0 w-8 h-8 flex items-center justify-center text-slate-300 hover:text-[#f43f5e] transition-colors cursor-pointer mt-0.5 bg-transparent border-0"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

@@ -136,10 +136,10 @@ function mapDbTripToUi(
   };
 }
 
-export function useTrips() {
+export function useTrips(skip?: boolean) {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [sharedTrips, setSharedTrips] = useState<Trip[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!skip);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
 
@@ -278,21 +278,24 @@ export function useTrips() {
   }, []);
 
   useEffect(() => {
+    if (skip) return;
     mountedRef.current = true;
     fetchTrips();
     return () => { mountedRef.current = false; };
-  }, [fetchTrips]);
+  }, [fetchTrips, skip]);
 
   // 모달 등에서 여행 추가 시 자동 refetch
   useEffect(() => {
+    if (skip) return;
     const handler = () => fetchTrips();
     window.addEventListener('trip-added', handler);
     return () => window.removeEventListener('trip-added', handler);
-  }, [fetchTrips]);
+  }, [fetchTrips, skip]);
 
   // 탭/앱 활성화 시 최신 데이터 refetch (크로스 디바이스 동기화)
   const lastFetchRef = useRef(0);
   useEffect(() => {
+    if (skip) return;
     const handler = () => {
       if (document.visibilityState === 'visible' && Date.now() - lastFetchRef.current > 30_000) {
         lastFetchRef.current = Date.now();
@@ -301,7 +304,7 @@ export function useTrips() {
     };
     document.addEventListener('visibilitychange', handler);
     return () => document.removeEventListener('visibilitychange', handler);
-  }, [fetchTrips]);
+  }, [fetchTrips, skip]);
 
   return { trips, sharedTrips, loading, error, refetch: fetchTrips };
 }
@@ -570,7 +573,6 @@ export async function savePlaces(
         category: existing?.category ?? 'other' as const,
       };
     });
-    console.log('[savePlaces] 삽입할 핀:', pins.length, '개, trip_id:', tripId);
     const { error: insErr } = await supabase.from('pins').insert(pins);
     if (insErr) {
       console.error('[savePlaces] 핀 삽입 실패:', insErr);
@@ -657,24 +659,29 @@ export function useTrip(id: string | undefined) {
 
       // 2차: 내 여행이 아니면 공유받은 소유자의 여행인지 확인
       if (!dbTrip) {
-        // 해당 여행의 소유자가 나에게 공유를 수락한 소유자인지 확인
-        const { data: tripData } = await supabase
-          .from('trips')
-          .select('id, user_id')
-          .eq('id', id)
-          .maybeSingle();
+        // trip_shares를 통해 접근 권한이 있는 소유자의 여행인지 확인
+        // (trip 테이블을 user_id 필터 없이 직접 조회하지 않아 소유자 정보 비노출)
+        const { data: acceptedShares } = await supabase
+          .from('trip_shares')
+          .select('owner_id')
+          .eq('status', 'accepted')
+          .or(`invited_user_id.eq.${userId},invited_email.eq.${userEmail ?? ''}`);
 
+        const sharedOwnerIds = (acceptedShares ?? []).map((s) => s.owner_id);
         let hasAccess = false;
-        if (tripData) {
-          const { data: share } = await supabase
-            .from('trip_shares')
-            .select('id')
-            .eq('owner_id', tripData.user_id)
-            .eq('status', 'accepted')
-            .or(`invited_user_id.eq.${userId},invited_email.eq.${userEmail ?? ''}`)
-            .limit(1)
+
+        if (sharedOwnerIds.length > 0) {
+          // 공유받은 소유자의 여행 중 해당 id가 있는지 확인
+          const { data: sharedTrip } = await supabase
+            .from('trips')
+            .select('*')
+            .eq('id', id)
+            .in('user_id', sharedOwnerIds)
             .maybeSingle();
-          hasAccess = !!share;
+          if (sharedTrip) {
+            hasAccess = true;
+            dbTrip = sharedTrip;
+          }
         }
 
         if (!hasAccess) {
@@ -694,14 +701,6 @@ export function useTrip(id: string | undefined) {
           setError('접근 권한이 없습니다');
           return;
         }
-        // 공유 확인 후 여행 데이터 조회
-        const { data: sharedTrip, error: sharedErr } = await supabase
-          .from('trips')
-          .select('*')
-          .eq('id', id)
-          .single();
-        if (sharedErr) throw sharedErr;
-        dbTrip = sharedTrip;
       }
 
       if (!dbTrip) {

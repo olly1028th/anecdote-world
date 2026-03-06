@@ -28,7 +28,12 @@ export default function Checklist({ items, onToggle, action }: Props) {
             className="flex items-center gap-3 p-3 rounded-xl bg-[#F9F4E8] dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 hover:border-[#f48c25] cursor-pointer transition-colors"
           >
             <div
+              role="checkbox"
+              aria-checked={item.checked}
+              aria-label={item.text}
+              tabIndex={onToggle ? 0 : undefined}
               onClick={onToggle ? (e) => { e.preventDefault(); onToggle(i); } : undefined}
+              onKeyDown={onToggle ? (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); onToggle(i); } } : undefined}
               className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center shrink-0 transition-colors ${
                 item.checked
                   ? 'bg-[#0d9488] border-slate-900'

@@ -6,10 +6,10 @@ import type { Pin } from '../types/database';
 // 기존 API 호환을 위한 re-export (localStore.ts 에서 관리)
 export { addLocalPin as addDemoPin } from '../lib/localStore';
 
-export function usePins() {
+export function usePins(skip?: boolean) {
   const [pins, setPins] = useState<Pin[]>([]);
   const [sharedPins, setSharedPins] = useState<Pin[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!skip);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
 
@@ -96,21 +96,24 @@ export function usePins() {
   }, []);
 
   useEffect(() => {
+    if (skip) return;
     mountedRef.current = true;
     fetchPins();
     return () => { mountedRef.current = false; };
-  }, [fetchPins]);
+  }, [fetchPins, skip]);
 
   // 핀 추가 시 자동 refetch
   useEffect(() => {
+    if (skip) return;
     const handler = () => fetchPins();
     window.addEventListener('pin-added', handler);
     return () => window.removeEventListener('pin-added', handler);
-  }, [fetchPins]);
+  }, [fetchPins, skip]);
 
   // 탭/앱 활성화 시 최신 데이터 refetch (크로스 디바이스 동기화)
   const lastFetchRef = useRef(0);
   useEffect(() => {
+    if (skip) return;
     const handler = () => {
       if (document.visibilityState === 'visible' && Date.now() - lastFetchRef.current > 30_000) {
         lastFetchRef.current = Date.now();
@@ -119,7 +122,7 @@ export function usePins() {
     };
     document.addEventListener('visibilitychange', handler);
     return () => document.removeEventListener('visibilitychange', handler);
-  }, [fetchPins]);
+  }, [fetchPins, skip]);
 
   return { pins, sharedPins, loading, error, refetch: fetchPins };
 }
