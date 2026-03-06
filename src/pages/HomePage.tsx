@@ -4,7 +4,7 @@ import type { VisitStatus } from '../types/database';
 import { useTrips } from '../hooks/useTrips';
 import { usePins } from '../hooks/usePins';
 import { useFavoritePhotos } from '../hooks/useFavoritePhotos';
-import { usePendingInvitations, acceptSharesFromOwner, declineSharesFromOwner, shareAllTrips, revokeAllShares, useSharedUsers } from '../hooks/useShares';
+import { usePendingInvitations, acceptSharesFromOwner, declineSharesFromOwner, shareAllTrips, revokeAllShares, useSharedUsers, useReceivedShares } from '../hooks/useShares';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { formatDate } from '../utils/format';
@@ -36,6 +36,7 @@ export default function HomePage() {
   const { toast } = useToast();
   const { invitations } = usePendingInvitations(user?.email ?? undefined);
   const { users: sharedUsers } = useSharedUsers(user?.id);
+  const { shares: receivedShares } = useReceivedShares(user?.email ?? undefined);
 
   // Share modal state
   const [shareModalOpen, setShareModalOpen] = useState(false);
@@ -616,6 +617,86 @@ export default function HomePage() {
           </div>
         )}
       </section>
+
+      {/* 공유받은 여행 */}
+      {receivedShares.length > 0 && (() => {
+        const grouped = new Map<string, { owner_id: string; owner_nickname: string; shares: typeof receivedShares }>();
+        for (const s of receivedShares) {
+          const g = grouped.get(s.owner_id) ?? { owner_id: s.owner_id, owner_nickname: s.owner_nickname, shares: [] };
+          g.shares.push(s);
+          grouped.set(s.owner_id, g);
+        }
+        return (
+          <section>
+            <p className="text-sm font-bold text-[#0d9488] uppercase tracking-widest mb-1">Shared Journeys</p>
+            <h3 className="text-2xl font-bold text-[#1c140d] dark:text-slate-100 mb-4">
+              공유받은 여행
+              <span className="ml-2 text-sm font-bold text-[#0d9488] bg-[#0d9488]/10 px-2 py-0.5 rounded-full border border-[#0d9488]/30">
+                {receivedShares.length}
+              </span>
+            </h3>
+            <div className="space-y-4">
+              {[...grouped.values()].map((group) => (
+                <div key={group.owner_id} className="bg-white dark:bg-slate-800 rounded-xl border-[3px] border-slate-900 retro-shadow p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-full bg-[#0d9488] flex items-center justify-center border-2 border-slate-900">
+                        <span className="text-white text-sm font-bold">{group.owner_nickname[0].toUpperCase()}</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{group.owner_nickname}</p>
+                        <p className="text-[10px] text-slate-400 font-medium">{group.shares.length}개 여행 공유</p>
+                      </div>
+                    </div>
+                    <Link
+                      to={`/shared/${group.owner_id}`}
+                      className="text-[10px] font-bold uppercase tracking-widest text-[#0d9488] hover:text-[#0d9488]/80 border-2 border-[#0d9488] px-2.5 py-1 rounded-full hover:bg-[#0d9488]/10 transition-colors no-underline"
+                    >
+                      모두 보기
+                    </Link>
+                  </div>
+                  <div className="space-y-2">
+                    {group.shares.slice(0, 3).map((share) => {
+                      const thumbSrc = share.trip_cover || getCountryFlagUrl(share.trip_destination, 160);
+                      const statusBg: Record<string, string> = {
+                        completed: 'bg-[#0d9488] text-white',
+                        planned: 'bg-[#eab308] text-slate-900',
+                        wishlist: 'bg-[#6366f1] text-white',
+                      };
+                      const statusLabel: Record<string, string> = { completed: 'Visited', planned: 'Planned', wishlist: 'Wish' };
+                      return (
+                        <Link
+                          key={share.id}
+                          to={`/trip/${share.trip_id}`}
+                          className="flex items-center gap-3 bg-[#F9F4E8] dark:bg-slate-700 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-600 hover:border-[#0d9488] transition-colors no-underline"
+                        >
+                          <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border-[3px] border-slate-900 bg-[#0d9488]/10 flex items-center justify-center">
+                            {thumbSrc ? (
+                              <img src={thumbSrc} alt={share.trip_title} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-lg">🌍</span>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{share.trip_title}</p>
+                            <p className="text-[10px] text-slate-400 mt-0.5 uppercase tracking-wider font-bold">
+                              {share.trip_destination && <span>{share.trip_destination} · </span>}
+                              {share.trip_start_date && formatDate(share.trip_start_date)}
+                            </p>
+                          </div>
+                          <span className={`text-[9px] font-bold px-2 py-1 rounded-full border-2 border-slate-900 uppercase shrink-0 ${statusBg[share.trip_status] || ''}`}>
+                            {statusLabel[share.trip_status] || share.trip_status}
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        );
+      })()}
 
       {/* 전체 공유 모달 */}
       {shareModalOpen && (
