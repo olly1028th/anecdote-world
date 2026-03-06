@@ -333,31 +333,51 @@ usePins() → allPins[]
 - `acceptShare`/`declineShare`: `invited_email` === 현재 사용자 이메일 검증 필수
 - 공유 여행 조회: `.or(`invited_user_id.eq.${userId},invited_email.eq.${userEmail}`)` 패턴
 
+### 공유받은 여행 접근 경로
+
+| 위치 | 훅 | 표시 내용 |
+|------|-----|----------|
+| `HomePage` "Shared Journeys" | `useReceivedShares` | 수락된 공유 여행, 소유자별 그룹 (최대 3개 미리보기) |
+| `ProfilePage` "공유받은 여행" | `useReceivedShares` | 수락된 공유 여행, 소유자별 그룹 + 권한/해제 관리 |
+| `SharedViewPage` `/shared/:ownerId` | `useReceivedShares` | 특정 소유자의 공유 여행 전체 목록 |
+| `HomePage` 초대 알림 | `usePendingInvitations` | 미수락 초대 (수락/거절 버튼) |
+
+- `useReceivedShares(userEmail)`: `status === 'accepted'` 공유만 조회, `share-updated` 이벤트로 refetch
+- `usePendingInvitations(userEmail)`: `status === 'pending'` 초대만 조회, 소유자별 그룹핑
+
 ## 환율 시스템 (`useExchangeRate`)
 
 ### API
 
-- **Frankfurter API** (`https://api.frankfurter.dev/v1/latest?base=KRW&symbols={currency}`)
+- **Frankfurter API** (`https://api.frankfurter.dev/v1/latest?base=KRW&symbols={currency}`) — ECB 지원 통화
+- **open.er-api.com** (`https://open.er-api.com/v6/latest/KRW`) — VND, TWD, EGP 등 비ECB 통화 fallback
 - ECB(유럽중앙은행) 데이터 기반 무료 오픈소스 API, 인증 불필요
-- `fetchWithTimeout` 래퍼로 타임아웃 처리
+- `fetchWithTimeout` 래퍼로 타임아웃 처리 (Frankfurter 8초, open.er-api 10초)
 - 응답: `{ rates: { JPY: 0.09 }, date: "2026-03-04" }`
+- **CSP 필수**: `vercel.json` `connect-src`에 모든 API 도메인 등록 필요
 
 ### 통화 감지 흐름
 
 ```
-trip.destination ("일본 도쿄")
+trip.country ("일본")  ← DestinationPicker에서 Nominatim 역지오코딩으로 설정
        │
        ▼
-  detectCurrency(destination)  ← COUNTRY_TO_CURRENCY 매핑 (30+ 국가)
-       │
+  detectCurrency(destination, country?)  ← country 우선 매칭 → destination fallback
+       │                                    COUNTRY_TO_CURRENCY 매핑 (30+ 국가)
        ▼
   currency code ("JPY")
        │
        ▼
-  useExchangeRate(destination)
-       ├─ Frankfurter API 호출 (KRW→JPY)
+  useLazyExchangeRate(destination, country?)  ← 버튼 클릭 시 수동 조회
+       ├─ Frankfurter API 호출 (KRW→JPY) — ECB 지원 통화
+       ├─ open.er-api.com fallback — VND, TWD, EGP 등 비ECB 통화
        └─ ExchangeRateInfo { rate, symbol, currencyName, updatedAt }
 ```
+
+- **CSP 필수**: `vercel.json` `connect-src`에 `https://api.frankfurter.dev https://api.frankfurter.app https://open.er-api.com` 등록 필요
+- **에러 분류**: `ExchangeRateError = false | 'no_currency' | 'api_fail'` — UI에서 통화 감지 실패와 API 오류를 구분 표시
+- **country 필드**: Trip 타입에 `country?: string` 추가, DB에 컬럼 미존재 시 `stripNonDbFields()`로 제거 후 저장
+- **환율 표시 단위**: 1,000원 기준 (예: ₩1,000 = ¥X.XX)
 
 ### 환율 사용처
 
@@ -486,3 +506,35 @@ planned 여행을 **바로 completed로** 전환. 순환 없이 직접 설정.
 - **원인 3**: 다른 기기에서 동일 계정 사용 시 데이터 불일치 (Realtime 미사용)
 - **수정 3**: `useTrips`/`usePins`에 `visibilitychange` 이벤트 리스너 추가 → 탭 활성화 시 30초 쓰로틀로 자동 refetch
 - **수정 파일**: `useStats.ts`, `localStore.ts`, `usePins.ts`, `useTrips.ts`
+
+### Trip country 필드 추가 + 환율 조회 안정화
+
+- **변경**: Trip 타입에 `country?: string` 필드 추가 (DestinationPicker에서 Nominatim 역지오코딩으로 설정)
+- **통화 감지**: `detectCurrency(destination, country?)` — country 우선 매칭 + 양방향 includes
+- **에러 분류**: `ExchangeRateError` 타입으로 통화 감지 실패 vs API 오류 구분
+- **CSP 수정**: `vercel.json` `connect-src`에 환율 API 도메인 3개 추가 (Frankfurter .dev/.app, open.er-api.com)
+- **DB 호환**: `stripNonDbFields()`로 country 등 DB 미존재 컬럼 제거 후 Supabase 저장
+- **환율 단위**: 10,000원 → 1,000원 기준으로 변경
+- **수정 파일**: `useExchangeRate.ts`, `useTrips.ts`, `TripDetailPage.tsx`, `TripFormPage.tsx`, `TripFormModal.tsx`, `InlineExpenseEditor.tsx`, `InlineDailySpendingEditor.tsx`, `vercel.json`, `types/trip.ts`, `types/database.ts`
+
+### 메인 핀과 일정 핀 분리
+
+- **문제**: Edit Mission으로 장소 등록 시 Daily Schedule "미배정" 섹션에 여행지 정보가 계속 누적
+- **원인**: 메인 핀(`day_number=null`, 세계지도/환율용)이 places 배열에 포함되어 savePlaces에서 삭제/재생성됨
+- **수정**: `mapDbTripToUi`에서 `day_number != null` 핀만 places로 변환, `savePlaces`에서 `.not('day_number', 'is', null)` 조건으로 메인 핀 보존
+- **수정 파일**: `useTrips.ts`, `localStore.ts`
+
+### 로컬 전용 여행 저장 실패 수정
+
+- **문제**: `demo-*` ID 여행의 장소 편집 시 "서버에 저장실패" 발생
+- **원인**: `isDemo` 플래그와 별개로 `demo-*` ID가 Supabase에 INSERT 시도 → FK 위반
+- **수정**: `InlinePlacesEditor`에서 `tripId.startsWith('demo-')` 체크 추가
+- **수정 파일**: `InlinePlacesEditor.tsx`
+
+### 홈페이지에 공유받은 여행 섹션 추가
+
+- **문제**: 공유 초대 수락 후 공유받은 여행을 찾을 수 있는 링크가 홈페이지에 없음 (프로필 페이지에만 존재)
+- **수정**: `HomePage.tsx`에 "Shared Journeys" 섹션 추가 — `useReceivedShares` 훅으로 수락된 공유 여행을 소유자별 그룹핑하여 표시
+- **기능**: 소유자 아바타/닉네임, 여행 카드 (최대 3개), "모두 보기" → `/shared/:ownerId` 링크
+- **조건**: `receivedShares.length > 0`일 때만 섹션 표시
+- **수정 파일**: `HomePage.tsx`

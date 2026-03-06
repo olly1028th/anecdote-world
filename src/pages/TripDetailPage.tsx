@@ -449,9 +449,9 @@ export default function TripDetailPage() {
             </div>
             <div className="text-right">
               <p className="text-sm font-bold text-[#0d9488]">
-                {exchangeRate.symbol}{(exchangeRate.rate * 10000).toFixed(2)}
+                {exchangeRate.symbol}{(exchangeRate.rate * 1000).toFixed(2)}
               </p>
-              <p className="text-[10px] text-slate-400 font-medium">= 10,000원 ({exchangeRate.updatedAt})</p>
+              <p className="text-[10px] text-slate-400 font-medium">= 1,000원 ({exchangeRate.updatedAt})</p>
             </div>
           </div>
         ) : rateLoading ? (
