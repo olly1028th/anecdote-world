@@ -2,6 +2,9 @@ import { useMemo } from 'react';
 import { useTrips } from './useTrips';
 import { usePins } from './usePins';
 import { getMapDisplayPins } from '../utils/mapPins';
+import { totalExpensesInKRW } from '../utils/format';
+import type { Trip } from '../types/trip';
+import type { Pin } from '../types/database';
 
 // ---- Return types ----
 
@@ -44,15 +47,22 @@ export interface Stats {
   loading: boolean;
 }
 
+interface UseStatsOptions {
+  trips?: Trip[];
+  pins?: Pin[];
+  tripsLoading?: boolean;
+  pinsLoading?: boolean;
+}
+
 /**
  * Dashboard 통계를 기존 trip / pin 데이터로부터 순수 계산하는 훅.
- * 외부 의존성 없이 useTrips(), usePins() 결과만 사용한다.
+ * trips/pins를 파라미터로 받으면 내부 useTrips()/usePins() 호출을 건너뛴다.
  */
-export function useStats(): Stats {
-  const { trips, loading: tripsLoading } = useTrips();
-  const { pins, loading: pinsLoading } = usePins();
-
-  const loading = tripsLoading || pinsLoading;
+export function useStats(options?: UseStatsOptions): Stats {
+  const internal = useStatsInternal(options);
+  const trips = options?.trips ?? internal.trips;
+  const pins = options?.pins ?? internal.pins;
+  const loading = (options?.tripsLoading ?? internal.tripsLoading) || (options?.pinsLoading ?? internal.pinsLoading);
 
   const stats = useMemo<Omit<Stats, 'loading'>>(() => {
     // ---- Trip 기반 통계 ----
@@ -62,24 +72,23 @@ export function useStats(): Stats {
     const completedCount = completedTrips.length;
     const plannedCount = plannedTrips.length;
 
-    // 총 지출 (completed trips only)
-    const totalSpent = completedTrips.reduce(
-      (sum, trip) => sum + trip.expenses.reduce((s, e) => s + e.amount, 0),
-      0,
-    );
+    // 총 지출 (completed trips only, 다중 통화 KRW 환산)
+    const allExpenses = completedTrips.flatMap((trip) => trip.expenses);
+    const totalSpent = totalExpensesInKRW(allExpenses);
 
     // 평균 지출 (completed trips)
     const avgExpensePerTrip = completedCount > 0 ? totalSpent / completedCount : 0;
 
-    // 카테고리별 지출 (completed trips only)
+    // 카테고리별 지출 (completed trips only, KRW 환산)
     const categoryMap = new Map<string, { amount: number; label: string }>();
     for (const trip of completedTrips) {
       for (const exp of trip.expenses) {
+        const krwAmount = totalExpensesInKRW([exp]);
         const existing = categoryMap.get(exp.category);
         if (existing) {
-          existing.amount += exp.amount;
+          existing.amount += krwAmount;
         } else {
-          categoryMap.set(exp.category, { amount: exp.amount, label: exp.label });
+          categoryMap.set(exp.category, { amount: krwAmount, label: exp.label });
         }
       }
     }
@@ -151,4 +160,18 @@ export function useStats(): Stats {
   }, [trips, pins]);
 
   return { ...stats, loading };
+}
+
+/** 내부 훅: options가 없을 때만 useTrips/usePins 호출 */
+function useStatsInternal(options?: UseStatsOptions) {
+  const skipTrips = !!options?.trips;
+  const skipPins = !!options?.pins;
+  const tripsResult = useTrips(skipTrips);
+  const pinsResult = usePins(skipPins);
+  return {
+    trips: tripsResult.trips,
+    pins: pinsResult.pins,
+    tripsLoading: tripsResult.loading,
+    pinsLoading: pinsResult.loading,
+  };
 }

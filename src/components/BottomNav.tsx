@@ -32,6 +32,7 @@ export default function BottomNav({ onAddClick }: Props) {
         <button
           type="button"
           onClick={onAddClick}
+          aria-label="새 여행 추가"
           className="w-14 h-14 sm:w-16 sm:h-16 bg-[#f48c25] rounded-full flex items-center justify-center border-[3px] border-slate-900 shadow-[0_6px_0_0_#925417] active:shadow-none active:translate-y-1 transition-all cursor-pointer -translate-y-4"
         >
           <svg className="w-7 h-7 sm:w-8 sm:h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>

@@ -164,6 +164,7 @@ function AlbumView({
           <button
             type="button"
             onClick={onClose}
+            aria-label="앨범 닫기"
             className="text-white/80 hover:text-white cursor-pointer bg-transparent border-0 p-1 min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

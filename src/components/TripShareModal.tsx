@@ -100,6 +100,7 @@ export default function TripShareModal({ open, onClose, tripId, tripTitle, isDem
               <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Share Mission</h3>
               <button
                 onClick={onClose}
+                aria-label="닫기"
                 className="text-slate-400 hover:text-slate-600 cursor-pointer bg-transparent border-0 p-1"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -184,6 +185,7 @@ export default function TripShareModal({ open, onClose, tripId, tripTitle, isDem
                         <button
                           type="button"
                           onClick={() => handleRemoveShare(s.id)}
+                          aria-label="공유 해제"
                           className="text-slate-300 hover:text-[#f43f5e] transition-colors cursor-pointer bg-transparent border-0 p-1"
                         >
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

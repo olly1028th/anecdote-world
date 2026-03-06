@@ -49,6 +49,16 @@ body {
   box-shadow: 4px 4px 0px 0px #1c140d;
 }
 
+/* 키보드 포커스 스타일 (마우스 클릭 시에는 미표시) */
+button:focus-visible,
+a:focus-visible,
+[role="checkbox"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #f48c25;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 /* 스크롤바 숨기기 (필터 pill 등 가로 스크롤) */
 .no-scrollbar {
   -ms-overflow-style: none;

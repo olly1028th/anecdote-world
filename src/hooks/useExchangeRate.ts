@@ -268,13 +268,11 @@ export function useLazyExchangeRate(destination: string | undefined, country?: s
       return;
     }
 
-    console.log('[환율] 조회 시작:', currency, '(destination:', destination, ', country:', country, ')');
     setLoading(true);
     setError(false);
 
     fetchRate(currency)
       .then((info) => {
-        console.log('[환율] 조회 성공:', info);
         setRate(info);
       })
       .catch((err) => {
