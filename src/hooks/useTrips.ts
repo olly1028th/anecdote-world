@@ -322,9 +322,10 @@ export interface TripInput {
 
 /** TripInput에서 DB에 존재하지 않을 수 있는 필드를 분리 */
 function stripNonDbFields(input: Record<string, unknown>): Record<string, unknown> {
-  const { country, ...rest } = input;
+  const cleaned = { ...input };
+  delete cleaned.country;
   // country 컬럼이 DB에 추가되면 이 함수에서 country를 포함시키면 됨
-  return rest;
+  return cleaned;
 }
 
 export async function createTrip(input: TripInput): Promise<string> {
