@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background circle (planet) -->
+  <circle cx="256" cy="256" r="230" fill="#f48c25" stroke="#1c140d" stroke-width="16"/>
+  <!-- Planet ring -->
+  <ellipse cx="256" cy="256" rx="300" ry="60" fill="none" stroke="#1c140d" stroke-width="14" transform="rotate(-20 256 256)"/>
+  <ellipse cx="256" cy="256" rx="300" ry="60" fill="none" stroke="#eab308" stroke-width="8" transform="rotate(-20 256 256)"/>
+  <!-- Planet surface details -->
+  <circle cx="180" cy="200" r="40" fill="#e07a1a" stroke="#1c140d" stroke-width="6"/>
+  <circle cx="310" cy="300" r="55" fill="#e07a1a" stroke="#1c140d" stroke-width="6"/>
+  <circle cx="250" cy="170" r="20" fill="#d96f15" stroke="#1c140d" stroke-width="4"/>
+  <!-- Pin marker on planet -->
+  <g transform="translate(320, 140)">
+    <path d="M0,0 C-20,-40 -40,-60 -40,-80 A40,40 0 1,1 40,-80 C40,-60 20,-40 0,0 Z" fill="#f43f5e" stroke="#1c140d" stroke-width="8"/>
+    <circle cx="0" cy="-80" r="16" fill="#fff" stroke="#1c140d" stroke-width="4"/>
+  </g>
+  <!-- Star sparkles -->
+  <polygon points="80,80 86,96 102,96 89,106 94,122 80,112 66,122 71,106 58,96 74,96" fill="#eab308" stroke="#1c140d" stroke-width="3"/>
+  <polygon points="430,380 434,390 444,390 436,397 439,407 430,400 421,407 424,397 416,390 426,390" fill="#eab308" stroke="#1c140d" stroke-width="2"/>
+</svg>
