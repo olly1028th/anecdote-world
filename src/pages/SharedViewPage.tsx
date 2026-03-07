@@ -164,7 +164,7 @@ function renderGroup(
             >
               <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border-[3px] border-slate-900 bg-slate-100 flex items-center justify-center">
                 {thumbSrc ? (
-                  <img src={thumbSrc} alt={share.trip_title} className="w-full h-full object-cover" />
+                  <img src={thumbSrc} alt={share.trip_title} className="w-full h-full object-cover" loading="lazy" />
                 ) : (
                   <span className="text-lg">🌍</span>
                 )}

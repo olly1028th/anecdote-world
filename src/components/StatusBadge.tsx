@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { TripStatus } from '../types/trip';
 
 interface Props {
@@ -10,7 +11,7 @@ const STATUS_STYLES: Record<string, { bg: string; label: string }> = {
   wishlist: { bg: 'bg-[#6366f1] text-white', label: 'Wish' },
 };
 
-export default function StatusBadge({ status }: Props) {
+export default memo(function StatusBadge({ status }: Props) {
   const style = STATUS_STYLES[status] ?? STATUS_STYLES.planned;
 
   return (
@@ -20,4 +21,4 @@ export default function StatusBadge({ status }: Props) {
       {style.label}
     </span>
   );
-}
+})

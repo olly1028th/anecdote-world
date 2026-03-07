@@ -62,6 +62,7 @@ export default function Header() {
           onClick={toggleDark}
           className="w-10 h-10 rounded-lg flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-[#f48c25] transition-colors cursor-pointer bg-transparent border-0"
           title={isDark ? '라이트 모드' : '다크 모드'}
+          aria-label={isDark ? '라이트 모드로 변경' : '다크 모드로 변경'}
         >
           {isDark ? (
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -81,6 +82,7 @@ export default function Header() {
               onClick={() => setBellOpen((p) => !p)}
               className="w-10 h-10 rounded-lg flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-[#f48c25] transition-colors cursor-pointer bg-transparent border-0 relative"
               title="초대 알림"
+              aria-label={invitations.length > 0 ? `초대 알림 ${invitations.length}개` : '초대 알림'}
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -151,7 +153,7 @@ export default function Header() {
               {avatarUrl ? (
                 <img
                   src={avatarUrl}
-                  alt="profile"
+                  alt="프로필 사진"
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
                 />

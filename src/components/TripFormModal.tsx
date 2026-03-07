@@ -223,6 +223,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
               onClick={onClose}
               disabled={saving}
               className="w-9 h-9 flex items-center justify-center rounded-xl border-2 border-slate-900 dark:border-[#4a3f35] bg-white dark:bg-[#2a1f15] shadow-[2px_2px_0px_0px_#1c140d] dark:shadow-[2px_2px_0px_0px_rgba(74,63,53,0.5)] hover:bg-[#f48c25]/10 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
+              aria-label="모달 닫기"
             >
               <svg className="w-5 h-5 text-[#1c140d] dark:text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

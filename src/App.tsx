@@ -2,11 +2,12 @@ import { lazy, Suspense, useState, useCallback, useEffect } from 'react';
 import { Routes, Route, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import BottomNav from './components/BottomNav';
-import TripFormModal from './components/TripFormModal';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
+import { TripDetailSkeleton, CardListSkeleton } from './components/Skeleton';
 
+const TripFormModal = lazy(() => import('./components/TripFormModal'));
 const TripDetailPage = lazy(() => import('./pages/TripDetailPage'));
 const TripFormPage = lazy(() => import('./pages/TripFormPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
@@ -42,11 +43,15 @@ function ProtectedLayout() {
           <Outlet />
         </main>
         <BottomNav onAddClick={() => setModalOpen(true)} />
-        <TripFormModal
-          open={modalOpen}
-          onClose={() => setModalOpen(false)}
-          onSaved={handleSaved}
-        />
+        {modalOpen && (
+          <Suspense fallback={null}>
+            <TripFormModal
+              open={modalOpen}
+              onClose={() => setModalOpen(false)}
+              onSaved={handleSaved}
+            />
+          </Suspense>
+        )}
       </>
     </ProtectedRoute>
   );
@@ -86,9 +91,9 @@ export default function App() {
           <Route path="/profile" element={<Suspense fallback={<Loading />}><ProfilePage /></Suspense>} />
           <Route path="/trip/new" element={<Suspense fallback={<Loading />}><TripFormPage /></Suspense>} />
           <Route path="/trip/edit/:id" element={<Suspense fallback={<Loading />}><TripFormPage /></Suspense>} />
-          <Route path="/trip/:id" element={<Suspense fallback={<Loading />}><TripDetailPage /></Suspense>} />
-          <Route path="/timeline" element={<Suspense fallback={<Loading />}><TimelinePage /></Suspense>} />
-          <Route path="/shared/:ownerId" element={<Suspense fallback={<Loading />}><SharedViewPage /></Suspense>} />
+          <Route path="/trip/:id" element={<Suspense fallback={<TripDetailSkeleton />}><TripDetailPage /></Suspense>} />
+          <Route path="/timeline" element={<Suspense fallback={<CardListSkeleton count={5} />}><TimelinePage /></Suspense>} />
+          <Route path="/shared/:ownerId" element={<Suspense fallback={<CardListSkeleton count={4} />}><SharedViewPage /></Suspense>} />
           <Route
             path="/pin/new"
             element={<Suspense fallback={<Loading />}><PinFormPage /></Suspense>}

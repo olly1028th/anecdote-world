@@ -2,6 +2,7 @@
  * 빈 상태 컴포넌트 - 데이터가 없을 때 표시
  * 일러스트 + 안내 메시지 + CTA 버튼
  */
+import { memo } from 'react';
 
 interface Props {
   icon: string;
@@ -11,7 +12,7 @@ interface Props {
   onAction?: () => void;
 }
 
-export default function EmptyState({ icon, title, description, actionLabel, onAction }: Props) {
+export default memo(function EmptyState({ icon, title, description, actionLabel, onAction }: Props) {
   return (
     <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
       {/* 일러스트 영역 */}
@@ -38,4 +39,4 @@ export default function EmptyState({ icon, title, description, actionLabel, onAc
       )}
     </div>
   );
-}
+})
