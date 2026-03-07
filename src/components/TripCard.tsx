@@ -43,6 +43,7 @@ export default function TripCard({ trip, colorIndex = 0, onStatusChange }: Props
             src={coverSrc}
             alt={trip.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            loading="lazy"
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-[#f48c25]/30 via-[#eab308]/20 to-[#0d9488]/30 flex items-center justify-center">
