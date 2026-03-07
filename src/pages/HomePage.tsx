@@ -18,6 +18,8 @@ import SearchFilter from '../components/SearchFilter';
 import type { SharePermission } from '../types/database';
 import type { TripStatus } from '../types/trip';
 
+const STATUS_BG: Record<string, string> = { completed: 'bg-[#0d9488] text-white', planned: 'bg-[#eab308] text-slate-900', wishlist: 'bg-[#6366f1] text-white' };
+const STATUS_LABEL: Record<string, string> = { completed: 'Visited', planned: 'Planned', wishlist: 'Wish' };
 
 const WorldMap = lazy(() =>
   import('../components/Map').then((m) => ({ default: m.WorldMap })),
@@ -114,14 +116,20 @@ export default function HomePage() {
   const filteredPins =
     pinFilter === 'all' ? mapPins : mapPins.filter((p) => p.visit_status === pinFilter);
 
-  const completedTrips = trips.filter((t) => t.status === 'completed');
-  const plannedTrips = trips.filter((t) => t.status === 'planned');
-  const wishlistTrips = trips.filter((t) => t.status === 'wishlist');
+  const completedTrips = useMemo(() => trips.filter((t) => t.status === 'completed'), [trips]);
+  const plannedTrips = useMemo(() => trips.filter((t) => t.status === 'planned'), [trips]);
+  const wishlistTrips = useMemo(() => trips.filter((t) => t.status === 'wishlist'), [trips]);
 
-  // 지도와 일치하는 핀 기반 카운트 (stats 카드에 사용)
-  const visitedPinCount = mapPins.filter((p) => p.visit_status === 'visited').length;
-  const plannedPinCount = mapPins.filter((p) => p.visit_status === 'planned').length;
-  const wishlistPinCount = mapPins.filter((p) => p.visit_status === 'wishlist').length;
+  // 지도와 일치하는 핀 기반 카운트 — 단일 순회
+  const { visitedPinCount, plannedPinCount, wishlistPinCount } = useMemo(() => {
+    let visited = 0, planned = 0, wishlist = 0;
+    for (const p of mapPins) {
+      if (p.visit_status === 'visited') visited++;
+      else if (p.visit_status === 'planned') planned++;
+      else if (p.visit_status === 'wishlist') wishlist++;
+    }
+    return { visitedPinCount: visited, plannedPinCount: planned, wishlistPinCount: wishlist };
+  }, [mapPins]);
 
   // 검색/필터 적용된 여행 목록
   const displayTrips = useMemo(() => {
@@ -147,6 +155,18 @@ export default function HomePage() {
     { key: 'planned', label: `계획 (${plannedPinCount})` },
     { key: 'wishlist', label: `위시 (${wishlistPinCount})` },
   ], [mapPins.length, visitedPinCount, plannedPinCount, wishlistPinCount]);
+
+  // 공유받은 여행 소유자별 그룹핑
+  const groupedShares = useMemo(() => {
+    if (receivedShares.length === 0) return [];
+    const map = new Map<string, { owner_id: string; owner_nickname: string; shares: typeof receivedShares }>();
+    for (const s of receivedShares) {
+      const g = map.get(s.owner_id) ?? { owner_id: s.owner_id, owner_nickname: s.owner_nickname, shares: [] };
+      g.shares.push(s);
+      map.set(s.owner_id, g);
+    }
+    return [...map.values()];
+  }, [receivedShares]);
 
   if (loading) {
     return <HomePageSkeleton />;
@@ -383,8 +403,6 @@ export default function HomePage() {
               ) : (
                 trips.map((trip) => {
                   const thumbSrc = trip.coverImage || getCountryFlagUrl(trip.destination, 160);
-                  const statusLabels: Record<string, string> = { completed: 'Visited', planned: 'Planned', wishlist: 'Wish' };
-                  const statusBg: Record<string, string> = { completed: 'bg-[#0d9488] text-white', planned: 'bg-[#eab308]', wishlist: 'bg-[#f43f5e] text-white' };
                   return (
                     <Link
                       key={trip.id}
@@ -405,8 +423,8 @@ export default function HomePage() {
                           {trip.startDate && <span> · {formatDate(trip.startDate)}</span>}
                         </p>
                       </div>
-                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0 border-2 border-slate-900 uppercase tracking-wider ${statusBg[trip.status] || ''}`}>
-                        {statusLabels[trip.status] || trip.status}
+                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0 border-2 border-slate-900 uppercase tracking-wider ${STATUS_BG[trip.status] || ''}`}>
+                        {STATUS_LABEL[trip.status] || trip.status}
                       </span>
                     </Link>
                   );
@@ -448,10 +466,6 @@ export default function HomePage() {
             <div className="space-y-2">
               {displayTrips.map((trip) => {
                 const thumbSrc = trip.coverImage || getCountryFlagUrl(trip.destination, 160);
-                const statusBadge = trip.status === 'completed'
-                  ? 'bg-[#0d9488] text-white' : trip.status === 'planned'
-                  ? 'bg-[#eab308] text-slate-900' : 'bg-[#6366f1] text-white';
-                const statusLabel = trip.status === 'completed' ? 'Visited' : trip.status === 'planned' ? 'Planned' : 'Wish';
                 return (
                   <Link
                     key={trip.id}
@@ -472,8 +486,8 @@ export default function HomePage() {
                         {formatDate(trip.startDate)}
                       </p>
                     </div>
-                    <span className={`text-[9px] font-bold px-2 py-1 rounded-full border-2 border-slate-900 uppercase ${statusBadge}`}>
-                      {statusLabel}
+                    <span className={`text-[9px] font-bold px-2 py-1 rounded-full border-2 border-slate-900 uppercase ${STATUS_BG[trip.status] || ''}`}>
+                      {STATUS_LABEL[trip.status] || trip.status}
                     </span>
                   </Link>
                 );
@@ -620,14 +634,7 @@ export default function HomePage() {
       </section>
 
       {/* 공유받은 여행 */}
-      {receivedShares.length > 0 && (() => {
-        const grouped = new Map<string, { owner_id: string; owner_nickname: string; shares: typeof receivedShares }>();
-        for (const s of receivedShares) {
-          const g = grouped.get(s.owner_id) ?? { owner_id: s.owner_id, owner_nickname: s.owner_nickname, shares: [] };
-          g.shares.push(s);
-          grouped.set(s.owner_id, g);
-        }
-        return (
+      {groupedShares.length > 0 && (
           <section>
             <p className="text-sm font-bold text-[#0d9488] uppercase tracking-widest mb-1">Shared Journeys</p>
             <h3 className="text-2xl font-bold text-[#1c140d] dark:text-slate-100 mb-4">
@@ -637,7 +644,7 @@ export default function HomePage() {
               </span>
             </h3>
             <div className="space-y-4">
-              {[...grouped.values()].map((group) => (
+              {groupedShares.map((group) => (
                 <div key={group.owner_id} className="bg-white dark:bg-slate-800 rounded-xl border-[3px] border-slate-900 retro-shadow p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2.5">
@@ -659,12 +666,6 @@ export default function HomePage() {
                   <div className="space-y-2">
                     {group.shares.slice(0, 3).map((share) => {
                       const thumbSrc = share.trip_cover || getCountryFlagUrl(share.trip_destination, 160);
-                      const statusBg: Record<string, string> = {
-                        completed: 'bg-[#0d9488] text-white',
-                        planned: 'bg-[#eab308] text-slate-900',
-                        wishlist: 'bg-[#6366f1] text-white',
-                      };
-                      const statusLabel: Record<string, string> = { completed: 'Visited', planned: 'Planned', wishlist: 'Wish' };
                       return (
                         <Link
                           key={share.id}
@@ -685,8 +686,8 @@ export default function HomePage() {
                               {share.trip_start_date && formatDate(share.trip_start_date)}
                             </p>
                           </div>
-                          <span className={`text-[9px] font-bold px-2 py-1 rounded-full border-2 border-slate-900 uppercase shrink-0 ${statusBg[share.trip_status] || ''}`}>
-                            {statusLabel[share.trip_status] || share.trip_status}
+                          <span className={`text-[9px] font-bold px-2 py-1 rounded-full border-2 border-slate-900 uppercase shrink-0 ${STATUS_BG[share.trip_status] || ''}`}>
+                            {STATUS_LABEL[share.trip_status] || share.trip_status}
                           </span>
                         </Link>
                       );
@@ -696,8 +697,7 @@ export default function HomePage() {
               ))}
             </div>
           </section>
-        );
-      })()}
+      )}
 
       {/* 전체 공유 모달 */}
       {shareModalOpen && (

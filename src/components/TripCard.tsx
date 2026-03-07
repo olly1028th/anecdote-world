@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import type { Trip, TripStatus } from '../types/trip';
 import { formatCurrency, totalExpenses } from '../utils/format';
@@ -16,7 +17,7 @@ const CARD_THEMES = [
   { shadow: 'shadow-[8px_8px_0px_0px_rgba(244,63,94,1)]', badge: 'bg-[#f43f5e] text-white', label: 'Deep Space' },
 ];
 
-export default function TripCard({ trip, colorIndex = 0, onStatusChange }: Props) {
+export default memo(function TripCard({ trip, colorIndex = 0, onStatusChange }: Props) {
   const theme = CARD_THEMES[colorIndex % CARD_THEMES.length];
   const total = totalExpenses(trip.expenses);
   const coverSrc = trip.coverImage || getCountryFlagUrl(trip.destination, 640);
@@ -96,4 +97,4 @@ export default function TripCard({ trip, colorIndex = 0, onStatusChange }: Props
       </div>
     </Link>
   );
-}
+})
