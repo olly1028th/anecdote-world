@@ -164,6 +164,7 @@ export default function HomePage() {
           type="button"
           onClick={() => setShareModalOpen(true)}
           className="shrink-0 w-11 h-11 rounded-xl bg-[#0d9488] hover:bg-[#0d9488]/90 text-white border-[3px] border-slate-900 retro-shadow flex items-center justify-center cursor-pointer transition-all active:translate-y-0.5 active:translate-x-0.5 relative"
+          aria-label="여행 공유하기"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -715,6 +716,7 @@ export default function HomePage() {
                 <button
                   onClick={() => setShareModalOpen(false)}
                   className="text-slate-400 hover:text-slate-600 cursor-pointer bg-transparent border-0 p-1"
+                  aria-label="공유 모달 닫기"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -796,6 +798,7 @@ export default function HomePage() {
                           onClick={() => handleRevokeAll(su.email)}
                           className="text-slate-300 hover:text-[#f43f5e] transition-colors cursor-pointer bg-transparent border-0 p-1"
                           title="공유 취소"
+                          aria-label={`${su.email} 공유 취소`}
                         >
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

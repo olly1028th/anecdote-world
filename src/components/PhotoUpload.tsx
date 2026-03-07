@@ -299,10 +299,14 @@ export default function PhotoUpload({ photos, onChange, coverImage, onCoverChang
       {/* 빈 상태 */}
       {photos.length === 0 && (
         <div
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click(); } }}
           onClick={() => fileInputRef.current?.click()}
+          aria-label="사진 추가 영역 — 클릭하여 파일 선택"
           className="border-2 border-dashed border-gray-200 dark:border-[#4a3f35] rounded-xl p-8 text-center cursor-pointer hover:border-[#f48c25] hover:bg-[#f48c25]/5 transition-colors"
         >
-          <svg className="w-8 h-8 mx-auto text-gray-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <svg className="w-8 h-8 mx-auto text-gray-300 dark:text-slate-600" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
           </svg>
           <p className="text-sm text-gray-400 dark:text-slate-500 mt-2">클릭하여 사진을 추가하거나</p>
