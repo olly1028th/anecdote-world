@@ -437,7 +437,7 @@ export default function ProfilePage() {
                         >
                           <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-[#0d9488]/10">
                             {coverSrc ? (
-                              <img src={coverSrc} alt={share.trip_title} className="w-full h-full object-cover" />
+                              <img src={coverSrc} alt={share.trip_title} className="w-full h-full object-cover" loading="lazy" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-2xl">🌍</div>
                             )}

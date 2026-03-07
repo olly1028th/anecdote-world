@@ -394,7 +394,7 @@ export default function TripDetailPage() {
         <div className="relative">
           <div className="w-32 h-32 rounded-full border-[3px] border-slate-900 overflow-hidden bg-white retro-shadow relative z-10">
             {trip.coverImage ? (
-              <img src={trip.coverImage} alt={trip.title} className="w-full h-full object-cover" />
+              <img src={trip.coverImage} alt={trip.title} className="w-full h-full object-cover" loading="lazy" />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-100 to-teal-100 dark:from-orange-900/30 dark:to-teal-900/30">
                 <svg className="w-12 h-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>

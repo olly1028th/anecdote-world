@@ -6,6 +6,7 @@ import TripFormModal from './components/TripFormModal';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
+import { TripDetailSkeleton, CardListSkeleton } from './components/Skeleton';
 
 const TripDetailPage = lazy(() => import('./pages/TripDetailPage'));
 const TripFormPage = lazy(() => import('./pages/TripFormPage'));
@@ -86,9 +87,9 @@ export default function App() {
           <Route path="/profile" element={<Suspense fallback={<Loading />}><ProfilePage /></Suspense>} />
           <Route path="/trip/new" element={<Suspense fallback={<Loading />}><TripFormPage /></Suspense>} />
           <Route path="/trip/edit/:id" element={<Suspense fallback={<Loading />}><TripFormPage /></Suspense>} />
-          <Route path="/trip/:id" element={<Suspense fallback={<Loading />}><TripDetailPage /></Suspense>} />
-          <Route path="/timeline" element={<Suspense fallback={<Loading />}><TimelinePage /></Suspense>} />
-          <Route path="/shared/:ownerId" element={<Suspense fallback={<Loading />}><SharedViewPage /></Suspense>} />
+          <Route path="/trip/:id" element={<Suspense fallback={<TripDetailSkeleton />}><TripDetailPage /></Suspense>} />
+          <Route path="/timeline" element={<Suspense fallback={<CardListSkeleton count={5} />}><TimelinePage /></Suspense>} />
+          <Route path="/shared/:ownerId" element={<Suspense fallback={<CardListSkeleton count={4} />}><SharedViewPage /></Suspense>} />
           <Route
             path="/pin/new"
             element={<Suspense fallback={<Loading />}><PinFormPage /></Suspense>}

@@ -44,7 +44,7 @@ function UpcomingCard({ trip }: { trip: Trip }) {
       className="shrink-0 w-36 bg-white dark:bg-slate-800 rounded-xl border-[3px] border-slate-900 retro-shadow p-3 space-y-2 no-underline snap-start"
     >
       <div className="w-full h-20 rounded-lg overflow-hidden border-2 border-slate-200 dark:border-slate-600">
-        <img src={trip.coverImage} alt={trip.title} className="w-full h-full object-cover" />
+        <img src={trip.coverImage} alt={trip.title} className="w-full h-full object-cover" loading="lazy" />
       </div>
       <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">{trip.title}</p>
       <div className="flex items-center justify-between">
@@ -81,7 +81,7 @@ function TimelineCard({ trip }: { trip: Trip }) {
         {/* 헤더: 사진 + 제목 */}
         <div className="flex gap-3">
           <div className="w-16 h-16 rounded-lg overflow-hidden border-2 border-slate-200 dark:border-slate-600 shrink-0">
-            <img src={trip.coverImage} alt={trip.title} className="w-full h-full object-cover" />
+            <img src={trip.coverImage} alt={trip.title} className="w-full h-full object-cover" loading="lazy" />
           </div>
           <div className="flex-1 min-w-0 space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
@@ -108,7 +108,7 @@ function TimelineCard({ trip }: { trip: Trip }) {
           <div className="flex gap-1.5 overflow-hidden">
             {trip.photos.slice(0, 4).map((photo, i) => (
               <div key={i} className="w-12 h-12 rounded-lg overflow-hidden border-2 border-slate-200 dark:border-slate-600 shrink-0">
-                <img src={photo} alt="" className="w-full h-full object-cover" />
+                <img src={photo} alt="" className="w-full h-full object-cover" loading="lazy" />
               </div>
             ))}
             {trip.photos.length > 4 && (
