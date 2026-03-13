@@ -307,22 +307,33 @@ export default function TripDetailPage() {
           await saveDocuments(id, uploaded);
         } catch (e) {
           console.warn('[documents] DB 저장 실패, 로컬 fallback:', e);
-          updateDemoTrip(id, { documents: uploaded });
+          // data URL은 localStorage에 저장 시 용량 초과 → URL이 있는 것만 저장
+          const saveable = uploaded.filter((d) => !d.url.startsWith('data:'));
+          if (saveable.length > 0) {
+            updateDemoTrip(id, { documents: saveable });
+          }
         }
       }
       toast('서류가 저장되었습니다', 'success');
       setEditingDocuments(false);
       refetch();
-    } catch (err) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : typeof err === 'object' && err !== null && 'message' in err ? String((err as { message: unknown }).message) : String(err);
       console.error('[documents] 문서 저장 실패:', err);
-      // 최종 fallback: 로컬에라도 저장
+      // 최종 fallback: 파일 내용 제외하고 메타만 로컬 저장
       try {
-        updateDemoTrip(id, { documents: draftDocuments });
-        toast('서류가 로컬에 저장되었습니다', 'success');
+        const metaOnly = draftDocuments.map((d) => ({
+          ...d,
+          url: d.url.startsWith('data:') ? '' : d.url,
+        })).filter((d) => d.url);
+        if (metaOnly.length > 0) {
+          updateDemoTrip(id, { documents: metaOnly });
+        }
+        toast(`저장 오류: ${msg}`, 'error');
         setEditingDocuments(false);
         refetch();
       } catch {
-        toast('서류 저장에 실패했습니다', 'error');
+        toast(`저장 오류: ${msg}`, 'error');
       }
     } finally {
       setSaving(false);
