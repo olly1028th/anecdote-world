@@ -267,55 +267,74 @@ export default function TripDetailPage() {
   };
   const saveDocumentsInline = async () => {
     if (!trip || !id) return;
+    setSaving(true);
     try {
-      setSaving(true);
+      // data URL 없는 빈 문서 필터링
+      const validDocs = draftDocuments.filter((d) => d.url && d.name);
       const isDemoTrip = isDemo || id.startsWith('demo-');
 
       if (isDemoTrip) {
-        updateDemoTrip(id, { documents: draftDocuments });
+        updateDemoTrip(id, { documents: validDocs });
       } else {
-        // Supabase 경로: Storage 업로드 + DB 저장 (실패 시 로컬 fallback)
-        let finalDocs = draftDocuments;
-        try {
-          // 새 파일(data URL) → Storage 업로드
-          const uploaded: TripDocument[] = [];
-          for (const doc of draftDocuments) {
-            if (doc.url.startsWith('data:')) {
+        // Supabase 경로: Storage 업로드 + DB 저장
+        const uploaded: TripDocument[] = [];
+        for (const doc of validDocs) {
+          if (doc.url.startsWith('data:')) {
+            try {
               const res = await fetch(doc.url);
               const blob = await res.blob();
               const ext = doc.name.split('.').pop() || 'pdf';
               const file = new File([blob], doc.name, { type: blob.type || `application/${ext}` });
-              try {
-                const url = await uploadTripDocument(id, file);
-                uploaded.push({ ...doc, url });
-              } catch {
-                uploaded.push(doc);
-              }
-            } else {
+              const url = await uploadTripDocument(id, file);
+              uploaded.push({ ...doc, url });
+            } catch (e) {
+              console.warn('[documents] Storage 업로드 실패, data URL 유지:', e);
               uploaded.push(doc);
             }
+          } else {
+            uploaded.push(doc);
           }
-          // 삭제된 문서의 Storage 파일 제거
-          const newUrls = new Set(uploaded.map((d) => d.url));
-          for (const old of (trip.documents ?? [])) {
-            if (!newUrls.has(old.url) && !old.url.startsWith('data:')) {
-              try { await deleteTripDocument(id, old.url); } catch { /* ignore */ }
-            }
+        }
+        // 삭제된 문서의 Storage 파일 제거
+        const newUrls = new Set(uploaded.map((d) => d.url));
+        for (const old of (trip.documents ?? [])) {
+          if (!newUrls.has(old.url) && !old.url.startsWith('data:')) {
+            try { await deleteTripDocument(id, old.url); } catch { /* ignore */ }
           }
-          finalDocs = uploaded;
-          // DB 저장
+        }
+        // DB 저장 시도 → 실패 시 로컬 fallback
+        try {
           await saveDocuments(id, uploaded);
-        } catch {
-          // Supabase 저장 실패 → 로컬 fallback
-          updateDemoTrip(id, { documents: finalDocs });
+        } catch (e) {
+          console.warn('[documents] DB 저장 실패, 로컬 fallback:', e);
+          // data URL은 localStorage에 저장 시 용량 초과 → URL이 있는 것만 저장
+          const saveable = uploaded.filter((d) => !d.url.startsWith('data:'));
+          if (saveable.length > 0) {
+            updateDemoTrip(id, { documents: saveable });
+          }
         }
       }
       toast('서류가 저장되었습니다', 'success');
       setEditingDocuments(false);
       refetch();
-    } catch (err) {
-      console.error('문서 저장 실패:', err);
-      toast('서류 저장에 실패했습니다', 'error');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : typeof err === 'object' && err !== null && 'message' in err ? String((err as { message: unknown }).message) : String(err);
+      console.error('[documents] 문서 저장 실패:', err);
+      // 최종 fallback: 파일 내용 제외하고 메타만 로컬 저장
+      try {
+        const metaOnly = draftDocuments.map((d) => ({
+          ...d,
+          url: d.url.startsWith('data:') ? '' : d.url,
+        })).filter((d) => d.url);
+        if (metaOnly.length > 0) {
+          updateDemoTrip(id, { documents: metaOnly });
+        }
+        toast(`저장 오류: ${msg}`, 'error');
+        setEditingDocuments(false);
+        refetch();
+      } catch {
+        toast(`저장 오류: ${msg}`, 'error');
+      }
     } finally {
       setSaving(false);
     }
