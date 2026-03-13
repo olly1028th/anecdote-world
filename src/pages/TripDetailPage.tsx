@@ -276,21 +276,17 @@ export default function TripDetailPage() {
       if (isDemoTrip) {
         updateDemoTrip(id, { documents: validDocs });
       } else {
-        // Supabase 경로: Storage 업로드 + DB 저장
+        // Storage 업로드 후 public URL로 DB 저장
         const uploaded: TripDocument[] = [];
         for (const doc of validDocs) {
           if (doc.url.startsWith('data:')) {
-            try {
-              const res = await fetch(doc.url);
-              const blob = await res.blob();
-              const ext = doc.name.split('.').pop() || 'pdf';
-              const file = new File([blob], doc.name, { type: blob.type || `application/${ext}` });
-              const url = await uploadTripDocument(id, file);
-              uploaded.push({ ...doc, url });
-            } catch (e) {
-              console.warn('[documents] Storage 업로드 실패, data URL 유지:', e);
-              uploaded.push(doc);
-            }
+            // data URL → File → Storage 업로드
+            const res = await fetch(doc.url);
+            const blob = await res.blob();
+            const ext = doc.name.split('.').pop() || 'pdf';
+            const file = new File([blob], doc.name, { type: blob.type || `application/${ext}` });
+            const url = await uploadTripDocument(id, file);
+            uploaded.push({ ...doc, url });
           } else {
             uploaded.push(doc);
           }
@@ -302,17 +298,7 @@ export default function TripDetailPage() {
             try { await deleteTripDocument(id, old.url); } catch { /* ignore */ }
           }
         }
-        // DB 저장 시도 → 실패 시 로컬 fallback
-        try {
-          await saveDocuments(id, uploaded);
-        } catch (e) {
-          console.warn('[documents] DB 저장 실패, 로컬 fallback:', e);
-          // data URL은 localStorage에 저장 시 용량 초과 → URL이 있는 것만 저장
-          const saveable = uploaded.filter((d) => !d.url.startsWith('data:'));
-          if (saveable.length > 0) {
-            updateDemoTrip(id, { documents: saveable });
-          }
-        }
+        await saveDocuments(id, uploaded);
       }
       toast('서류가 저장되었습니다', 'success');
       setEditingDocuments(false);
