@@ -269,42 +269,45 @@ export default function TripDetailPage() {
     if (!trip || !id) return;
     try {
       setSaving(true);
-      if (isDemo) {
+      const isDemoTrip = isDemo || id.startsWith('demo-');
+
+      if (isDemoTrip) {
         updateDemoTrip(id, { documents: draftDocuments });
       } else {
-        // 새 파일(data URL) → Storage 업로드
-        const uploaded: TripDocument[] = [];
-        for (const doc of draftDocuments) {
-          if (doc.url.startsWith('data:')) {
-            // data URL → File 변환 → 업로드
-            const res = await fetch(doc.url);
-            const blob = await res.blob();
-            const ext = doc.name.split('.').pop() || 'pdf';
-            const file = new File([blob], doc.name, { type: blob.type || `application/${ext}` });
-            try {
-              const url = await uploadTripDocument(id, file);
-              uploaded.push({ ...doc, url });
-            } catch {
-              // Storage 버킷 미생성 시 data URL 그대로 유지
+        // Supabase 경로: Storage 업로드 + DB 저장 (실패 시 로컬 fallback)
+        let finalDocs = draftDocuments;
+        try {
+          // 새 파일(data URL) → Storage 업로드
+          const uploaded: TripDocument[] = [];
+          for (const doc of draftDocuments) {
+            if (doc.url.startsWith('data:')) {
+              const res = await fetch(doc.url);
+              const blob = await res.blob();
+              const ext = doc.name.split('.').pop() || 'pdf';
+              const file = new File([blob], doc.name, { type: blob.type || `application/${ext}` });
+              try {
+                const url = await uploadTripDocument(id, file);
+                uploaded.push({ ...doc, url });
+              } catch {
+                uploaded.push(doc);
+              }
+            } else {
               uploaded.push(doc);
             }
-          } else {
-            uploaded.push(doc);
           }
-        }
-        // 삭제된 문서의 Storage 파일 제거
-        const newUrls = new Set(uploaded.map((d) => d.url));
-        for (const old of trip.documents) {
-          if (!newUrls.has(old.url) && !old.url.startsWith('data:')) {
-            try { await deleteTripDocument(id, old.url); } catch { /* ignore */ }
+          // 삭제된 문서의 Storage 파일 제거
+          const newUrls = new Set(uploaded.map((d) => d.url));
+          for (const old of (trip.documents ?? [])) {
+            if (!newUrls.has(old.url) && !old.url.startsWith('data:')) {
+              try { await deleteTripDocument(id, old.url); } catch { /* ignore */ }
+            }
           }
-        }
-        // DB 저장
-        try {
+          finalDocs = uploaded;
+          // DB 저장
           await saveDocuments(id, uploaded);
         } catch {
-          // trip_documents 테이블 미존재 시 로컬 저장
-          updateDemoTrip(id, { documents: uploaded });
+          // Supabase 저장 실패 → 로컬 fallback
+          updateDemoTrip(id, { documents: finalDocs });
         }
       }
       toast('서류가 저장되었습니다', 'success');
