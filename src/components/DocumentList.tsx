@@ -23,34 +23,7 @@ export default function DocumentList({ documents, action }: Props) {
   const handleOpen = (doc: TripDocument) => {
     const url = doc.url;
     if (!url) return;
-
-    // data URL → 새 창에서 직접 렌더링
-    if (url.startsWith('data:')) {
-      const w = window.open('', '_blank');
-      if (!w) return;
-      w.document.title = doc.name;
-      if (url.startsWith('data:application/pdf')) {
-        w.document.write(
-          `<!DOCTYPE html><html><head><title>${doc.name}</title><style>body{margin:0;overflow:hidden}</style></head>` +
-          `<body><iframe src="${url}" style="width:100%;height:100vh;border:none;" title="${doc.name}"></iframe></body></html>`
-        );
-      } else if (url.startsWith('data:image/')) {
-        w.document.write(
-          `<!DOCTYPE html><html><head><title>${doc.name}</title><style>body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#111}</style></head>` +
-          `<body><img src="${url}" alt="${doc.name}" style="max-width:100%;max-height:100vh;object-fit:contain;"/></body></html>`
-        );
-      } else {
-        // 기타 파일 → 다운로드 링크
-        w.document.write(
-          `<!DOCTYPE html><html><head><title>${doc.name}</title></head>` +
-          `<body><a href="${url}" download="${doc.name}">다운로드: ${doc.name}</a></body></html>`
-        );
-      }
-      w.document.close();
-      return;
-    }
-
-    // http(s) URL → 새 탭에서 직접 열기
+    // public URL이든 data URL이든 새 탭에서 바로 열기
     window.open(url, '_blank', 'noopener');
   };
 
