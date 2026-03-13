@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useTrip, deleteTrip, updateTrip, toggleChecklistItem, saveChecklistItems, updateDemoTrip, deleteDemoTrip } from '../hooks/useTrips';
+import { useTrip, deleteTrip, updateTrip, toggleChecklistItem, saveChecklistItems, saveDocuments, updateDemoTrip, deleteDemoTrip } from '../hooks/useTrips';
 import { supabase } from '../lib/supabase';
 import { savePhotoCaptions, saveTravelerCount as saveTravelerCountLocal, updateLocalPinsByTripId } from '../lib/localStore';
 import { tripStatusToPinStatus } from '../utils/statusConvert';
-import { uploadTripPhoto, deleteTripPhoto } from '../lib/storage';
+import { uploadTripPhoto, deleteTripPhoto, uploadTripDocument, deleteTripDocument } from '../lib/storage';
 import { useSharesForTrip } from '../hooks/useShares';
 import { useLazyExchangeRate } from '../hooks/useExchangeRate';
 import { useAuth } from '../contexts/AuthContext';
@@ -24,7 +24,9 @@ import InlineDailySpendingEditor from '../components/InlineDailySpendingEditor';
 import { EditButton, SaveCancelButtons } from '../components/InlineEditButtons';
 import { TripDetailSkeleton } from '../components/Skeleton';
 import { formatDate, calcDuration, totalExpensesInKRW, formatCurrency } from '../utils/format';
-import type { ChecklistItem, TripStatus } from '../types/trip';
+import DocumentUpload from '../components/DocumentUpload';
+import DocumentList from '../components/DocumentList';
+import type { ChecklistItem, TripDocument, TripStatus } from '../types/trip';
 
 export default function TripDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -50,6 +52,7 @@ export default function TripDetailPage() {
   const [editingChecklist, setEditingChecklist] = useState(false);
   const [editingPlaces, setEditingPlaces] = useState(false);
   const [editingMemo, setEditingMemo] = useState(false);
+  const [editingDocuments, setEditingDocuments] = useState(false);
   const [editingTravelerCount, setEditingTravelerCount] = useState(false);
   const [draftTravelerCount, setDraftTravelerCount] = useState(1);
 
@@ -57,6 +60,7 @@ export default function TripDetailPage() {
   const [draftPhotos, setDraftPhotos] = useState<string[]>([]);
   const [draftCover, setDraftCover] = useState('');
   const [draftChecklist, setDraftChecklist] = useState<ChecklistItem[]>([]);
+  const [draftDocuments, setDraftDocuments] = useState<TripDocument[]>([]);
   const [draftMemo, setDraftMemo] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -253,6 +257,65 @@ export default function TripDetailPage() {
   const startEditExpenses = () => {
     if (!trip) return;
     setEditingExpenses(true);
+  };
+
+  // --- Documents inline edit ---
+  const startEditDocuments = () => {
+    if (!trip) return;
+    setDraftDocuments([...(trip.documents ?? [])]);
+    setEditingDocuments(true);
+  };
+  const saveDocumentsInline = async () => {
+    if (!trip || !id) return;
+    try {
+      setSaving(true);
+      if (isDemo) {
+        updateDemoTrip(id, { documents: draftDocuments });
+      } else {
+        // 새 파일(data URL) → Storage 업로드
+        const uploaded: TripDocument[] = [];
+        for (const doc of draftDocuments) {
+          if (doc.url.startsWith('data:')) {
+            // data URL → File 변환 → 업로드
+            const res = await fetch(doc.url);
+            const blob = await res.blob();
+            const ext = doc.name.split('.').pop() || 'pdf';
+            const file = new File([blob], doc.name, { type: blob.type || `application/${ext}` });
+            try {
+              const url = await uploadTripDocument(id, file);
+              uploaded.push({ ...doc, url });
+            } catch {
+              // Storage 버킷 미생성 시 data URL 그대로 유지
+              uploaded.push(doc);
+            }
+          } else {
+            uploaded.push(doc);
+          }
+        }
+        // 삭제된 문서의 Storage 파일 제거
+        const newUrls = new Set(uploaded.map((d) => d.url));
+        for (const old of trip.documents) {
+          if (!newUrls.has(old.url) && !old.url.startsWith('data:')) {
+            try { await deleteTripDocument(id, old.url); } catch { /* ignore */ }
+          }
+        }
+        // DB 저장
+        try {
+          await saveDocuments(id, uploaded);
+        } catch {
+          // trip_documents 테이블 미존재 시 로컬 저장
+          updateDemoTrip(id, { documents: uploaded });
+        }
+      }
+      toast('서류가 저장되었습니다', 'success');
+      setEditingDocuments(false);
+      refetch();
+    } catch (err) {
+      console.error('문서 저장 실패:', err);
+      toast('서류 저장에 실패했습니다', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   // --- Traveler count inline edit ---
@@ -900,6 +963,28 @@ export default function TripDetailPage() {
             </div>
           );
         })()}
+
+        {/* 예약 서류 — 인라인 편집 */}
+        {editingDocuments ? (
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-slate-900 retro-shadow">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-4">Reservations</h3>
+            <DocumentUpload documents={draftDocuments} onChange={setDraftDocuments} />
+            <SaveCancelButtons onSave={saveDocumentsInline} onCancel={() => setEditingDocuments(false)} saving={saving} />
+          </div>
+        ) : (trip.documents ?? []).length > 0 ? (
+          <DocumentList
+            documents={trip.documents}
+            action={<EditButton onClick={startEditDocuments} />}
+          />
+        ) : (
+          <div
+            onClick={startEditDocuments}
+            className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-dashed border-slate-300 cursor-pointer hover:border-[#f48c25] transition-colors"
+          >
+            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">Reservations</h3>
+            <p className="text-xs text-slate-300 font-medium text-center py-4">탭하여 예약 서류를 추가해보세요</p>
+          </div>
+        )}
 
         {/* 체크리스트 — 인라인 편집 */}
         {editingChecklist ? (
