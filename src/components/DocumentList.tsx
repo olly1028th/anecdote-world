@@ -4,14 +4,11 @@
  */
 import type { ReactNode } from 'react';
 import type { TripDocument } from '../types/trip';
-import { supabase } from '../lib/supabase';
 
 interface Props {
   documents: TripDocument[];
   action?: ReactNode;
 }
-
-const DOC_BUCKET = 'trip-documents';
 
 const CATEGORY_META: Record<string, { icon: string; label: string; color: string }> = {
   flight: { icon: '✈️', label: '항공', color: 'bg-blue-100 dark:bg-blue-900/30 border-blue-300' },
@@ -22,38 +19,39 @@ const CATEGORY_META: Record<string, { icon: string; label: string; color: string
   other: { icon: '📎', label: '기타', color: 'bg-slate-100 dark:bg-slate-700 border-slate-300' },
 };
 
-/**
- * URL에서 Storage 경로를 추출하여 public URL로 변환.
- * - supabase-doc:// → public URL
- * - 기존 public URL → 그대로 반환
- * - data: URL → 그대로 반환
- */
-function resolveDocUrl(url: string): string {
-  if (url.startsWith('supabase-doc://')) {
-    const path = url.replace('supabase-doc://', '');
-    const { data } = supabase.storage.from(DOC_BUCKET).getPublicUrl(path);
-    return data.publicUrl;
-  }
-  return url;
-}
-
 export default function DocumentList({ documents, action }: Props) {
   const handleOpen = (doc: TripDocument) => {
-    const url = resolveDocUrl(doc.url);
+    const url = doc.url;
+    if (!url) return;
 
+    // data URL → 새 창에서 직접 렌더링
     if (url.startsWith('data:')) {
       const w = window.open('', '_blank');
       if (!w) return;
-      if (url.startsWith('data:application/pdf')) {
-        w.document.write(`<iframe src="${url}" style="width:100%;height:100%;border:none;" title="${doc.name}"></iframe>`);
-      } else {
-        w.document.write(`<img src="${url}" alt="${doc.name}" style="max-width:100%;"/>`);
-      }
       w.document.title = doc.name;
-    } else {
-      // http(s) URL → 새 탭에서 바로 열기 (동기적, 팝업 차단 없음)
-      window.open(url, '_blank', 'noopener');
+      if (url.startsWith('data:application/pdf')) {
+        w.document.write(
+          `<!DOCTYPE html><html><head><title>${doc.name}</title><style>body{margin:0;overflow:hidden}</style></head>` +
+          `<body><iframe src="${url}" style="width:100%;height:100vh;border:none;" title="${doc.name}"></iframe></body></html>`
+        );
+      } else if (url.startsWith('data:image/')) {
+        w.document.write(
+          `<!DOCTYPE html><html><head><title>${doc.name}</title><style>body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#111}</style></head>` +
+          `<body><img src="${url}" alt="${doc.name}" style="max-width:100%;max-height:100vh;object-fit:contain;"/></body></html>`
+        );
+      } else {
+        // 기타 파일 → 다운로드 링크
+        w.document.write(
+          `<!DOCTYPE html><html><head><title>${doc.name}</title></head>` +
+          `<body><a href="${url}" download="${doc.name}">다운로드: ${doc.name}</a></body></html>`
+        );
+      }
+      w.document.close();
+      return;
     }
+
+    // http(s) URL → 새 탭에서 직접 열기
+    window.open(url, '_blank', 'noopener');
   };
 
   return (
