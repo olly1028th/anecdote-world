@@ -26,27 +26,31 @@ export default function DocumentList({ documents, action }: Props) {
   const handleOpen = async (doc: TripDocument, index: number) => {
     const key = doc.id || `${doc.name}-${index}`;
 
+    // 클릭 직후 동기적으로 창을 열어야 브라우저 팝업 차단을 방지
+    const w = window.open('', '_blank');
+    if (!w) return;
+
     if (doc.url.startsWith('data:')) {
       // data URL → iframe/img로 표시
-      const w = window.open('', '_blank');
-      if (w) {
-        if (doc.url.startsWith('data:application/pdf')) {
-          w.document.write(`<iframe src="${doc.url}" style="width:100%;height:100%;border:none;" title="${doc.name}"></iframe>`);
-        } else {
-          w.document.write(`<img src="${doc.url}" alt="${doc.name}" style="max-width:100%;"/>`);
-        }
-        w.document.title = doc.name;
+      if (doc.url.startsWith('data:application/pdf')) {
+        w.document.write(`<iframe src="${doc.url}" style="width:100%;height:100%;border:none;" title="${doc.name}"></iframe>`);
+      } else {
+        w.document.write(`<img src="${doc.url}" alt="${doc.name}" style="max-width:100%;"/>`);
       }
+      w.document.title = doc.name;
     } else {
-      // supabase-doc:// 또는 일반 URL → signed URL 생성 후 열기
+      // 로딩 화면 표시
+      w.document.title = doc.name;
+      w.document.body.style.cssText = 'margin:0;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#888;';
+      w.document.body.textContent = '로딩 중...';
+
       try {
         setLoadingId(key);
         const signedUrl = await getDocumentSignedUrl(doc.url);
-        window.open(signedUrl, '_blank', 'noopener');
+        w.location.href = signedUrl;
       } catch (e) {
         console.error('[DocumentList] signed URL 생성 실패:', e);
-        // fallback: 원본 URL 직접 열기
-        window.open(doc.url, '_blank', 'noopener');
+        w.location.href = doc.url;
       } finally {
         setLoadingId(null);
       }
