@@ -108,7 +108,7 @@ export async function deleteTripPhoto(
 // ============================================================
 
 /**
- * 예약 서류 파일을 Supabase Storage에 업로드하고 Storage 경로를 반환.
+ * 예약 서류 파일을 Supabase Storage에 업로드하고 공개 URL을 반환.
  */
 export async function uploadTripDocument(
   tripId: string,
@@ -127,34 +127,53 @@ export async function uploadTripDocument(
 
   if (error) throw error;
 
-  // Storage 경로를 반환
-  return `supabase-doc://${path}`;
+  // public URL 반환 (trip-photos와 동일 패턴)
+  const { data } = supabase.storage.from(DOC_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
 }
 
 /**
- * Storage 경로에서 파일을 다운로드하여 blob URL을 반환.
- * - supabase-doc:// 경로 → download → blob URL
- * - 기존 Supabase public URL → Storage 경로 추출 → download → blob URL
- * - 일반 URL / data URL → 그대로 반환
+ * Storage URL에서 파일을 Blob으로 가져오기.
+ * 1차: public URL로 직접 fetch
+ * 2차: Supabase download API (인증 경유)
+ * 3차: 실패 시 null 반환
  */
-export async function getDocumentBlobUrl(url: string): Promise<string> {
-  let path: string | null = null;
+export async function downloadDocumentAsBlob(url: string): Promise<Blob | null> {
+  // supabase-doc:// 레거시 경로 처리
+  const storagePath = extractStoragePath(url);
 
-  if (url.startsWith('supabase-doc://')) {
-    path = url.replace('supabase-doc://', '');
-  } else if (url.includes(`/storage/v1/object/public/${DOC_BUCKET}/`)) {
-    // 기존 public URL에서 Storage 경로 추출
-    path = url.split(`/storage/v1/object/public/${DOC_BUCKET}/`)[1];
+  // 1차: public URL이 있으면 직접 fetch
+  if (url.startsWith('http')) {
+    try {
+      const res = await fetch(url);
+      if (res.ok) return await res.blob();
+    } catch { /* public URL 실패, 다음 시도 */ }
   }
 
-  if (!path) return url;
+  // 2차: storage path가 있으면 인증된 download API 사용
+  if (storagePath) {
+    try {
+      const { data, error } = await supabase.storage
+        .from(DOC_BUCKET)
+        .download(storagePath);
+      if (!error && data) return data;
+    } catch { /* download 실패 */ }
+  }
 
-  const { data, error } = await supabase.storage
-    .from(DOC_BUCKET)
-    .download(path);
+  return null;
+}
 
-  if (error || !data) throw error || new Error('파일 다운로드 실패');
-  return URL.createObjectURL(data);
+/**
+ * URL에서 Storage 경로를 추출.
+ */
+function extractStoragePath(url: string): string | null {
+  if (url.startsWith('supabase-doc://')) {
+    return url.replace('supabase-doc://', '');
+  }
+  if (url.includes(`/storage/v1/object/public/${DOC_BUCKET}/`)) {
+    return url.split(`/storage/v1/object/public/${DOC_BUCKET}/`)[1];
+  }
+  return null;
 }
 
 /**
@@ -167,13 +186,14 @@ export async function deleteTripDocument(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('로그인이 필요합니다.');
 
-  let path: string;
-  if (url.startsWith('supabase-doc://')) {
-    path = url.replace('supabase-doc://', '');
+  const storagePath = extractStoragePath(url);
+  if (storagePath) {
+    await supabase.storage.from(DOC_BUCKET).remove([storagePath]);
   } else {
+    // fallback: URL 끝에서 파일명 추출
     const parts = url.split('/');
     const fileName = parts[parts.length - 1];
-    path = `${user.id}/${tripId}/${fileName}`;
+    const path = `${user.id}/${tripId}/${fileName}`;
+    await supabase.storage.from(DOC_BUCKET).remove([path]);
   }
-  await supabase.storage.from(DOC_BUCKET).remove([path]);
 }

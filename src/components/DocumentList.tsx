@@ -4,7 +4,7 @@
  */
 import { useState, type ReactNode } from 'react';
 import type { TripDocument } from '../types/trip';
-import { getDocumentBlobUrl } from '../lib/storage';
+import { downloadDocumentAsBlob } from '../lib/storage';
 
 interface Props {
   documents: TripDocument[];
@@ -20,40 +20,70 @@ const CATEGORY_META: Record<string, { icon: string; label: string; color: string
   other: { icon: '📎', label: '기타', color: 'bg-slate-100 dark:bg-slate-700 border-slate-300' },
 };
 
+/** Blob을 새 탭에 직접 렌더링 */
+function renderBlobInWindow(w: Window, blob: Blob, name: string) {
+  const blobUrl = URL.createObjectURL(blob);
+  const type = blob.type;
+
+  if (type === 'application/pdf') {
+    // PDF → embed로 표시
+    w.document.open();
+    w.document.write(`<!DOCTYPE html><html><head><title>${name}</title><style>body{margin:0;overflow:hidden}</style></head><body><embed src="${blobUrl}" type="application/pdf" width="100%" height="100%" style="position:fixed;top:0;left:0;width:100%;height:100%"/></body></html>`);
+    w.document.close();
+  } else if (type.startsWith('image/')) {
+    // 이미지 → img 태그로 표시
+    w.document.open();
+    w.document.write(`<!DOCTYPE html><html><head><title>${name}</title><style>body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#f5f5f5}</style></head><body><img src="${blobUrl}" alt="${name}" style="max-width:100%;max-height:100vh;object-fit:contain"/></body></html>`);
+    w.document.close();
+  } else {
+    // 기타 파일 → 다운로드 링크
+    w.location.href = blobUrl;
+  }
+}
+
+/** 에러 화면을 새 탭에 렌더링 */
+function renderErrorInWindow(w: Window, name: string) {
+  w.document.open();
+  w.document.write(`<!DOCTYPE html><html><head><title>${name}</title><style>body{margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#666;gap:12px}h2{margin:0;color:#333}p{margin:0;max-width:400px;text-align:center;line-height:1.5}</style></head><body><h2>파일을 열 수 없습니다</h2><p>Supabase Storage 설정을 확인해주세요.<br/>Dashboard → Storage → trip-documents → 버킷 설정에서 Public 활성화가 필요합니다.</p></body></html>`);
+  w.document.close();
+}
+
 export default function DocumentList({ documents, action }: Props) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const handleOpen = async (doc: TripDocument, index: number) => {
     const key = doc.id || `${doc.name}-${index}`;
 
-    // 클릭 직후 동기적으로 창을 열어야 브라우저 팝업 차단을 방지
+    // 클릭 직후 동기적으로 창을 열어야 팝업 차단 방지
     const w = window.open('', '_blank');
     if (!w) return;
 
+    // data URL은 바로 렌더링
     if (doc.url.startsWith('data:')) {
-      // data URL → iframe/img로 표시
-      if (doc.url.startsWith('data:application/pdf')) {
-        w.document.write(`<iframe src="${doc.url}" style="width:100%;height:100%;border:none;" title="${doc.name}"></iframe>`);
-      } else {
-        w.document.write(`<img src="${doc.url}" alt="${doc.name}" style="max-width:100%;"/>`);
-      }
-      w.document.title = doc.name;
-    } else {
-      // 로딩 화면 표시
-      w.document.title = doc.name;
-      w.document.body.style.cssText = 'margin:0;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#888;';
-      w.document.body.textContent = '로딩 중...';
+      const res = await fetch(doc.url);
+      const blob = await res.blob();
+      renderBlobInWindow(w, blob, doc.name);
+      return;
+    }
 
-      try {
-        setLoadingId(key);
-        const blobUrl = await getDocumentBlobUrl(doc.url);
-        w.location.href = blobUrl;
-      } catch (e) {
-        console.error('[DocumentList] 파일 다운로드 실패:', e);
-        w.location.href = doc.url;
-      } finally {
-        setLoadingId(null);
+    // 로딩 화면 표시
+    w.document.title = doc.name;
+    w.document.body.style.cssText = 'margin:0;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#888;';
+    w.document.body.textContent = '로딩 중...';
+
+    try {
+      setLoadingId(key);
+      const blob = await downloadDocumentAsBlob(doc.url);
+      if (blob) {
+        renderBlobInWindow(w, blob, doc.name);
+      } else {
+        renderErrorInWindow(w, doc.name);
       }
+    } catch (e) {
+      console.error('[DocumentList] 파일 열기 실패:', e);
+      renderErrorInWindow(w, doc.name);
+    } finally {
+      setLoadingId(null);
     }
   };
 

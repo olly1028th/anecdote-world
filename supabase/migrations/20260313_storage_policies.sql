@@ -1,10 +1,16 @@
 -- ============================================================
--- trip-documents Storage 버킷 RLS 정책
--- 테이블과 버킷은 이미 생성된 상태에서 이 파일만 실행
+-- trip-documents Storage 버킷 + RLS 정책 (수정용)
+-- 이미 버킷이 있어도 public으로 업데이트됩니다.
 -- Supabase Dashboard → SQL Editor 에서 실행
 -- ============================================================
 
--- 파일 업로드 권한 (본인 폴더에만)
+-- 버킷: 생성 또는 public 업데이트
+INSERT INTO storage.buckets (id, name, public, file_size_limit)
+VALUES ('trip-documents', 'trip-documents', true, 10485760)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+-- 기존 정책 삭제 후 재생성 (충돌 방지)
+DROP POLICY IF EXISTS "Users can upload documents" ON storage.objects;
 CREATE POLICY "Users can upload documents"
   ON storage.objects FOR INSERT
   WITH CHECK (
@@ -12,13 +18,13 @@ CREATE POLICY "Users can upload documents"
     AND auth.uid()::text = (storage.foldername(name))[1]
   );
 
--- 파일 읽기 권한 (공개)
+DROP POLICY IF EXISTS "Anyone can read documents" ON storage.objects;
 CREATE POLICY "Anyone can read documents"
   ON storage.objects FOR SELECT
   USING (bucket_id = 'trip-documents');
 
--- 파일 삭제 권한 (본인 파일만)
-CREATE POLICY "Users can delete own documents"
+DROP POLICY IF EXISTS "Users can delete own trip-documents" ON storage.objects;
+CREATE POLICY "Users can delete own trip-documents"
   ON storage.objects FOR DELETE
   USING (
     bucket_id = 'trip-documents'
