@@ -133,37 +133,6 @@ export async function uploadTripDocument(
 }
 
 /**
- * Storage URL에서 파일을 Blob으로 가져오기.
- * 1차: public URL로 직접 fetch
- * 2차: Supabase download API (인증 경유)
- * 3차: 실패 시 null 반환
- */
-export async function downloadDocumentAsBlob(url: string): Promise<Blob | null> {
-  // supabase-doc:// 레거시 경로 처리
-  const storagePath = extractStoragePath(url);
-
-  // 1차: public URL이 있으면 직접 fetch
-  if (url.startsWith('http')) {
-    try {
-      const res = await fetch(url);
-      if (res.ok) return await res.blob();
-    } catch { /* public URL 실패, 다음 시도 */ }
-  }
-
-  // 2차: storage path가 있으면 인증된 download API 사용
-  if (storagePath) {
-    try {
-      const { data, error } = await supabase.storage
-        .from(DOC_BUCKET)
-        .download(storagePath);
-      if (!error && data) return data;
-    } catch { /* download 실패 */ }
-  }
-
-  return null;
-}
-
-/**
  * URL에서 Storage 경로를 추출.
  */
 function extractStoragePath(url: string): string | null {
