@@ -109,7 +109,6 @@ export async function deleteTripPhoto(
 
 /**
  * 예약 서류 파일을 Supabase Storage에 업로드하고 Storage 경로를 반환.
- * 실제 접근은 signed URL로 (버킷 public 여부 무관하게 동작).
  */
 export async function uploadTripDocument(
   tripId: string,
@@ -128,17 +127,17 @@ export async function uploadTripDocument(
 
   if (error) throw error;
 
-  // Storage 경로를 반환 (signed URL 생성에 사용)
+  // Storage 경로를 반환
   return `supabase-doc://${path}`;
 }
 
 /**
- * 서류 URL에서 signed URL을 생성하여 반환.
- * - supabase-doc:// 경로 → signed URL
- * - 기존 Supabase public URL → Storage 경로 추출 후 signed URL
+ * Storage 경로에서 파일을 다운로드하여 blob URL을 반환.
+ * - supabase-doc:// 경로 → download → blob URL
+ * - 기존 Supabase public URL → Storage 경로 추출 → download → blob URL
  * - 일반 URL / data URL → 그대로 반환
  */
-export async function getDocumentSignedUrl(url: string): Promise<string> {
+export async function getDocumentBlobUrl(url: string): Promise<string> {
   let path: string | null = null;
 
   if (url.startsWith('supabase-doc://')) {
@@ -152,10 +151,10 @@ export async function getDocumentSignedUrl(url: string): Promise<string> {
 
   const { data, error } = await supabase.storage
     .from(DOC_BUCKET)
-    .createSignedUrl(path, 3600); // 1시간 유효
+    .download(path);
 
-  if (error || !data?.signedUrl) throw error || new Error('URL 생성 실패');
-  return data.signedUrl;
+  if (error || !data) throw error || new Error('파일 다운로드 실패');
+  return URL.createObjectURL(data);
 }
 
 /**

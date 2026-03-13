@@ -4,7 +4,7 @@
  */
 import { useState, type ReactNode } from 'react';
 import type { TripDocument } from '../types/trip';
-import { getDocumentSignedUrl } from '../lib/storage';
+import { getDocumentBlobUrl } from '../lib/storage';
 
 interface Props {
   documents: TripDocument[];
@@ -46,10 +46,10 @@ export default function DocumentList({ documents, action }: Props) {
 
       try {
         setLoadingId(key);
-        const signedUrl = await getDocumentSignedUrl(doc.url);
-        w.location.href = signedUrl;
+        const blobUrl = await getDocumentBlobUrl(doc.url);
+        w.location.href = blobUrl;
       } catch (e) {
-        console.error('[DocumentList] signed URL 생성 실패:', e);
+        console.error('[DocumentList] 파일 다운로드 실패:', e);
         w.location.href = doc.url;
       } finally {
         setLoadingId(null);
