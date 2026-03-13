@@ -781,7 +781,7 @@ export function useTrip(id: string | undefined) {
 
       // 여행 소유자의 user_id로 하위 데이터 필터 (데이터 격리)
       const tripOwnerId = (dbTrip as DbTrip).user_id;
-      const [expensesRes, checklistRes, pinsRes, docsRes] = await Promise.all([
+      const [expensesRes, checklistRes, pinsRes] = await Promise.all([
         supabase.from('expenses').select('*').eq('trip_id', id).eq('user_id', tripOwnerId),
         supabase
           .from('checklist_items')
@@ -795,13 +795,21 @@ export function useTrip(id: string | undefined) {
           .eq('trip_id', id)
           .eq('user_id', tripOwnerId)
           .order('sort_order'),
-        supabase
+      ]);
+
+      // trip_documents 테이블 조회 (테이블 미존재 시 빈 배열 반환)
+      let docsData: DbTripDocument[] = [];
+      try {
+        const docsRes = await supabase
           .from('trip_documents')
           .select('*')
           .eq('trip_id', id)
           .eq('user_id', tripOwnerId)
-          .order('sort_order'),
-      ]);
+          .order('sort_order');
+        docsData = (docsRes.data ?? []) as DbTripDocument[];
+      } catch {
+        // trip_documents 테이블 미존재 시 무시
+      }
 
       const pins: Pin[] = (pinsRes.data as Pin[]) ?? [];
 
@@ -834,7 +842,7 @@ export function useTrip(id: string | undefined) {
           pins,
           pinPhotos,
           storagePhotos,
-          (docsRes.data ?? []) as DbTripDocument[],
+          docsData,
         ),
       );
       setIsDemo(false);
