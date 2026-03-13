@@ -86,6 +86,7 @@ export default function TripFormModal({ open, onClose, onSaved }: Props) {
           photos: [],
           places: [],
           checklist: [],
+          documents: [],
           travelerCount: 1,
           createdAt: now,
           updatedAt: now,

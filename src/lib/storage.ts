@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 
 const BUCKET = 'trip-photos';
+const DOC_BUCKET = 'trip-documents';
 
 /**
  * base64 data URL → Blob 변환
@@ -100,4 +101,48 @@ export async function deleteTripPhoto(
   const fileName = parts[parts.length - 1];
   const path = `${user.id}/${tripId}/${fileName}`;
   await supabase.storage.from(BUCKET).remove([path]);
+}
+
+// ============================================================
+// 예약 서류 (Documents) Storage 함수
+// ============================================================
+
+/**
+ * 예약 서류 파일을 Supabase Storage에 업로드하고 공개 URL을 반환.
+ */
+export async function uploadTripDocument(
+  tripId: string,
+  file: File,
+): Promise<string> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('로그인이 필요합니다.');
+
+  const ext = file.name.split('.').pop() || 'pdf';
+  const fileName = `${crypto.randomUUID()}.${ext}`;
+  const path = `${user.id}/${tripId}/${fileName}`;
+
+  const { error } = await supabase.storage
+    .from(DOC_BUCKET)
+    .upload(path, file, { cacheControl: '3600', upsert: false });
+
+  if (error) throw error;
+
+  const { data } = supabase.storage.from(DOC_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+
+/**
+ * Storage에서 예약 서류 삭제.
+ */
+export async function deleteTripDocument(
+  tripId: string,
+  url: string,
+): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('로그인이 필요합니다.');
+
+  const parts = url.split('/');
+  const fileName = parts[parts.length - 1];
+  const path = `${user.id}/${tripId}/${fileName}`;
+  await supabase.storage.from(DOC_BUCKET).remove([path]);
 }

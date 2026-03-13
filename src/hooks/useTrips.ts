@@ -9,12 +9,13 @@ import {
   loadTravelerCount,
   deleteLocalTrip,
 } from '../lib/localStore';
-import type { Trip, Place, PlacePriority } from '../types/trip';
+import type { Trip, Place, PlacePriority, TripDocument as UiTripDocument } from '../types/trip';
 import { tripStatusToPinStatus } from '../utils/statusConvert';
 import type {
   Trip as DbTrip,
   Expense as DbExpense,
   ChecklistItem as DbChecklistItem,
+  TripDocument as DbTripDocument,
   Pin,
   PinPhoto,
 } from '../types/database';
@@ -33,6 +34,7 @@ function mapDbTripToUi(
   pins: Pin[],
   pinPhotos: PinPhoto[],
   storagePhotos: string[] = [],
+  tripDocuments: DbTripDocument[] = [],
 ): Trip {
   // destination: 핀들의 도시/나라 조합
   const cityCountry = [...new Set(
@@ -130,6 +132,14 @@ function mapDbTripToUi(
       text: c.text,
       checked: c.checked,
     })),
+    documents: tripDocuments
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map((d) => ({
+        id: d.id,
+        url: d.url,
+        name: d.name,
+        category: d.category,
+      })),
     travelerCount: db.traveler_count ?? loadTravelerCount(db.id),
     createdAt: db.created_at,
     updatedAt: db.updated_at,
@@ -505,6 +515,65 @@ export async function saveChecklistItems(
   }
 }
 
+// ---- 예약 서류 저장 ----
+
+export async function saveDocuments(
+  tripId: string,
+  documents: UiTripDocument[],
+): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id;
+  if (!userId) throw new Error('인증이 필요합니다');
+
+  // 기존 항목 조회
+  const { data: existing } = await supabase
+    .from('trip_documents')
+    .select('id')
+    .eq('trip_id', tripId)
+    .eq('user_id', userId);
+  const existingIds = new Set((existing ?? []).map((d: { id: string }) => d.id));
+
+  const keepIds = new Set(documents.filter((d) => d.id).map((d) => d.id!));
+  const toDelete = [...existingIds].filter((id) => !keepIds.has(id));
+
+  // 삭제
+  if (toDelete.length > 0) {
+    const { error: delErr } = await supabase
+      .from('trip_documents')
+      .delete()
+      .in('id', toDelete)
+      .eq('user_id', userId);
+    if (delErr) throw delErr;
+  }
+
+  // 삽입 (새 항목)
+  const newDocs = documents.filter((d) => !d.id);
+  if (newDocs.length > 0) {
+    const { error: insErr } = await supabase.from('trip_documents').insert(
+      newDocs.map((doc) => ({
+        trip_id: tripId,
+        user_id: userId,
+        url: doc.url,
+        name: doc.name,
+        category: doc.category,
+        sort_order: documents.indexOf(doc),
+      })),
+    );
+    if (insErr) throw insErr;
+  }
+
+  // 업데이트 (기존 항목 순서/이름 변경)
+  const existingDocs = documents.filter((d) => d.id && existingIds.has(d.id));
+  for (const doc of existingDocs) {
+    const { error: updErr } = await supabase
+      .from('trip_documents')
+      .update({ name: doc.name, category: doc.category, sort_order: documents.indexOf(doc) })
+      .eq('id', doc.id!)
+      .eq('user_id', userId);
+    if (updErr) throw updErr;
+  }
+}
+
 // ---- 일정(장소) 저장 ----
 
 export async function savePlaces(
@@ -712,7 +781,7 @@ export function useTrip(id: string | undefined) {
 
       // 여행 소유자의 user_id로 하위 데이터 필터 (데이터 격리)
       const tripOwnerId = (dbTrip as DbTrip).user_id;
-      const [expensesRes, checklistRes, pinsRes] = await Promise.all([
+      const [expensesRes, checklistRes, pinsRes, docsRes] = await Promise.all([
         supabase.from('expenses').select('*').eq('trip_id', id).eq('user_id', tripOwnerId),
         supabase
           .from('checklist_items')
@@ -722,6 +791,12 @@ export function useTrip(id: string | undefined) {
           .order('sort_order'),
         supabase
           .from('pins')
+          .select('*')
+          .eq('trip_id', id)
+          .eq('user_id', tripOwnerId)
+          .order('sort_order'),
+        supabase
+          .from('trip_documents')
           .select('*')
           .eq('trip_id', id)
           .eq('user_id', tripOwnerId)
@@ -759,6 +834,7 @@ export function useTrip(id: string | undefined) {
           pins,
           pinPhotos,
           storagePhotos,
+          (docsRes.data ?? []) as DbTripDocument[],
         ),
       );
       setIsDemo(false);

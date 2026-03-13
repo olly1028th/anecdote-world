@@ -35,6 +35,15 @@ export interface ChecklistItem {
   checked: boolean;
 }
 
+export type DocumentCategory = 'flight' | 'hotel' | 'visa' | 'insurance' | 'ticket' | 'other';
+
+export interface TripDocument {
+  id?: string;
+  url: string;
+  name: string;
+  category: DocumentCategory;
+}
+
 export interface Trip {
   id: string;
   title: string;
@@ -53,6 +62,7 @@ export interface Trip {
   photoCaptions?: Record<string, string>;
   places: Place[];
   checklist: ChecklistItem[];
+  documents: TripDocument[];
   travelerCount: number;
   createdAt: string;
   updatedAt: string;

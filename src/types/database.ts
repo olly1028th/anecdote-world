@@ -98,6 +98,20 @@ export interface ChecklistItem {
   created_at: string;
 }
 
+// ---- trip_documents (예약 서류) ----
+export type DocumentCategory = 'flight' | 'hotel' | 'visa' | 'insurance' | 'ticket' | 'other';
+
+export interface TripDocument {
+  id: string;
+  trip_id: string;
+  user_id: string;
+  url: string;
+  name: string;
+  category: DocumentCategory;
+  sort_order: number;
+  created_at: string;
+}
+
 // ---- trip_shares (공유/초대) ----
 export type SharePermission = 'read' | 'edit';
 export type ShareStatus = 'pending' | 'accepted' | 'declined';
