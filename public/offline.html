@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f48c25" />
+    <title>오프라인 — Anecdote World</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        font-family: 'Space Grotesk', system-ui, sans-serif;
+        background: #F9F4E8;
+        color: #1c140d;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .container {
+        text-align: center;
+        padding: 2rem;
+        max-width: 400px;
+      }
+      .planet {
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 1.5rem;
+        border-radius: 50%;
+        background: #f48c25;
+        border: 4px solid #1c140d;
+        box-shadow: 6px 6px 0px 0px #1c140d;
+        position: relative;
+        opacity: 0.6;
+      }
+      .planet::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-20deg);
+        width: 160px;
+        height: 30px;
+        border: 3px solid #1c140d;
+        border-radius: 50%;
+        opacity: 0.5;
+      }
+      h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+        letter-spacing: -0.02em;
+      }
+      p {
+        font-size: 1rem;
+        color: #6b5a4e;
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+      }
+      button {
+        background: #f48c25;
+        color: #1c140d;
+        border: 3px solid #1c140d;
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 4px 4px 0px 0px #1c140d;
+        transition: transform 0.1s, box-shadow 0.1s;
+      }
+      button:active {
+        transform: translate(2px, 2px);
+        box-shadow: 2px 2px 0px 0px #1c140d;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="planet"></div>
+      <h1>행성 연결 끊김!</h1>
+      <p>인터넷 연결이 없어 여행 기록에 접근할 수 없어요.<br/>네트워크 연결 후 다시 시도해 주세요.</p>
+      <button onclick="window.location.reload()">다시 연결하기</button>
+    </div>
+  </body>
+</html>
