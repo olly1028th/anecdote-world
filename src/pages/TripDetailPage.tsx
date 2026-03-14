@@ -282,10 +282,15 @@ export default function TripDetailPage() {
           if (doc.url.startsWith('data:')) {
             // data URL → File → Storage 업로드
             try {
-              const res = await fetch(doc.url);
-              const blob = await res.blob();
+              // Safari에서 fetch(dataUrl)이 안 되므로 직접 변환
+              const [header, b64] = doc.url.split(',');
+              const mime = header.match(/:(.*?);/)?.[1] || 'application/pdf';
+              const binary = atob(b64);
+              const bytes = new Uint8Array(binary.length);
+              for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+              const blob = new Blob([bytes], { type: mime });
               const ext = doc.name.split('.').pop() || 'pdf';
-              const file = new File([blob], doc.name, { type: blob.type || `application/${ext}` });
+              const file = new File([blob], doc.name, { type: mime });
               console.log(`[documents] Uploading ${doc.name} (${(blob.size / 1024).toFixed(1)}KB) to trip-documents...`);
               const url = await uploadTripDocument(id, file);
               console.log(`[documents] Upload OK: ${url}`);
