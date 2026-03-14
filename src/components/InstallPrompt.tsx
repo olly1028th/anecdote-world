@@ -11,45 +11,40 @@ declare global {
   }
 }
 
+/** 설치 배너를 표시할 수 있는 초기 상태 계산 (동기) */
+function canShowBanner() {
+  if (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as unknown as { standalone?: boolean }).standalone
+  )
+    return false;
+  const dismissed = localStorage.getItem('pwa-install-dismissed');
+  if (dismissed && Date.now() - Number(dismissed) < 7 * 24 * 60 * 60 * 1000)
+    return false;
+  return true;
+}
+
+function detectIOS() {
+  const ua = navigator.userAgent;
+  return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
 export default function InstallPrompt() {
+  const isIOS = detectIOS();
+
   const [deferredPrompt, setDeferredPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
-  const [showBanner, setShowBanner] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
+    useState<BeforeInstallPromptEvent | null>(() =>
+      canShowBanner() && !detectIOS() ? window.__pwaInstallPrompt : null,
+    );
+  const [showBanner, setShowBanner] = useState(() => {
+    if (!canShowBanner()) return false;
+    return detectIOS() || !!window.__pwaInstallPrompt;
+  });
 
+  // Android / Chrome: 아직 이벤트가 안 왔으면 리스너 등록
   useEffect(() => {
-    // 이미 설치된 앱이면 표시하지 않음
-    if (
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as unknown as { standalone?: boolean }).standalone
-    )
-      return;
+    if (isIOS || !canShowBanner() || deferredPrompt) return;
 
-    // 사용자가 이전에 닫았으면 7일간 숨김
-    const dismissed = localStorage.getItem('pwa-install-dismissed');
-    if (dismissed && Date.now() - Number(dismissed) < 7 * 24 * 60 * 60 * 1000)
-      return;
-
-    // iOS 감지 (Safari, Chrome, 기타 브라우저 모두)
-    const ua = navigator.userAgent;
-    const isIOSDevice =
-      /iPad|iPhone|iPod/.test(ua) ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-    if (isIOSDevice) {
-      setIsIOS(true);
-      setShowBanner(true);
-      return;
-    }
-
-    // Android / Chrome: index.html에서 미리 캡처한 이벤트 확인
-    if (window.__pwaInstallPrompt) {
-      setDeferredPrompt(window.__pwaInstallPrompt);
-      setShowBanner(true);
-      return;
-    }
-
-    // 아직 이벤트가 안 왔으면 리스너 등록
     const handler = (e: Event) => {
       e.preventDefault();
       window.__pwaInstallPrompt = e as BeforeInstallPromptEvent;
@@ -58,7 +53,7 @@ export default function InstallPrompt() {
     };
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, []);
+  }, [isIOS, deferredPrompt]);
 
   // 앱이 설치되면 배너 숨김
   useEffect(() => {
