@@ -553,45 +553,31 @@ export default function TripDetailPage() {
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
             {formatDate(trip.startDate)} ~ {formatDate(trip.endDate)} ({calcDuration(trip.startDate, trip.endDate)})
           </p>
+          {/* 환율 — 소형 인라인 */}
+          {exchangeRate ? (
+            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-[#0d9488]/10 border border-[#0d9488]/30 text-[10px] font-bold text-[#0d9488]">
+              <span>{exchangeRate.symbol}{(exchangeRate.rate * 1000).toFixed(2)}</span>
+              <span className="opacity-60">/ ₩1,000</span>
+            </span>
+          ) : rateLoading ? (
+            <span className="inline-block mt-1 w-20 h-5 bg-slate-100 dark:bg-slate-800 rounded-full animate-pulse" />
+          ) : (
+            <button
+              type="button"
+              onClick={fetchRate}
+              className="inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-[#0d9488] bg-[#0d9488]/10 border border-[#0d9488]/30 hover:bg-[#0d9488]/20 active:scale-95 transition-all cursor-pointer"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {rateError === 'no_currency'
+                ? '통화 감지 실패'
+                : rateError === 'api_fail'
+                  ? '환율 재시도'
+                  : '환율 확인'}
+            </button>
+          )}
         </div>
-
-        {/* 환율 정보 — 버튼 클릭 시 조회 */}
-        {exchangeRate ? (
-          <div className="w-full bg-gradient-to-r from-[#0d9488]/10 to-[#eab308]/10 border-2 border-[#0d9488]/30 rounded-xl px-4 py-2.5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-[#0d9488]/20 flex items-center justify-center">
-                <span className="text-xs font-bold text-[#0d9488]">{exchangeRate.symbol}</span>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Exchange Rate</p>
-                <p className="text-xs font-bold text-slate-900 dark:text-slate-100">{exchangeRate.currencyName}</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-sm font-bold text-[#0d9488]">
-                {exchangeRate.symbol}{(exchangeRate.rate * 1000).toFixed(2)}
-              </p>
-              <p className="text-[10px] text-slate-400 font-medium">= 1,000원 ({exchangeRate.updatedAt})</p>
-            </div>
-          </div>
-        ) : rateLoading ? (
-          <div className="w-full h-14 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />
-        ) : (
-          <button
-            type="button"
-            onClick={fetchRate}
-            className="w-full py-2.5 rounded-xl text-sm font-bold tracking-tight text-[#0d9488] bg-[#0d9488]/10 border-2 border-[#0d9488]/30 hover:bg-[#0d9488]/20 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            {rateError === 'no_currency'
-              ? `통화 감지 실패 (${trip.destination || '목적지 없음'})`
-              : rateError === 'api_fail'
-                ? '환율 API 조회 실패 — 다시 시도'
-                : '환율 확인하기'}
-          </button>
-        )}
 
         {/* 정복 완료 배너 — 계획 여행의 종료일이 지났을 때 */}
         {trip.status === 'planned' && trip.endDate && new Date(trip.endDate) < new Date(new Date().toDateString()) && (
