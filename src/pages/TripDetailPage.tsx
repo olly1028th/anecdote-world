@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTrip, deleteTrip, updateTrip, toggleChecklistItem, saveChecklistItems, saveDocuments, updateDemoTrip, deleteDemoTrip } from '../hooks/useTrips';
 import { supabase } from '../lib/supabase';
-import { savePhotoCaptions, saveTravelerCount as saveTravelerCountLocal, updateLocalPinsByTripId } from '../lib/localStore';
+import { savePhotoCaptions, saveTravelerCount as saveTravelerCountLocal, saveDiaryEntries, updateLocalPinsByTripId } from '../lib/localStore';
 import { tripStatusToPinStatus } from '../utils/statusConvert';
 import { uploadTripPhoto, deleteTripPhoto, uploadTripDocument, deleteTripDocument } from '../lib/storage';
 import { useSharesForTrip } from '../hooks/useShares';
@@ -60,6 +60,10 @@ export default function TripDetailPage() {
   const [editingDocuments, setEditingDocuments] = useState(false);
   const [editingTravelerCount, setEditingTravelerCount] = useState(false);
   const [draftTravelerCount, setDraftTravelerCount] = useState(1);
+
+  // Diary edit state
+  const [editingDiaryDate, setEditingDiaryDate] = useState<string | null>(null);
+  const [draftDiaryContent, setDraftDiaryContent] = useState('');
 
   // Edit form data (photos, checklist, memo — expenses/places are in extracted components)
   const [draftPhotos, setDraftPhotos] = useState<string[]>([]);
@@ -395,6 +399,35 @@ export default function TripDetailPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  // --- 일기 날짜별 저장 ---
+  const startEditDiary = (date: string) => {
+    if (!trip) return;
+    const existing = (trip.diaryEntries ?? []).find((e) => e.date === date);
+    setDraftDiaryContent(existing?.content ?? '');
+    setEditingDiaryDate(date);
+  };
+  const saveDiaryInline = () => {
+    if (!trip || !id || !editingDiaryDate) return;
+    const entries = [...(trip.diaryEntries ?? [])];
+    const idx = entries.findIndex((e) => e.date === editingDiaryDate);
+    if (draftDiaryContent.trim()) {
+      if (idx >= 0) {
+        entries[idx] = { ...entries[idx], content: draftDiaryContent.trim() };
+      } else {
+        entries.push({ date: editingDiaryDate, content: draftDiaryContent.trim() });
+      }
+    } else if (idx >= 0) {
+      entries.splice(idx, 1);
+    }
+    saveDiaryEntries(id, entries);
+    if (isDemo) {
+      updateDemoTrip(id, { diaryEntries: entries });
+    }
+    setEditingDiaryDate(null);
+    refetch();
+    toast('일기가 저장되었습니다');
   };
 
   // --- 사진 캡션 저장 ---
@@ -780,39 +813,129 @@ export default function TripDetailPage() {
 
         {/* ===== 일기 탭 ===== */}
         {activeTab === 'diary' && (
-          <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border-[3px] border-slate-900 retro-shadow">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">
-                {isCompleted ? 'Mission Review' : 'Mission Notes'}
-              </h3>
-              {!editingMemo && <EditButton onClick={startEditMemo} />}
-            </div>
-            {editingMemo ? (
-              <>
-                <textarea
-                  value={draftMemo}
-                  onChange={(e) => setDraftMemo(e.target.value)}
-                  placeholder={isCompleted ? '이 여행 어땠어요?' : '여행에 대한 메모를 남겨보세요...'}
-                  rows={5}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 dark:border-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25] resize-none"
-                />
-                <SaveCancelButtons onSave={saveMemoInline} onCancel={() => setEditingMemo(false)} saving={saving} />
-              </>
-            ) : trip.memo ? (
-              isCompleted ? (
-                <p className="text-slate-900 dark:text-slate-100 font-medium italic leading-relaxed">"{trip.memo}"</p>
+          <>
+            {/* 날짜별 일기 카드 */}
+            {(() => {
+              const days: { date: string; dayNum: number; label: string }[] = [];
+              if (trip.startDate && trip.endDate) {
+                const start = new Date(trip.startDate);
+                const end = new Date(trip.endDate);
+                for (let d = new Date(start), i = 1; d <= end; d.setDate(d.getDate() + 1), i++) {
+                  const dateStr = d.toISOString().slice(0, 10);
+                  const mm = d.getMonth() + 1;
+                  const dd = d.getDate();
+                  const weekday = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
+                  days.push({
+                    date: dateStr,
+                    dayNum: i,
+                    label: `${mm}.${dd} (${weekday})`,
+                  });
+                }
+              }
+              const diaryMap = new Map((trip.diaryEntries ?? []).map((e) => [e.date, e.content]));
+
+              if (days.length === 0) {
+                return (
+                  <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-dashed border-slate-300 text-center">
+                    <p className="text-xs text-slate-300 font-medium py-4">
+                      여행 날짜를 설정하면 Day별 일기를 작성할 수 있어요
+                    </p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="space-y-3">
+                  {days.map(({ date, dayNum, label }) => {
+                    const content = diaryMap.get(date);
+                    const isEditing = editingDiaryDate === date;
+                    return (
+                      <div
+                        key={date}
+                        className={`bg-white dark:bg-slate-800 rounded-xl border-[3px] overflow-hidden transition-all ${
+                          isEditing
+                            ? 'border-[#6366f1] shadow-[4px_4px_0px_0px_rgba(99,102,241,0.3)]'
+                            : 'border-slate-900 dark:border-slate-100 retro-shadow'
+                        }`}
+                      >
+                        <div
+                          className="flex items-center gap-3 px-4 py-3 cursor-pointer"
+                          onClick={() => !isEditing && startEditDiary(date)}
+                        >
+                          <div className="w-10 h-10 rounded-lg bg-[#6366f1]/15 border-2 border-[#6366f1] flex items-center justify-center shrink-0">
+                            <span className="text-sm font-bold text-[#6366f1]">D{dayNum}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-slate-500 tracking-wide">{label}</p>
+                            {!isEditing && (
+                              content ? (
+                                <p className="text-sm text-slate-700 dark:text-slate-300 font-medium truncate mt-0.5">{content}</p>
+                              ) : (
+                                <p className="text-xs text-slate-300 dark:text-slate-600 mt-0.5">탭하여 일기 작성</p>
+                              )
+                            )}
+                          </div>
+                          {!isEditing && content && (
+                            <svg className="w-4 h-4 text-[#6366f1] shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                              <circle cx="12" cy="12" r="4" />
+                            </svg>
+                          )}
+                        </div>
+                        {isEditing && (
+                          <div className="px-4 pb-4">
+                            <textarea
+                              value={draftDiaryContent}
+                              onChange={(e) => setDraftDiaryContent(e.target.value)}
+                              placeholder="오늘 하루는 어땠나요?"
+                              rows={4}
+                              autoFocus
+                              className="w-full px-3 py-2.5 rounded-lg border-2 border-slate-900 text-sm font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 dark:border-slate-100 focus:outline-none focus:ring-2 focus:ring-[#6366f1]/40 focus:border-[#6366f1] resize-none"
+                            />
+                            <SaveCancelButtons onSave={saveDiaryInline} onCancel={() => setEditingDiaryDate(null)} saving={false} />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            {/* 전체 메모 */}
+            <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border-[3px] border-slate-900 retro-shadow">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">
+                  {isCompleted ? 'Mission Review' : 'Mission Notes'}
+                </h3>
+                {!editingMemo && <EditButton onClick={startEditMemo} />}
+              </div>
+              {editingMemo ? (
+                <>
+                  <textarea
+                    value={draftMemo}
+                    onChange={(e) => setDraftMemo(e.target.value)}
+                    placeholder={isCompleted ? '이 여행 어땠어요?' : '여행에 대한 메모를 남겨보세요...'}
+                    rows={4}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 dark:border-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25] resize-none"
+                  />
+                  <SaveCancelButtons onSave={saveMemoInline} onCancel={() => setEditingMemo(false)} saving={saving} />
+                </>
+              ) : trip.memo ? (
+                isCompleted ? (
+                  <p className="text-slate-900 dark:text-slate-100 font-medium italic leading-relaxed">"{trip.memo}"</p>
+                ) : (
+                  <p className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-relaxed">{trip.memo}</p>
+                )
               ) : (
-                <p className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-relaxed">{trip.memo}</p>
-              )
-            ) : (
-              <p
-                onClick={startEditMemo}
-                className="text-xs text-slate-300 font-medium text-center py-8 cursor-pointer hover:text-[#f48c25] transition-colors"
-              >
-                {isCompleted ? '탭하여 후기를 작성해보세요' : '탭하여 메모를 추가해보세요'}
-              </p>
-            )}
-          </div>
+                <p
+                  onClick={startEditMemo}
+                  className="text-xs text-slate-300 font-medium text-center py-4 cursor-pointer hover:text-[#f48c25] transition-colors"
+                >
+                  {isCompleted ? '탭하여 후기를 작성해보세요' : '탭하여 메모를 추가해보세요'}
+                </p>
+              )}
+            </div>
+          </>
         )}
 
         {/* ===== 체크리스트 탭 ===== */}

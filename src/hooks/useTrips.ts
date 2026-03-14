@@ -7,6 +7,7 @@ import {
   getMergedDemoTrips,
   loadPhotoCaptions,
   loadTravelerCount,
+  loadDiaryEntries,
   deleteLocalTrip,
 } from '../lib/localStore';
 import type { Trip, Place, PlacePriority, TripDocument as UiTripDocument } from '../types/trip';
@@ -140,6 +141,7 @@ function mapDbTripToUi(
         name: d.name,
         category: d.category,
       })),
+    diaryEntries: loadDiaryEntries(db.id),
     travelerCount: db.traveler_count ?? loadTravelerCount(db.id),
     createdAt: db.created_at,
     updatedAt: db.updated_at,
@@ -684,6 +686,7 @@ export function useTrip(id: string | undefined) {
         const localCaps = loadPhotoCaptions(found.id);
         if (localCaps) found.photoCaptions = { ...found.photoCaptions, ...localCaps };
         found.travelerCount = found.travelerCount || loadTravelerCount(found.id);
+        found.diaryEntries = loadDiaryEntries(found.id);
       }
       setTrip(found);
       setIsDemo(true);
@@ -707,6 +710,7 @@ export function useTrip(id: string | undefined) {
           const localCaps = loadPhotoCaptions(found.id);
           if (localCaps) found.photoCaptions = { ...found.photoCaptions, ...localCaps };
           found.travelerCount = found.travelerCount || loadTravelerCount(found.id);
+          found.diaryEntries = loadDiaryEntries(found.id);
         }
         setTrip(found);
         setIsDemo(true);
@@ -754,6 +758,7 @@ export function useTrip(id: string | undefined) {
             const lc = loadPhotoCaptions(localFallback.id);
             if (lc) localFallback.photoCaptions = { ...localFallback.photoCaptions, ...lc };
             localFallback.travelerCount = localFallback.travelerCount || loadTravelerCount(localFallback.id);
+            localFallback.diaryEntries = loadDiaryEntries(localFallback.id);
             setTrip(localFallback);
             setIsDemo(true);
             return;
@@ -854,6 +859,7 @@ export function useTrip(id: string | undefined) {
         const lc = loadPhotoCaptions(demoFallback.id);
         if (lc) demoFallback.photoCaptions = { ...demoFallback.photoCaptions, ...lc };
         demoFallback.travelerCount = demoFallback.travelerCount || loadTravelerCount(demoFallback.id);
+        demoFallback.diaryEntries = loadDiaryEntries(demoFallback.id);
         setTrip(demoFallback);
         setIsDemo(true);
       } else {
