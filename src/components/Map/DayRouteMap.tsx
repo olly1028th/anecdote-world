@@ -35,16 +35,18 @@ function createNumberIcon(num: number) {
 function FitBounds({ places }: { places: Array<{ lat: number; lng: number }> }) {
   const map = useMap();
   useEffect(() => {
-    // 탭 전환 등으로 컨테이너가 숨겨진 상태에서 마운트될 수 있으므로
-    // 약간의 딜레이 후 invalidateSize로 크기 재계산
-    const timer = setTimeout(() => {
-      map.invalidateSize();
-      if (places.length > 0) {
-        const bounds = L.latLngBounds(places.map((p) => [p.lat, p.lng] as [number, number]));
-        map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
-      }
-    }, 100);
-    return () => clearTimeout(timer);
+    // lazy 로딩 + 탭 전환으로 컨테이너 크기가 0일 수 있으므로
+    // 단계적으로 invalidateSize 호출
+    const timers = [150, 400, 800].map((ms) =>
+      setTimeout(() => {
+        map.invalidateSize();
+        if (places.length > 0) {
+          const bounds = L.latLngBounds(places.map((p) => [p.lat, p.lng] as [number, number]));
+          map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
+        }
+      }, ms),
+    );
+    return () => timers.forEach(clearTimeout);
   }, [map, places]);
   return null;
 }

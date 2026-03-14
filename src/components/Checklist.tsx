@@ -41,7 +41,7 @@ export default function Checklist({ items, onToggle, action }: Props) {
                 </svg>
               )}
             </div>
-            <span className={`text-sm font-bold ${item.checked ? 'line-through text-slate-300' : 'text-slate-900 dark:text-slate-100'}`}>
+            <span className={`text-xs font-bold ${item.checked ? 'line-through text-slate-300' : 'text-slate-900 dark:text-slate-100'}`}>
               {item.text}
             </span>
           </label>
