@@ -289,7 +289,6 @@ export default function TripDetailPage() {
               const bytes = new Uint8Array(binary.length);
               for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
               const blob = new Blob([bytes], { type: mime });
-              const ext = doc.name.split('.').pop() || 'pdf';
               const file = new File([blob], doc.name, { type: mime });
               console.log(`[documents] Uploading ${doc.name} (${(blob.size / 1024).toFixed(1)}KB) to trip-documents...`);
               const url = await uploadTripDocument(id, file);
