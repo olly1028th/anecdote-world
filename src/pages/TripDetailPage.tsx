@@ -814,7 +814,7 @@ export default function TripDetailPage() {
         {/* ===== 일기 탭 ===== */}
         {activeTab === 'diary' && (
           <>
-            {/* 날짜별 일기 카드 */}
+            {/* 날짜별 일기 — 클래식 메모지 스타일 */}
             {(() => {
               const days: { date: string; dayNum: number; label: string }[] = [];
               if (trip.startDate && trip.endDate) {
@@ -836,8 +836,11 @@ export default function TripDetailPage() {
 
               if (days.length === 0) {
                 return (
-                  <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-dashed border-slate-300 text-center">
-                    <p className="text-xs text-slate-300 font-medium py-4">
+                  <div
+                    className="border-2 border-slate-400 bg-[#fefcf3] dark:bg-[#2a2418] p-6 text-center"
+                    style={{ borderLeft: '4px solid #c8553d' }}
+                  >
+                    <p className="text-xs text-slate-400 italic">
                       여행 날짜를 설정하면 Day별 일기를 작성할 수 있어요
                     </p>
                   </div>
@@ -845,53 +848,78 @@ export default function TripDetailPage() {
               }
 
               return (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {days.map(({ date, dayNum, label }) => {
                     const content = diaryMap.get(date);
                     const isEditing = editingDiaryDate === date;
                     return (
                       <div
                         key={date}
-                        className={`bg-white dark:bg-slate-800 rounded-xl border-[3px] overflow-hidden transition-all ${
-                          isEditing
-                            ? 'border-[#6366f1] shadow-[4px_4px_0px_0px_rgba(99,102,241,0.3)]'
-                            : 'border-slate-900 dark:border-slate-100 retro-shadow'
-                        }`}
+                        className="relative bg-[#fefcf3] dark:bg-[#2a2418] border-2 border-slate-300 dark:border-slate-600 overflow-hidden transition-all"
+                        style={{ borderLeft: '4px solid #c8553d' }}
                       >
+                        {/* 줄 무늬 배경 (조회 모드에서만) */}
+                        {!isEditing && content && (
+                          <div
+                            className="absolute inset-0 pointer-events-none opacity-30 dark:opacity-15"
+                            style={{
+                              backgroundImage: 'repeating-linear-gradient(transparent, transparent 27px, #d4c5a9 27px, #d4c5a9 28px)',
+                              backgroundPosition: '0 42px',
+                            }}
+                          />
+                        )}
+
+                        {/* 헤더 — 날짜 */}
                         <div
-                          className="flex items-center gap-3 px-4 py-3 cursor-pointer"
+                          className={`relative z-10 flex items-baseline gap-2 px-5 pt-3 pb-1 ${!isEditing ? 'cursor-pointer' : ''}`}
                           onClick={() => !isEditing && startEditDiary(date)}
                         >
-                          <div className="w-10 h-10 rounded-lg bg-[#6366f1]/15 border-2 border-[#6366f1] flex items-center justify-center shrink-0">
-                            <span className="text-sm font-bold text-[#6366f1]">D{dayNum}</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold text-slate-500 tracking-wide">{label}</p>
-                            {!isEditing && (
-                              content ? (
-                                <p className="text-sm text-slate-700 dark:text-slate-300 font-medium truncate mt-0.5">{content}</p>
-                              ) : (
-                                <p className="text-xs text-slate-300 dark:text-slate-600 mt-0.5">탭하여 일기 작성</p>
-                              )
-                            )}
-                          </div>
+                          <span className="text-base font-bold text-[#c8553d] dark:text-[#e07a5f] italic">
+                            Day {dayNum}
+                          </span>
+                          <span className="text-xs text-slate-400 dark:text-slate-500 tracking-wide">
+                            — {label}
+                          </span>
                           {!isEditing && content && (
-                            <svg className="w-4 h-4 text-[#6366f1] shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                              <circle cx="12" cy="12" r="4" />
-                            </svg>
+                            <span className="ml-auto text-[10px] text-slate-300 dark:text-slate-600 italic">
+                              편집
+                            </span>
                           )}
                         </div>
-                        {isEditing && (
-                          <div className="px-4 pb-4">
+
+                        {/* 본문 */}
+                        {isEditing ? (
+                          <div className="relative z-10 px-5 pb-4 pt-1">
                             <textarea
                               value={draftDiaryContent}
                               onChange={(e) => setDraftDiaryContent(e.target.value)}
-                              placeholder="오늘 하루는 어땠나요?"
-                              rows={4}
+                              placeholder="오늘 하루는 어땠나요..."
+                              rows={6}
                               autoFocus
-                              className="w-full px-3 py-2.5 rounded-lg border-2 border-slate-900 text-sm font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 dark:border-slate-100 focus:outline-none focus:ring-2 focus:ring-[#6366f1]/40 focus:border-[#6366f1] resize-none"
+                              className="w-full px-0 py-2 bg-transparent text-sm leading-7 text-slate-800 dark:text-slate-200 focus:outline-none resize-none placeholder:text-slate-300 dark:placeholder:text-slate-600 placeholder:italic"
+                              style={{
+                                backgroundImage: 'repeating-linear-gradient(transparent, transparent 27px, #d4c5a9 27px, #d4c5a9 28px)',
+                              }}
                             />
                             <SaveCancelButtons onSave={saveDiaryInline} onCancel={() => setEditingDiaryDate(null)} saving={false} />
+                          </div>
+                        ) : content ? (
+                          <div
+                            className="relative z-10 px-5 pb-4 pt-1 cursor-pointer"
+                            onClick={() => startEditDiary(date)}
+                          >
+                            <p className="text-sm leading-7 text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
+                              {content}
+                            </p>
+                          </div>
+                        ) : (
+                          <div
+                            className="relative z-10 px-5 pb-4 pt-1 cursor-pointer"
+                            onClick={() => startEditDiary(date)}
+                          >
+                            <p className="text-xs text-slate-300 dark:text-slate-600 italic py-3">
+                              탭하여 일기를 작성해보세요...
+                            </p>
                           </div>
                         )}
                       </div>
@@ -901,10 +929,13 @@ export default function TripDetailPage() {
               );
             })()}
 
-            {/* 전체 메모 */}
-            <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border-[3px] border-slate-900 retro-shadow">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">
+            {/* 전체 메모 — 메모지 스타일 */}
+            <div
+              className="relative bg-[#fefcf3] dark:bg-[#2a2418] border-2 border-slate-300 dark:border-slate-600 p-5"
+              style={{ borderLeft: '4px solid #6366f1' }}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">
                   {isCompleted ? 'Mission Review' : 'Mission Notes'}
                 </h3>
                 {!editingMemo && <EditButton onClick={startEditMemo} />}
@@ -916,20 +947,23 @@ export default function TripDetailPage() {
                     onChange={(e) => setDraftMemo(e.target.value)}
                     placeholder={isCompleted ? '이 여행 어땠어요?' : '여행에 대한 메모를 남겨보세요...'}
                     rows={4}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 dark:border-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25] resize-none"
+                    className="w-full px-0 py-2 bg-transparent text-sm leading-7 text-slate-800 dark:text-slate-200 focus:outline-none resize-none placeholder:text-slate-300 placeholder:italic"
+                    style={{
+                      backgroundImage: 'repeating-linear-gradient(transparent, transparent 27px, #d4c5a9 27px, #d4c5a9 28px)',
+                    }}
                   />
                   <SaveCancelButtons onSave={saveMemoInline} onCancel={() => setEditingMemo(false)} saving={saving} />
                 </>
               ) : trip.memo ? (
                 isCompleted ? (
-                  <p className="text-slate-900 dark:text-slate-100 font-medium italic leading-relaxed">"{trip.memo}"</p>
+                  <p className="text-sm leading-7 text-slate-700 dark:text-slate-300 italic whitespace-pre-wrap">"{trip.memo}"</p>
                 ) : (
-                  <p className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-relaxed">{trip.memo}</p>
+                  <p className="text-sm leading-7 text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{trip.memo}</p>
                 )
               ) : (
                 <p
                   onClick={startEditMemo}
-                  className="text-xs text-slate-300 font-medium text-center py-4 cursor-pointer hover:text-[#f48c25] transition-colors"
+                  className="text-xs text-slate-300 italic text-center py-4 cursor-pointer hover:text-[#6366f1] transition-colors"
                 >
                   {isCompleted ? '탭하여 후기를 작성해보세요' : '탭하여 메모를 추가해보세요'}
                 </p>
