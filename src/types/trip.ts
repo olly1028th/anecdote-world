@@ -44,6 +44,11 @@ export interface TripDocument {
   category: DocumentCategory;
 }
 
+export interface DiaryEntry {
+  date: string;       // 'YYYY-MM-DD'
+  content: string;
+}
+
 export interface Trip {
   id: string;
   title: string;
@@ -63,6 +68,7 @@ export interface Trip {
   places: Place[];
   checklist: ChecklistItem[];
   documents: TripDocument[];
+  diaryEntries?: DiaryEntry[];
   travelerCount: number;
   createdAt: string;
   updatedAt: string;

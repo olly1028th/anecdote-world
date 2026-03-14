@@ -257,3 +257,32 @@ export function saveTravelerCount(tripId: string, count: number) {
 export function loadTravelerCount(tripId: string): number {
   return loadTravelerCounts()[tripId] ?? 1;
 }
+
+// ============================================================
+// 일기 로컬 저장소 (날짜별 일기 항목)
+// ============================================================
+
+import type { DiaryEntry } from '../types/trip';
+
+const DIARY_KEY_PREFIX = 'anecdote-diary-';
+
+/** 특정 여행의 일기 저장 */
+export function saveDiaryEntries(tripId: string, entries: DiaryEntry[]) {
+  const valid = entries.filter((e) => e.content.trim());
+  if (valid.length === 0) {
+    localStorage.removeItem(DIARY_KEY_PREFIX + tripId);
+  } else {
+    localStorage.setItem(DIARY_KEY_PREFIX + tripId, JSON.stringify(valid));
+  }
+}
+
+/** 특정 여행의 일기 로드 */
+export function loadDiaryEntries(tripId: string): DiaryEntry[] {
+  try {
+    const raw = localStorage.getItem(DIARY_KEY_PREFIX + tripId);
+    if (!raw) return [];
+    return JSON.parse(raw) as DiaryEntry[];
+  } catch {
+    return [];
+  }
+}
