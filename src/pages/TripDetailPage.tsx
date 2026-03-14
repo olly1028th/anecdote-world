@@ -26,6 +26,8 @@ import { TripDetailSkeleton } from '../components/Skeleton';
 import { formatDate, calcDuration, totalExpensesInKRW, formatCurrency } from '../utils/format';
 import DocumentUpload from '../components/DocumentUpload';
 import DocumentList from '../components/DocumentList';
+import DetailTabs from '../components/DetailTabs';
+import type { DetailTab } from '../components/DetailTabs';
 import type { ChecklistItem, TripDocument, TripStatus } from '../types/trip';
 
 export default function TripDetailPage() {
@@ -38,6 +40,9 @@ export default function TripDetailPage() {
   const { shares, loading: sharesLoading } = useSharesForTrip(id);
   const { rate: exchangeRate, loading: rateLoading, error: rateError, fetch: fetchRate } = useLazyExchangeRate(trip?.destination, trip?.country);
   const printRef = useRef<HTMLDivElement>(null);
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState<DetailTab>('schedule');
 
   // Share modal state
   const [shareModalOpen, setShareModalOpen] = useState(false);
@@ -680,389 +685,106 @@ export default function TripDetailPage() {
         sharesLoading={sharesLoading}
       />
 
-      {/* Stats Grid */}
-      <section className="grid grid-cols-2 gap-4">
-        <div
-          onClick={startEditExpenses}
-          className="bg-white dark:bg-slate-800 p-4 rounded-xl border-[3px] border-slate-900 retro-shadow flex flex-col gap-2 cursor-pointer hover:border-[#f48c25] transition-colors"
-        >
-          <div className="w-10 h-10 rounded-lg bg-[#eab308]/20 border-2 border-[#eab308] flex items-center justify-center">
-            <svg className="w-5 h-5 text-[#eab308]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Budget</p>
-          <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
-            {trip.expenses.length > 0 ? formatCurrency(totalExpensesInKRW(trip.expenses, exchangeRate?.rate)) : '-'}
-          </p>
-        </div>
+      {/* 탭 네비게이션 */}
+      <DetailTabs active={activeTab} onChange={setActiveTab} />
 
-        {/* 인당 경비 카드 */}
-        {(() => {
-          const total = trip.expenses.length > 0 ? totalExpensesInKRW(trip.expenses, exchangeRate?.rate) : 0;
-          const count = trip.travelerCount || 1;
-          const perPerson = count > 0 ? Math.round(total / count) : 0;
-          return (
-            <div
-              onClick={startEditTravelerCount}
-              className="bg-white dark:bg-slate-800 p-4 rounded-xl border-[3px] border-slate-900 retro-shadow flex flex-col gap-2 cursor-pointer hover:border-[#f48c25] transition-colors"
-            >
-              <div className="w-10 h-10 rounded-lg bg-[#0d9488]/20 border-2 border-[#0d9488] flex items-center justify-center">
-                <svg className="w-5 h-5 text-[#0d9488]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                Cost / Person
-                <span className="ml-1 text-[#0d9488]">({count}명)</span>
-              </p>
-              <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
-                {total > 0 ? formatCurrency(perPerson) : '-'}
-              </p>
-            </div>
-          );
-        })()}
-
-        <div
-          onClick={startEditPhotos}
-          className="bg-white dark:bg-slate-800 p-4 rounded-xl border-[3px] border-slate-900 retro-shadow flex flex-col gap-2 cursor-pointer hover:border-[#f48c25] transition-colors"
-        >
-          <div className="w-10 h-10 rounded-lg bg-[#f43f5e]/20 border-2 border-[#f43f5e] flex items-center justify-center">
-            <svg className="w-5 h-5 text-[#f43f5e]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Photos</p>
-          <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{trip.photos.length}</p>
-        </div>
-
-        <div
-          onClick={startEditChecklist}
-          className="bg-white dark:bg-slate-800 p-4 rounded-xl border-[3px] border-slate-900 retro-shadow flex flex-col gap-2 cursor-pointer hover:border-[#f48c25] transition-colors"
-        >
-          <div className="w-10 h-10 rounded-lg bg-[#f48c25]/20 border-2 border-[#f48c25] flex items-center justify-center">
-            <svg className="w-5 h-5 text-[#f48c25]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Checklist</p>
-          <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{checklistDone}/{checklistTotal}</p>
-        </div>
-      </section>
-
-      {/* 인원 수 인라인 편집 */}
-      {editingTravelerCount && (
-        <section className="bg-white dark:bg-slate-800 p-5 rounded-xl border-[3px] border-[#0d9488] retro-shadow">
-          <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-3">함께 가는 인원</h3>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setDraftTravelerCount(Math.max(1, draftTravelerCount - 1))}
-              className="w-10 h-10 rounded-lg border-2 border-slate-900 bg-white dark:bg-slate-700 text-lg font-bold cursor-pointer hover:bg-slate-100 transition-colors flex items-center justify-center"
-            >
-              -
-            </button>
-            <input
-              type="number"
-              min={1}
-              max={99}
-              value={draftTravelerCount}
-              onChange={(e) => setDraftTravelerCount(Math.max(1, Math.min(99, Number(e.target.value) || 1)))}
-              className="w-16 text-center text-2xl font-bold rounded-lg border-2 border-slate-900 py-1.5 bg-white dark:bg-[#2a1f15] dark:text-slate-100 dark:border-slate-100 focus:outline-none focus:ring-2 focus:ring-[#0d9488]/40"
-            />
-            <button
-              type="button"
-              onClick={() => setDraftTravelerCount(Math.min(99, draftTravelerCount + 1))}
-              className="w-10 h-10 rounded-lg border-2 border-slate-900 bg-white dark:bg-slate-700 text-lg font-bold cursor-pointer hover:bg-slate-100 transition-colors flex items-center justify-center"
-            >
-              +
-            </button>
-            <span className="text-sm font-bold text-slate-500">명</span>
-          </div>
-          <SaveCancelButtons onSave={saveTravelerCount} onCancel={() => setEditingTravelerCount(false)} saving={saving} />
-        </section>
-      )}
-
-      {/* Progress Bar */}
-      {checklistTotal > 0 && (
-        <section className="bg-white dark:bg-slate-800 p-6 rounded-xl border-[3px] border-slate-900 retro-shadow space-y-4">
-          <div className="flex justify-between items-end">
-            <div className="space-y-1">
-              <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">Mission Progress</h3>
-              <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{trip.title}</p>
-            </div>
-            <p className="text-2xl font-bold text-[#f48c25]">
-              {checklistTotal > 0 ? Math.round((checklistDone / checklistTotal) * 100) : 0}%
-            </p>
-          </div>
-          <div className="h-6 bg-slate-100 dark:bg-slate-700 rounded-lg border-2 border-slate-900 relative overflow-hidden">
-            <div
-              className="absolute top-0 left-0 h-full bg-[#f48c25] rounded-r-lg flex items-center justify-end pr-2 transition-all duration-500"
-              style={{ width: checklistTotal > 0 ? `${(checklistDone / checklistTotal) * 100}%` : '0%' }}
-            >
-              <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-            </div>
-          </div>
-          <p className="text-xs font-medium text-slate-600 dark:text-slate-400 leading-relaxed italic">
-            {checklistTotal - checklistDone}개 항목 남음
-          </p>
-        </section>
-      )}
-
-      {/* 한줄 후기 (완료 여행) — 인라인 편집 */}
-      {isCompleted && (
-        <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border-[3px] border-slate-900 retro-shadow">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">Mission Review</h3>
-            {!editingMemo && <EditButton onClick={startEditMemo} />}
-          </div>
-          {editingMemo ? (
-            <>
-              <textarea
-                value={draftMemo}
-                onChange={(e) => setDraftMemo(e.target.value)}
-                placeholder="이 여행 어땠어요?"
-                rows={3}
-                className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 dark:border-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25] resize-none"
-              />
-              <SaveCancelButtons onSave={saveMemoInline} onCancel={() => setEditingMemo(false)} saving={saving} />
-            </>
-          ) : trip.memo ? (
-            <p className="text-slate-900 dark:text-slate-100 font-medium italic">"{trip.memo}"</p>
-          ) : (
-            <p
-              onClick={startEditMemo}
-              className="text-slate-300 text-sm font-medium italic cursor-pointer hover:text-[#f48c25] transition-colors"
-            >
-              탭하여 후기를 작성해보세요
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* 콘텐츠 섹션들 */}
+      {/* 탭 콘텐츠 */}
       <div className="space-y-6">
-        {/* 사진 — 인라인 편집 */}
-        {editingPhotos ? (
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-slate-900 retro-shadow">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-4">Photos</h3>
-            <PhotoUpload
-              photos={draftPhotos}
-              onChange={setDraftPhotos}
-              coverImage={draftCover}
-              onCoverChange={setDraftCover}
-            />
-            <SaveCancelButtons onSave={savePhotosInline} onCancel={() => setEditingPhotos(false)} saving={saving} />
-          </div>
-        ) : trip.photos.length > 0 ? (
-          <PhotoGallery
-            photos={trip.photos}
-            captions={trip.photoCaptions}
-            onCaptionChange={handleCaptionChange}
-            action={<EditButton onClick={startEditPhotos} />}
-          />
-        ) : (
-          <div
-            onClick={startEditPhotos}
-            className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-dashed border-slate-300 cursor-pointer hover:border-[#f48c25] transition-colors"
-          >
-            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">Photos</h3>
-            <p className="text-xs text-slate-300 font-medium text-center py-4">탭하여 사진을 추가해보세요</p>
-          </div>
-        )}
 
-        {isCompleted && trip.itinerary.length > 0 && <Timeline items={trip.itinerary} />}
+        {/* ===== 일정 탭 ===== */}
+        {activeTab === 'schedule' && (
+          <>
+            {isCompleted && trip.itinerary.length > 0 && <Timeline items={trip.itinerary} />}
 
-        {/* 일정 & 장소 — Day별 인라인 편집 */}
-        {editingPlaces ? (
-          <InlinePlacesEditor
-            trip={trip}
-            tripId={id!}
-            isDemo={isDemo}
-            onDone={() => setEditingPlaces(false)}
-            refetch={refetch}
-          />
-        ) : trip.places.length > 0 ? (
-          <div className="relative">
-            <div className="absolute top-5 right-5 z-10">
-              <EditButton onClick={startEditPlaces} />
-            </div>
-            <PlaceList places={trip.places} startDate={trip.startDate} />
-          </div>
-        ) : (
-          <div
-            onClick={startEditPlaces}
-            className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-dashed border-slate-300 cursor-pointer hover:border-[#f48c25] transition-colors"
-          >
-            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">Daily Schedule</h3>
-            <p className="text-xs text-slate-300 font-medium text-center py-4">탭하여 Day별 일정을 추가해보세요</p>
-          </div>
-        )}
-
-        {/* 예산 경비 — 인라인 편집 (카테고리별) */}
-        {(() => {
-          const budgetExpenses = trip.expenses.filter((e) => !e.spentAt);
-          const dailyExpenses = trip.expenses.filter((e) => !!e.spentAt);
-          return editingExpenses ? (
-            <InlineExpenseEditor
-              tripId={id!}
-              isDemo={isDemo}
-              isCompleted={isCompleted}
-              initialExpenses={budgetExpenses}
-              otherExpenses={dailyExpenses}
-              onDone={() => setEditingExpenses(false)}
-              refetch={refetch}
-              destination={trip.destination}
-              country={trip.country}
-            />
-          ) : budgetExpenses.length > 0 ? (
-            <div className="relative">
-              <div className="absolute top-5 right-5 z-10">
-                <EditButton onClick={startEditExpenses} />
-              </div>
-              <ExpenseTable
-                expenses={budgetExpenses}
-                isEstimate={!isCompleted}
-                exchangeRate={exchangeRate?.rate}
-                currencySymbol={exchangeRate?.symbol}
-                localCurrency={exchangeRate?.toCurrency}
+            {editingPlaces ? (
+              <InlinePlacesEditor
+                trip={trip}
+                tripId={id!}
+                isDemo={isDemo}
+                onDone={() => setEditingPlaces(false)}
+                refetch={refetch}
               />
-            </div>
-          ) : (
-            <div
-              onClick={startEditExpenses}
-              className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-dashed border-slate-300 cursor-pointer hover:border-[#f48c25] transition-colors"
-            >
-              <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">
-                {isCompleted ? 'Expenses' : 'Est. Budget'}
-              </h3>
-              <p className="text-xs text-slate-300 font-medium text-center py-4">탭하여 경비를 추가해보세요</p>
-            </div>
-          );
-        })()}
-
-        {/* 일일 지출 — 인라인 편집 (Day별) */}
-        {(() => {
-          const budgetExpenses = trip.expenses.filter((e) => !e.spentAt);
-          const dailyExpenses = trip.expenses.filter((e) => !!e.spentAt);
-          return editingDailySpending ? (
-            <InlineDailySpendingEditor
-              tripId={id!}
-              isDemo={isDemo}
-              initialExpenses={dailyExpenses}
-              otherExpenses={budgetExpenses}
-              onDone={() => setEditingDailySpending(false)}
-              refetch={refetch}
-              destination={trip.destination}
-              country={trip.country}
-              startDate={trip.startDate}
-              endDate={trip.endDate}
-            />
-          ) : dailyExpenses.length > 0 ? (
-            <div className="relative">
-              <div className="absolute top-5 right-5 z-10">
-                <EditButton onClick={() => setEditingDailySpending(true)} />
+            ) : trip.places.length > 0 ? (
+              <div className="relative">
+                <div className="absolute top-5 right-5 z-10">
+                  <EditButton onClick={startEditPlaces} />
+                </div>
+                <PlaceList places={trip.places} startDate={trip.startDate} />
               </div>
-              <ExpenseTable
-                expenses={dailyExpenses}
-                title="Daily Spending"
-                startDate={trip.startDate}
-                exchangeRate={exchangeRate?.rate}
-                currencySymbol={exchangeRate?.symbol}
-                localCurrency={exchangeRate?.toCurrency}
-              />
-            </div>
-          ) : (
-            <div
-              onClick={() => setEditingDailySpending(true)}
-              className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-dashed border-slate-300 cursor-pointer hover:border-[#0d9488] transition-colors"
-            >
-              <h3 className="text-sm font-bold uppercase tracking-widest text-[#0d9488] mb-2">Daily Spending</h3>
-              <p className="text-xs text-slate-300 font-medium text-center py-4">탭하여 일일 지출을 기록해보세요</p>
-            </div>
-          );
-        })()}
-
-        {/* 예약 서류 — 인라인 편집 */}
-        {editingDocuments ? (
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-slate-900 retro-shadow">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-4">Reservations</h3>
-            <DocumentUpload documents={draftDocuments} onChange={setDraftDocuments} />
-            <SaveCancelButtons onSave={saveDocumentsInline} onCancel={() => setEditingDocuments(false)} saving={saving} />
-          </div>
-        ) : (trip.documents ?? []).length > 0 ? (
-          <DocumentList
-            documents={trip.documents}
-            action={<EditButton onClick={startEditDocuments} />}
-          />
-        ) : (
-          <div
-            onClick={startEditDocuments}
-            className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-dashed border-slate-300 cursor-pointer hover:border-[#f48c25] transition-colors"
-          >
-            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">Reservations</h3>
-            <p className="text-xs text-slate-300 font-medium text-center py-4">탭하여 예약 서류를 추가해보세요</p>
-          </div>
-        )}
-
-        {/* 체크리스트 — 인라인 편집 */}
-        {editingChecklist ? (
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-slate-900 retro-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">Checklist</h3>
-              <button
-                type="button"
-                onClick={addDraftChecklistItem}
-                className="text-[10px] font-bold uppercase tracking-widest text-[#f48c25] hover:text-[#d97a1e] cursor-pointer border-2 border-[#f48c25] px-3 py-1 rounded-full hover:bg-[#f48c25]/10 transition-colors bg-transparent"
-              >
-                + Add
-              </button>
-            </div>
-            {draftChecklist.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-4 font-medium">아직 체크리스트가 없습니다.</p>
             ) : (
-              <div className="space-y-2">
-                {draftChecklist.map((item, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={item.text}
-                      onChange={(e) => updateDraftChecklistText(i, e.target.value)}
-                      placeholder="예: 항공편 예약"
-                      className="flex-1 min-w-0 px-3 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 dark:border-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeDraftChecklistItem(i)}
-                      className="shrink-0 w-8 h-8 flex items-center justify-center text-slate-300 hover:text-[#f43f5e] transition-colors cursor-pointer bg-transparent border-0"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
+              <div
+                onClick={startEditPlaces}
+                className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-dashed border-slate-300 cursor-pointer hover:border-[#f48c25] transition-colors"
+              >
+                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">Daily Schedule</h3>
+                <p className="text-xs text-slate-300 font-medium text-center py-4">탭하여 Day별 일정을 추가해보세요</p>
               </div>
             )}
-            <SaveCancelButtons onSave={saveChecklistInline} onCancel={() => setEditingChecklist(false)} saving={saving} />
-          </div>
-        ) : trip.checklist.length > 0 ? (
-          <Checklist items={trip.checklist} onToggle={handleChecklistToggle} action={<EditButton onClick={startEditChecklist} />} />
-        ) : (
-          <div
-            onClick={startEditChecklist}
-            className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-dashed border-slate-300 cursor-pointer hover:border-[#f48c25] transition-colors"
-          >
-            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">Checklist</h3>
-            <p className="text-xs text-slate-300 font-medium text-center py-4">탭하여 체크리스트를 추가해보세요</p>
-          </div>
+
+            {/* 예약 서류 */}
+            {editingDocuments ? (
+              <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-slate-900 retro-shadow">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-4">Reservations</h3>
+                <DocumentUpload documents={draftDocuments} onChange={setDraftDocuments} />
+                <SaveCancelButtons onSave={saveDocumentsInline} onCancel={() => setEditingDocuments(false)} saving={saving} />
+              </div>
+            ) : (trip.documents ?? []).length > 0 ? (
+              <DocumentList
+                documents={trip.documents}
+                action={<EditButton onClick={startEditDocuments} />}
+              />
+            ) : (
+              <div
+                onClick={startEditDocuments}
+                className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-dashed border-slate-300 cursor-pointer hover:border-[#f48c25] transition-colors"
+              >
+                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">Reservations</h3>
+                <p className="text-xs text-slate-300 font-medium text-center py-4">탭하여 예약 서류를 추가해보세요</p>
+              </div>
+            )}
+          </>
         )}
 
-        {/* 계획 여행: 메모 — 인라인 편집 */}
-        {!isCompleted && (
+        {/* ===== 사진 탭 ===== */}
+        {activeTab === 'photos' && (
+          <>
+            {editingPhotos ? (
+              <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-slate-900 retro-shadow">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-4">Photos</h3>
+                <PhotoUpload
+                  photos={draftPhotos}
+                  onChange={setDraftPhotos}
+                  coverImage={draftCover}
+                  onCoverChange={setDraftCover}
+                />
+                <SaveCancelButtons onSave={savePhotosInline} onCancel={() => setEditingPhotos(false)} saving={saving} />
+              </div>
+            ) : trip.photos.length > 0 ? (
+              <PhotoGallery
+                photos={trip.photos}
+                captions={trip.photoCaptions}
+                onCaptionChange={handleCaptionChange}
+                action={<EditButton onClick={startEditPhotos} />}
+              />
+            ) : (
+              <div
+                onClick={startEditPhotos}
+                className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-dashed border-slate-300 cursor-pointer hover:border-[#f48c25] transition-colors"
+              >
+                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">Photos</h3>
+                <p className="text-xs text-slate-300 font-medium text-center py-4">탭하여 사진을 추가해보세요</p>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ===== 일기 탭 ===== */}
+        {activeTab === 'diary' && (
           <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border-[3px] border-slate-900 retro-shadow">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">Mission Notes</h3>
+              <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">
+                {isCompleted ? 'Mission Review' : 'Mission Notes'}
+              </h3>
               {!editingMemo && <EditButton onClick={startEditMemo} />}
             </div>
             {editingMemo ? (
@@ -1070,24 +792,277 @@ export default function TripDetailPage() {
                 <textarea
                   value={draftMemo}
                   onChange={(e) => setDraftMemo(e.target.value)}
-                  placeholder="여행에 대한 메모를 남겨보세요..."
-                  rows={3}
+                  placeholder={isCompleted ? '이 여행 어땠어요?' : '여행에 대한 메모를 남겨보세요...'}
+                  rows={5}
                   className="w-full px-4 py-3 rounded-xl border-2 border-slate-900 text-sm font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 dark:border-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40 focus:border-[#f48c25] resize-none"
                 />
                 <SaveCancelButtons onSave={saveMemoInline} onCancel={() => setEditingMemo(false)} saving={saving} />
               </>
             ) : trip.memo ? (
-              <p className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-relaxed">{trip.memo}</p>
+              isCompleted ? (
+                <p className="text-slate-900 dark:text-slate-100 font-medium italic leading-relaxed">"{trip.memo}"</p>
+              ) : (
+                <p className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-relaxed">{trip.memo}</p>
+              )
             ) : (
               <p
                 onClick={startEditMemo}
-                className="text-xs text-slate-300 font-medium text-center py-4 cursor-pointer hover:text-[#f48c25] transition-colors"
+                className="text-xs text-slate-300 font-medium text-center py-8 cursor-pointer hover:text-[#f48c25] transition-colors"
               >
-                탭하여 메모를 추가해보세요
+                {isCompleted ? '탭하여 후기를 작성해보세요' : '탭하여 메모를 추가해보세요'}
               </p>
             )}
           </div>
         )}
+
+        {/* ===== 체크리스트 탭 ===== */}
+        {activeTab === 'checklist' && (
+          <>
+            {/* Progress Bar */}
+            {checklistTotal > 0 && (
+              <section className="bg-white dark:bg-slate-800 p-6 rounded-xl border-[3px] border-slate-900 retro-shadow space-y-4">
+                <div className="flex justify-between items-end">
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">Mission Progress</h3>
+                    <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{trip.title}</p>
+                  </div>
+                  <p className="text-2xl font-bold text-[#f48c25]">
+                    {checklistTotal > 0 ? Math.round((checklistDone / checklistTotal) * 100) : 0}%
+                  </p>
+                </div>
+                <div className="h-6 bg-slate-100 dark:bg-slate-700 rounded-lg border-2 border-slate-900 relative overflow-hidden">
+                  <div
+                    className="absolute top-0 left-0 h-full bg-[#f48c25] rounded-r-lg flex items-center justify-end pr-2 transition-all duration-500"
+                    style={{ width: checklistTotal > 0 ? `${(checklistDone / checklistTotal) * 100}%` : '0%' }}
+                  >
+                    <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                  </div>
+                </div>
+                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 leading-relaxed italic">
+                  {checklistTotal - checklistDone}개 항목 남음
+                </p>
+              </section>
+            )}
+
+            {editingChecklist ? (
+              <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-slate-900 retro-shadow">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">Checklist</h3>
+                  <button
+                    type="button"
+                    onClick={addDraftChecklistItem}
+                    className="text-[10px] font-bold uppercase tracking-widest text-[#f48c25] hover:text-[#d97a1e] cursor-pointer border-2 border-[#f48c25] px-3 py-1 rounded-full hover:bg-[#f48c25]/10 transition-colors bg-transparent"
+                  >
+                    + Add
+                  </button>
+                </div>
+                {draftChecklist.length === 0 ? (
+                  <p className="text-xs text-slate-400 text-center py-4 font-medium">아직 체크리스트가 없습니다.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {draftChecklist.map((item, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={item.text}
+                          onChange={(e) => updateDraftChecklistText(i, e.target.value)}
+                          placeholder="예: 항공편 예약"
+                          className="flex-1 min-w-0 px-3 py-2.5 rounded-lg border-2 border-slate-900 text-xs font-medium bg-white dark:bg-[#2a1f15] dark:text-slate-100 dark:border-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f48c25]/40"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeDraftChecklistItem(i)}
+                          className="shrink-0 w-8 h-8 flex items-center justify-center text-slate-300 hover:text-[#f43f5e] transition-colors cursor-pointer bg-transparent border-0"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <SaveCancelButtons onSave={saveChecklistInline} onCancel={() => setEditingChecklist(false)} saving={saving} />
+              </div>
+            ) : trip.checklist.length > 0 ? (
+              <Checklist items={trip.checklist} onToggle={handleChecklistToggle} action={<EditButton onClick={startEditChecklist} />} />
+            ) : (
+              <div
+                onClick={startEditChecklist}
+                className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-dashed border-slate-300 cursor-pointer hover:border-[#f48c25] transition-colors"
+              >
+                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">Checklist</h3>
+                <p className="text-xs text-slate-300 font-medium text-center py-4">탭하여 체크리스트를 추가해보세요</p>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ===== 가계부 탭 ===== */}
+        {activeTab === 'expenses' && (
+          <>
+            {/* Stats Grid */}
+            <section className="grid grid-cols-2 gap-4">
+              <div
+                onClick={startEditExpenses}
+                className="bg-white dark:bg-slate-800 p-4 rounded-xl border-[3px] border-slate-900 retro-shadow flex flex-col gap-2 cursor-pointer hover:border-[#f48c25] transition-colors"
+              >
+                <div className="w-10 h-10 rounded-lg bg-[#eab308]/20 border-2 border-[#eab308] flex items-center justify-center">
+                  <svg className="w-5 h-5 text-[#eab308]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Budget</p>
+                <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                  {trip.expenses.length > 0 ? formatCurrency(totalExpensesInKRW(trip.expenses, exchangeRate?.rate)) : '-'}
+                </p>
+              </div>
+
+              {(() => {
+                const total = trip.expenses.length > 0 ? totalExpensesInKRW(trip.expenses, exchangeRate?.rate) : 0;
+                const count = trip.travelerCount || 1;
+                const perPerson = count > 0 ? Math.round(total / count) : 0;
+                return (
+                  <div
+                    onClick={startEditTravelerCount}
+                    className="bg-white dark:bg-slate-800 p-4 rounded-xl border-[3px] border-slate-900 retro-shadow flex flex-col gap-2 cursor-pointer hover:border-[#f48c25] transition-colors"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-[#0d9488]/20 border-2 border-[#0d9488] flex items-center justify-center">
+                      <svg className="w-5 h-5 text-[#0d9488]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                      Cost / Person
+                      <span className="ml-1 text-[#0d9488]">({count}명)</span>
+                    </p>
+                    <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                      {total > 0 ? formatCurrency(perPerson) : '-'}
+                    </p>
+                  </div>
+                );
+              })()}
+            </section>
+
+            {/* 인원 수 인라인 편집 */}
+            {editingTravelerCount && (
+              <section className="bg-white dark:bg-slate-800 p-5 rounded-xl border-[3px] border-[#0d9488] retro-shadow">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-3">함께 가는 인원</h3>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setDraftTravelerCount(Math.max(1, draftTravelerCount - 1))}
+                    className="w-10 h-10 rounded-lg border-2 border-slate-900 bg-white dark:bg-slate-700 text-lg font-bold cursor-pointer hover:bg-slate-100 transition-colors flex items-center justify-center"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    min={1}
+                    max={99}
+                    value={draftTravelerCount}
+                    onChange={(e) => setDraftTravelerCount(Math.max(1, Math.min(99, Number(e.target.value) || 1)))}
+                    className="w-16 text-center text-2xl font-bold rounded-lg border-2 border-slate-900 py-1.5 bg-white dark:bg-[#2a1f15] dark:text-slate-100 dark:border-slate-100 focus:outline-none focus:ring-2 focus:ring-[#0d9488]/40"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setDraftTravelerCount(Math.min(99, draftTravelerCount + 1))}
+                    className="w-10 h-10 rounded-lg border-2 border-slate-900 bg-white dark:bg-slate-700 text-lg font-bold cursor-pointer hover:bg-slate-100 transition-colors flex items-center justify-center"
+                  >
+                    +
+                  </button>
+                  <span className="text-sm font-bold text-slate-500">명</span>
+                </div>
+                <SaveCancelButtons onSave={saveTravelerCount} onCancel={() => setEditingTravelerCount(false)} saving={saving} />
+              </section>
+            )}
+
+            {/* 예산 경비 (카테고리별) */}
+            {(() => {
+              const budgetExpenses = trip.expenses.filter((e) => !e.spentAt);
+              const dailyExpenses = trip.expenses.filter((e) => !!e.spentAt);
+              return editingExpenses ? (
+                <InlineExpenseEditor
+                  tripId={id!}
+                  isDemo={isDemo}
+                  isCompleted={isCompleted}
+                  initialExpenses={budgetExpenses}
+                  otherExpenses={dailyExpenses}
+                  onDone={() => setEditingExpenses(false)}
+                  refetch={refetch}
+                  destination={trip.destination}
+                  country={trip.country}
+                />
+              ) : budgetExpenses.length > 0 ? (
+                <div className="relative">
+                  <div className="absolute top-5 right-5 z-10">
+                    <EditButton onClick={startEditExpenses} />
+                  </div>
+                  <ExpenseTable
+                    expenses={budgetExpenses}
+                    isEstimate={!isCompleted}
+                    exchangeRate={exchangeRate?.rate}
+                    currencySymbol={exchangeRate?.symbol}
+                    localCurrency={exchangeRate?.toCurrency}
+                  />
+                </div>
+              ) : (
+                <div
+                  onClick={startEditExpenses}
+                  className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-dashed border-slate-300 cursor-pointer hover:border-[#f48c25] transition-colors"
+                >
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">
+                    {isCompleted ? 'Expenses' : 'Est. Budget'}
+                  </h3>
+                  <p className="text-xs text-slate-300 font-medium text-center py-4">탭하여 경비를 추가해보세요</p>
+                </div>
+              );
+            })()}
+
+            {/* 일일 지출 (Day별) */}
+            {(() => {
+              const budgetExpenses = trip.expenses.filter((e) => !e.spentAt);
+              const dailyExpenses = trip.expenses.filter((e) => !!e.spentAt);
+              return editingDailySpending ? (
+                <InlineDailySpendingEditor
+                  tripId={id!}
+                  isDemo={isDemo}
+                  initialExpenses={dailyExpenses}
+                  otherExpenses={budgetExpenses}
+                  onDone={() => setEditingDailySpending(false)}
+                  refetch={refetch}
+                  destination={trip.destination}
+                  country={trip.country}
+                  startDate={trip.startDate}
+                  endDate={trip.endDate}
+                />
+              ) : dailyExpenses.length > 0 ? (
+                <div className="relative">
+                  <div className="absolute top-5 right-5 z-10">
+                    <EditButton onClick={() => setEditingDailySpending(true)} />
+                  </div>
+                  <ExpenseTable
+                    expenses={dailyExpenses}
+                    title="Daily Spending"
+                    startDate={trip.startDate}
+                    exchangeRate={exchangeRate?.rate}
+                    currencySymbol={exchangeRate?.symbol}
+                    localCurrency={exchangeRate?.toCurrency}
+                  />
+                </div>
+              ) : (
+                <div
+                  onClick={() => setEditingDailySpending(true)}
+                  className="bg-white dark:bg-slate-800 rounded-xl p-5 border-[3px] border-dashed border-slate-300 cursor-pointer hover:border-[#0d9488] transition-colors"
+                >
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-[#0d9488] mb-2">Daily Spending</h3>
+                  <p className="text-xs text-slate-300 font-medium text-center py-4">탭하여 일일 지출을 기록해보세요</p>
+                </div>
+              );
+            })()}
+          </>
+        )}
+
       </div>
 
       <ConfirmModal
