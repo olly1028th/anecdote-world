@@ -281,12 +281,19 @@ export default function TripDetailPage() {
         for (const doc of validDocs) {
           if (doc.url.startsWith('data:')) {
             // data URL → File → Storage 업로드
-            const res = await fetch(doc.url);
-            const blob = await res.blob();
-            const ext = doc.name.split('.').pop() || 'pdf';
-            const file = new File([blob], doc.name, { type: blob.type || `application/${ext}` });
-            const url = await uploadTripDocument(id, file);
-            uploaded.push({ ...doc, url });
+            try {
+              const res = await fetch(doc.url);
+              const blob = await res.blob();
+              const ext = doc.name.split('.').pop() || 'pdf';
+              const file = new File([blob], doc.name, { type: blob.type || `application/${ext}` });
+              console.log(`[documents] Uploading ${doc.name} (${(blob.size / 1024).toFixed(1)}KB) to trip-documents...`);
+              const url = await uploadTripDocument(id, file);
+              console.log(`[documents] Upload OK: ${url}`);
+              uploaded.push({ ...doc, url });
+            } catch (uploadErr) {
+              console.error(`[documents] Storage 업로드 실패 (${doc.name}):`, uploadErr);
+              throw new Error(`파일 업로드 실패 (${doc.name}): ${uploadErr instanceof Error ? uploadErr.message : String(uploadErr)}`);
+            }
           } else {
             uploaded.push(doc);
           }
