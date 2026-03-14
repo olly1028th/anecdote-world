@@ -30,6 +30,12 @@ import DetailTabs from '../components/DetailTabs';
 import type { DetailTab } from '../components/DetailTabs';
 import type { ChecklistItem, TripDocument, TripStatus } from '../types/trip';
 
+const DIARY_STICKERS = [
+  '✈️', '🗺️', '📸', '🌅', '🏖️', '🏔️', '🍜', '☕',
+  '🎒', '🚂', '⛩️', '🌸', '❤️', '⭐', '🎵', '🌙',
+  '🎉', '😊', '😍', '🤩', '😋', '🥰', '💫', '🔥',
+];
+
 export default function TripDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -64,6 +70,7 @@ export default function TripDetailPage() {
   // Diary edit state
   const [editingDiaryDate, setEditingDiaryDate] = useState<string | null>(null);
   const [draftDiaryContent, setDraftDiaryContent] = useState('');
+  const diaryTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Edit form data (photos, checklist, memo — expenses/places are in extracted components)
   const [draftPhotos, setDraftPhotos] = useState<string[]>([]);
@@ -401,6 +408,24 @@ export default function TripDetailPage() {
     }
   };
 
+  // --- 일기 스티커 ---
+  const insertSticker = (emoji: string) => {
+    const ta = diaryTextareaRef.current;
+    if (!ta) {
+      setDraftDiaryContent((prev) => prev + emoji);
+      return;
+    }
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const before = draftDiaryContent.slice(0, start);
+    const after = draftDiaryContent.slice(end);
+    setDraftDiaryContent(before + emoji + after);
+    requestAnimationFrame(() => {
+      ta.selectionStart = ta.selectionEnd = start + emoji.length;
+      ta.focus();
+    });
+  };
+
   // --- 일기 날짜별 저장 ---
   const startEditDiary = (date: string) => {
     if (!trip) return;
@@ -553,45 +578,31 @@ export default function TripDetailPage() {
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
             {formatDate(trip.startDate)} ~ {formatDate(trip.endDate)} ({calcDuration(trip.startDate, trip.endDate)})
           </p>
+          {/* 환율 — 소형 인라인 */}
+          {exchangeRate ? (
+            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-[#0d9488]/10 border border-[#0d9488]/30 text-[10px] font-bold text-[#0d9488]">
+              <span>{exchangeRate.symbol}{(exchangeRate.rate * 1000).toFixed(2)}</span>
+              <span className="opacity-60">/ ₩1,000</span>
+            </span>
+          ) : rateLoading ? (
+            <span className="inline-block mt-1 w-20 h-5 bg-slate-100 dark:bg-slate-800 rounded-full animate-pulse" />
+          ) : (
+            <button
+              type="button"
+              onClick={fetchRate}
+              className="inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-[#0d9488] bg-[#0d9488]/10 border border-[#0d9488]/30 hover:bg-[#0d9488]/20 active:scale-95 transition-all cursor-pointer"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {rateError === 'no_currency'
+                ? '통화 감지 실패'
+                : rateError === 'api_fail'
+                  ? '환율 재시도'
+                  : '환율 확인'}
+            </button>
+          )}
         </div>
-
-        {/* 환율 정보 — 버튼 클릭 시 조회 */}
-        {exchangeRate ? (
-          <div className="w-full bg-gradient-to-r from-[#0d9488]/10 to-[#eab308]/10 border-2 border-[#0d9488]/30 rounded-xl px-4 py-2.5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-[#0d9488]/20 flex items-center justify-center">
-                <span className="text-xs font-bold text-[#0d9488]">{exchangeRate.symbol}</span>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Exchange Rate</p>
-                <p className="text-xs font-bold text-slate-900 dark:text-slate-100">{exchangeRate.currencyName}</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-sm font-bold text-[#0d9488]">
-                {exchangeRate.symbol}{(exchangeRate.rate * 1000).toFixed(2)}
-              </p>
-              <p className="text-[10px] text-slate-400 font-medium">= 1,000원 ({exchangeRate.updatedAt})</p>
-            </div>
-          </div>
-        ) : rateLoading ? (
-          <div className="w-full h-14 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />
-        ) : (
-          <button
-            type="button"
-            onClick={fetchRate}
-            className="w-full py-2.5 rounded-xl text-sm font-bold tracking-tight text-[#0d9488] bg-[#0d9488]/10 border-2 border-[#0d9488]/30 hover:bg-[#0d9488]/20 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            {rateError === 'no_currency'
-              ? `통화 감지 실패 (${trip.destination || '목적지 없음'})`
-              : rateError === 'api_fail'
-                ? '환율 API 조회 실패 — 다시 시도'
-                : '환율 확인하기'}
-          </button>
-        )}
 
         {/* 정복 완료 배너 — 계획 여행의 종료일이 지났을 때 */}
         {trip.status === 'planned' && trip.endDate && new Date(trip.endDate) < new Date(new Date().toDateString()) && (
@@ -840,7 +851,7 @@ export default function TripDetailPage() {
                     className="border-2 border-slate-400 bg-[#fefcf3] dark:bg-[#2a2418] p-6 text-center"
                     style={{ borderLeft: '4px solid #c8553d' }}
                   >
-                    <p className="text-xs text-slate-400 italic">
+                    <p className="text-xs text-slate-400">
                       여행 날짜를 설정하면 Day별 일기를 작성할 수 있어요
                     </p>
                   </div>
@@ -874,14 +885,14 @@ export default function TripDetailPage() {
                           className={`relative z-10 flex items-baseline gap-2 px-5 pt-3 pb-1 ${!isEditing ? 'cursor-pointer' : ''}`}
                           onClick={() => !isEditing && startEditDiary(date)}
                         >
-                          <span className="text-base font-bold text-[#c8553d] dark:text-[#e07a5f] italic">
+                          <span className="text-base font-bold text-[#c8553d] dark:text-[#e07a5f]">
                             Day {dayNum}
                           </span>
                           <span className="text-xs text-slate-400 dark:text-slate-500 tracking-wide">
                             — {label}
                           </span>
                           {!isEditing && content && (
-                            <span className="ml-auto text-[10px] text-slate-300 dark:text-slate-600 italic">
+                            <span className="ml-auto text-[10px] text-slate-300 dark:text-slate-600">
                               편집
                             </span>
                           )}
@@ -891,16 +902,30 @@ export default function TripDetailPage() {
                         {isEditing ? (
                           <div className="relative z-10 px-5 pb-4 pt-1">
                             <textarea
+                              ref={diaryTextareaRef}
                               value={draftDiaryContent}
                               onChange={(e) => setDraftDiaryContent(e.target.value)}
                               placeholder="오늘 하루는 어땠나요..."
                               rows={6}
                               autoFocus
-                              className="w-full px-0 py-2 bg-transparent text-sm leading-7 text-slate-800 dark:text-slate-200 focus:outline-none resize-none placeholder:text-slate-300 dark:placeholder:text-slate-600 placeholder:italic"
+                              className="w-full px-0 py-2 bg-transparent text-sm leading-7 text-slate-800 dark:text-slate-200 focus:outline-none resize-none placeholder:text-slate-300 dark:placeholder:text-slate-600"
                               style={{
                                 backgroundImage: 'repeating-linear-gradient(transparent, transparent 27px, #d4c5a9 27px, #d4c5a9 28px)',
                               }}
                             />
+                            {/* 스티커/이모지 바 */}
+                            <div className="flex flex-wrap gap-1 py-2 border-t border-dashed border-[#d4c5a9]">
+                              {DIARY_STICKERS.map((s) => (
+                                <button
+                                  key={s}
+                                  type="button"
+                                  onClick={() => insertSticker(s)}
+                                  className="w-8 h-8 flex items-center justify-center rounded-lg text-base hover:bg-[#f48c25]/10 active:scale-90 transition-all cursor-pointer bg-transparent border-0"
+                                >
+                                  {s}
+                                </button>
+                              ))}
+                            </div>
                             <SaveCancelButtons onSave={saveDiaryInline} onCancel={() => setEditingDiaryDate(null)} saving={false} />
                           </div>
                         ) : content ? (
@@ -917,7 +942,7 @@ export default function TripDetailPage() {
                             className="relative z-10 px-5 pb-4 pt-1 cursor-pointer"
                             onClick={() => startEditDiary(date)}
                           >
-                            <p className="text-xs text-slate-300 dark:text-slate-600 italic py-3">
+                            <p className="text-xs text-slate-300 dark:text-slate-600 py-3">
                               탭하여 일기를 작성해보세요...
                             </p>
                           </div>
@@ -947,7 +972,7 @@ export default function TripDetailPage() {
                     onChange={(e) => setDraftMemo(e.target.value)}
                     placeholder={isCompleted ? '이 여행 어땠어요?' : '여행에 대한 메모를 남겨보세요...'}
                     rows={4}
-                    className="w-full px-0 py-2 bg-transparent text-sm leading-7 text-slate-800 dark:text-slate-200 focus:outline-none resize-none placeholder:text-slate-300 placeholder:italic"
+                    className="w-full px-0 py-2 bg-transparent text-sm leading-7 text-slate-800 dark:text-slate-200 focus:outline-none resize-none placeholder:text-slate-300"
                     style={{
                       backgroundImage: 'repeating-linear-gradient(transparent, transparent 27px, #d4c5a9 27px, #d4c5a9 28px)',
                     }}
@@ -956,14 +981,14 @@ export default function TripDetailPage() {
                 </>
               ) : trip.memo ? (
                 isCompleted ? (
-                  <p className="text-sm leading-7 text-slate-700 dark:text-slate-300 italic whitespace-pre-wrap">"{trip.memo}"</p>
+                  <p className="text-sm leading-7 text-slate-700 dark:text-slate-300 whitespace-pre-wrap">"{trip.memo}"</p>
                 ) : (
                   <p className="text-sm leading-7 text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{trip.memo}</p>
                 )
               ) : (
                 <p
                   onClick={startEditMemo}
-                  className="text-xs text-slate-300 italic text-center py-4 cursor-pointer hover:text-[#6366f1] transition-colors"
+                  className="text-xs text-slate-300 text-center py-4 cursor-pointer hover:text-[#6366f1] transition-colors"
                 >
                   {isCompleted ? '탭하여 후기를 작성해보세요' : '탭하여 메모를 추가해보세요'}
                 </p>
@@ -995,7 +1020,7 @@ export default function TripDetailPage() {
                     <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
                   </div>
                 </div>
-                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 leading-relaxed italic">
+                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 leading-relaxed">
                   {checklistTotal - checklistDone}개 항목 남음
                 </p>
               </section>

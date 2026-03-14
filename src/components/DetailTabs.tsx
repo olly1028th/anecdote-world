@@ -85,10 +85,10 @@ export default function DetailTabs({ active, onChange }: DetailTabsProps) {
   }, [active]);
 
   return (
-    <div className="sticky top-0 z-30 -mx-4 px-4 py-3 bg-[var(--color-bg)]">
+    <div className="sticky top-0 z-30 -mx-4 px-4 py-3 bg-[var(--color-bg)] border-y-[3px] border-slate-900 dark:border-slate-100">
       <div
         ref={containerRef}
-        className="flex gap-2.5 overflow-x-auto scrollbar-hide"
+        className="flex justify-between gap-1.5 overflow-x-auto scrollbar-hide"
       >
         {tabs.map((tab) => {
           const isActive = active === tab.key;
@@ -99,10 +99,10 @@ export default function DetailTabs({ active, onChange }: DetailTabsProps) {
               ref={isActive ? activeRef : undefined}
               type="button"
               onClick={() => onChange(tab.key)}
-              className={`flex flex-col items-center gap-1 shrink-0 w-16 py-2.5 rounded-xl text-[10px] font-bold tracking-tight transition-all cursor-pointer ${
+              className={`flex flex-col items-center gap-1 shrink-0 flex-1 min-w-0 py-2.5 rounded-xl text-[10px] font-bold tracking-tight transition-all cursor-pointer ${
                 isActive
                   ? 'border-[3px] border-slate-900 dark:border-slate-100 text-white shadow-[3px_3px_0px_0px_rgba(28,20,13,1)]'
-                  : 'border-[2px] border-dashed border-slate-300 dark:border-slate-600 text-slate-400 dark:text-slate-500 hover:border-slate-400 hover:text-slate-600 dark:hover:text-slate-400'
+                  : 'border-[2px] border-dashed border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-slate-400 hover:text-slate-700 dark:hover:text-slate-300 bg-white/50 dark:bg-slate-800/50'
               }`}
               style={isActive ? { backgroundColor: color } : undefined}
             >
