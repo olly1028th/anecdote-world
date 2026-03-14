@@ -1,8 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+declare global {
+  interface Window {
+    __pwaInstallPrompt: BeforeInstallPromptEvent | null;
+  }
 }
 
 export default function InstallPrompt() {
@@ -13,29 +19,40 @@ export default function InstallPrompt() {
 
   useEffect(() => {
     // 이미 설치된 앱이면 표시하지 않음
-    if (window.matchMedia('(display-mode: standalone)').matches) return;
+    if (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as unknown as { standalone?: boolean }).standalone
+    )
+      return;
 
     // 사용자가 이전에 닫았으면 7일간 숨김
     const dismissed = localStorage.getItem('pwa-install-dismissed');
     if (dismissed && Date.now() - Number(dismissed) < 7 * 24 * 60 * 60 * 1000)
       return;
 
-    // iOS Safari 감지
+    // iOS 감지 (Safari, Chrome, 기타 브라우저 모두)
     const ua = navigator.userAgent;
     const isIOSDevice =
       /iPad|iPhone|iPod/.test(ua) ||
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|Chrome/.test(ua);
 
-    if (isIOSDevice && isSafari) {
+    if (isIOSDevice) {
       setIsIOS(true);
       setShowBanner(true);
       return;
     }
 
-    // Android / Chrome: beforeinstallprompt 이벤트
+    // Android / Chrome: index.html에서 미리 캡처한 이벤트 확인
+    if (window.__pwaInstallPrompt) {
+      setDeferredPrompt(window.__pwaInstallPrompt);
+      setShowBanner(true);
+      return;
+    }
+
+    // 아직 이벤트가 안 왔으면 리스너 등록
     const handler = (e: Event) => {
       e.preventDefault();
+      window.__pwaInstallPrompt = e as BeforeInstallPromptEvent;
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setShowBanner(true);
     };
@@ -43,7 +60,14 @@ export default function InstallPrompt() {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
-  const handleInstall = async () => {
+  // 앱이 설치되면 배너 숨김
+  useEffect(() => {
+    const handler = () => setShowBanner(false);
+    window.addEventListener('appinstalled', handler);
+    return () => window.removeEventListener('appinstalled', handler);
+  }, []);
+
+  const handleInstall = useCallback(async () => {
     if (!deferredPrompt) return;
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
@@ -51,12 +75,13 @@ export default function InstallPrompt() {
       setShowBanner(false);
     }
     setDeferredPrompt(null);
-  };
+    window.__pwaInstallPrompt = null;
+  }, [deferredPrompt]);
 
-  const handleDismiss = () => {
+  const handleDismiss = useCallback(() => {
     setShowBanner(false);
     localStorage.setItem('pwa-install-dismissed', String(Date.now()));
-  };
+  }, []);
 
   if (!showBanner) return null;
 

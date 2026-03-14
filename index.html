@@ -51,6 +51,14 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // beforeinstallprompt 이벤트를 React 마운트 전에 캡처
+      window.__pwaInstallPrompt = null;
+      window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        window.__pwaInstallPrompt = e;
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
